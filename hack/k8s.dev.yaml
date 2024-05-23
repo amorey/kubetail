@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubetail
+  labels:
+    app: kubetail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubetail
+  template:
+    metadata:
+      labels:
+        app: kubetail
+    spec:
+      containers:
+        - name: kubetail
+          image: kubetail
+          ports:
+            - containerPort: 4000
+          readinessProbe:
+            httpGet:
+              port: 4000
+              path: '/healthz'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubetail
+spec:
+  selector:
+    app: kubetail
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
