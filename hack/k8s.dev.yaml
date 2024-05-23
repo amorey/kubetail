@@ -1,37 +1,161 @@
-apiVersion: apps/v1
-kind: Deployment
+---
+kind: ServiceAccount
+apiVersion: v1
+automountServiceAccountToken: true
+metadata:
+  name: kubetail
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+---
+# Source: kubetail/templates/config-map.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+data:
+  config.yaml: |
+    addr: :4000
+    auth-mode: cluster
+    session:
+      secret: REPLACEME
+    csrf:
+      secret: REPLACEME
+---
+# Source: kubetail/templates/rbac.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail
   labels:
-    app: kubetail
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+rules:
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, namespaces, nodes, pods, pods/log, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+# Source: kubetail/templates/rbac.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail
+subjects:
+- kind: ServiceAccount
+  name: kubetail
+  namespace: default
+---
+# Source: kubetail/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubetail
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
+  ports:
+  - name: kubetail
+    protocol: TCP
+    port: 80
+    targetPort: kubetail
+    appProtocol: http
+---
+# Source: kubetail/templates/deployment.yaml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetail
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: dev
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: kubetail
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: dev
+  strategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
-        app: kubetail
+        app.kubernetes.io/name: kubetail
+        app.kubernetes.io/instance: dev
     spec:
+      automountServiceAccountToken: true
+      serviceAccountName: kubetail
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
+      - name: kubetail
+        image: docker.io/kubetail/kubetail:0.6.1
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        imagePullPolicy: IfNotPresent
+        env:
+        envFrom:
+        ports:
         - name: kubetail
-          image: kubetail
-          ports:
-            - containerPort: 4000
-          readinessProbe:
-            httpGet:
-              port: 4000
-              path: '/healthz'
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kubetail
-spec:
-  selector:
-    app: kubetail
-  ports:
-    - protocol: TCP
-      port: 4000
-      targetPort: 4000
+          protocol: TCP
+          containerPort: 4000
+        args:
+        - --config=/etc/kubetail/config.yaml
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: kubetail
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 30
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: kubetail
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 30
+        resources:
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail
+      nodeSelector:
+      affinity:
+      tolerations:
