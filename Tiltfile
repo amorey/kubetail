@@ -23,6 +23,18 @@ docker_build_with_restart(
   ]
 )
 
+#docker_build_with_restart(
+#  'kubetail-backend',
+#  dockerfile='Dockerfile',
+#  context='.',
+#  target='backend-builder',
+#  entrypoint='/backend/server -c /etc/kubetail/config.yaml',
+#  live_update=[
+#    sync('./backend', '/backend'),
+#    run('cd /backend && CGO_ENABLED=0 go build -o server ./cmd/server')
+#  ]
+#)
+
 # kubernetes
 k8s_yaml('hack/tilt/k8s.yaml')
 
