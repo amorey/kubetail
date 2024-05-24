@@ -80,45 +80,79 @@ subjects:
   name: kubetail-backend
   namespace: default
 ---
-kind: Deployment
-apiVersion: apps/v1
+kind: Pod
+apiVersion: v1
 metadata:
   name: kubetail-backend
-  namespace: default
   labels:
     app.kubernetes.io/name: kubetail-backend
 spec:
-  replicas: 1
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: kubetail-backend
-  strategy:
-    type: RollingUpdate
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: kubetail-backend
-    spec:
-      automountServiceAccountToken: true
-      serviceAccountName: kubetail-backend
-      containers:
-      - name: kubetail-backend
-        image: kubetail-backend
-        ports:
-        - name: http
-          protocol: TCP
-          containerPort: 4000
-        args:
-        - --config=/etc/kubetail/config.yaml
-        volumeMounts:
-        - name: config
-          mountPath: /etc/kubetail
-          readOnly: true
-      volumes:
-      - name: config
-        configMap:
-          name: kubetail-backend
+  automountServiceAccountToken: true
+  serviceAccountName: kubetail-backend
+  containers:
+  - name: kubetail-backend
+    image: kubetail-backend
+    ports:
+    - name: http
+      protocol: TCP
+      containerPort: 4000
+    args:
+    - --config=/etc/kubetail/config.yaml
+    volumeMounts:
+    - name: config
+      mountPath: /etc/kubetail
+      readOnly: true
+    resources:
+      requests:
+        memory: 20Mi
+        cpu: 250m
+      limits:
+        memory: 100Mi
+        cpu: 1000m
+  volumes:
+  - name: config
+    configMap:
+      name: kubetail-backend
+#---
+#kind: Deployment
+#apiVersion: apps/v1
+#metadata:
+#  name: kubetail-backend
+#  namespace: default
+#  labels:
+#    app.kubernetes.io/name: kubetail-backend
+#spec:
+#  replicas: 1
+#  revisionHistoryLimit: 5
+#  selector:
+#    matchLabels:
+#      app.kubernetes.io/name: kubetail-backend
+#  strategy:
+#    type: RollingUpdate
+#  template:
+#    metadata:
+#      labels:
+#        app.kubernetes.io/name: kubetail-backend
+#    spec:
+#      automountServiceAccountToken: true
+#      serviceAccountName: kubetail-backend
+#      containers:
+#      - name: kubetail-backend
+#        image: kubetail-backend
+#        ports:
+#        - name: http
+#          protocol: TCP
+#          containerPort: 4000
+#        args:
+#        - --config=/etc/kubetail/config.yaml
+#        volumeMounts:
+#        - name: config
+#          mountPath: /etc/kubetail
+#          readOnly: true
+#      volumes:
+#      - name: config
+#        configMap:
+#          name: kubetail-backend
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -145,6 +179,13 @@ spec:
       containers:
       - name: loggen
         image: docker.io/kubetail/loggen:0.1.2
+        resources:
+          requests:
+            memory: 10Mi
+            cpu: 100m
+          limits:
+            memory: 20Mi
+            cpu: 200m
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -172,4 +213,11 @@ spec:
       - name: loggen
         image: docker.io/kubetail/loggen:0.1.2
         args: ["-ansi"]
+        resources:
+          requests:
+            memory: 10Mi
+            cpu: 100m
+          limits:
+            memory: 20Mi
+            cpu: 200m
 ---
