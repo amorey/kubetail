@@ -23,6 +23,7 @@ lerna-debug.log*
 # build
 /frontend/dist
 /frontend/dist-ssr
+/backend/build
 /backend/website
 
 # misc
