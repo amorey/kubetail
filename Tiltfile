@@ -3,7 +3,7 @@ load('ext://restart_process', 'docker_build_with_restart')
 # backend
 local_resource(
   'kubetail-backend-compile',
-  'cd backend && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/server ./cmd/server',
+  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o build/server ./cmd/server',
   deps=['./backend'],
   ignore=['./backend/build']
 )
