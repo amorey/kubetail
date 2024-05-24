@@ -1,0 +1,175 @@
+---
+kind: ServiceAccount
+apiVersion: v1
+automountServiceAccountToken: true
+metadata:
+  name: kubetail-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail-backend
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail-backend
+data:
+  config.yaml: |
+    addr: :4000
+    gin-mode: debug
+    auth-mode: cluster
+    allowed-namespaces: []
+    base-path: /
+    session:
+      secret: REPLACEME
+      cookie:
+        name: session
+        path: /
+        max-age: 2592000
+        secure: false
+        http-only: true
+        same-site: lax
+    csrf:
+      enabled: true
+      secret: REPLACEME
+      field-name: csrf_token
+      cookie:
+        name: csrf
+        path: /
+        max-age: 43200
+        secure: false
+        http-only: true
+        same-site: strict
+    logging:
+      enabled: true
+      level: info
+      format: pretty
+      access-log:
+        enabled: true
+        hide-health-checks: false
+    tls:
+      enabled: false
+      cert-file:
+      key-file:
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-backend
+  labels:
+    app.kubernetes.io/name: kubetail-backend
+rules:
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, namespaces, nodes, pods, pods/log, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-backend
+  labels:
+    app.kubernetes.io/name: kubetail-backend
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-backend
+subjects:
+- kind: ServiceAccount
+  name: kubetail-backend
+  namespace: default
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetail-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail-backend
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail-backend
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubetail-backend
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: kubetail-backend
+      containers:
+      - name: kubetail-backend
+        image: kubetail-backend
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 4000
+        args:
+        - --config=/etc/kubetail/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loggen
+  namespace: default
+  labels:
+    app.kubernetes.io/name: loggen
+    app.kubernetes.io/instance: kubetail-demo
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loggen
+      app.kubernetes.io/instance: kubetail-demo
+  replicas: 3
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loggen
+        app.kubernetes.io/instance: kubetail-demo
+        app.kubernetes.io/version: "0.1.3"
+    spec:
+      containers:
+      - name: loggen
+        image: docker.io/kubetail/loggen:0.1.2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loggen-ansi
+  namespace: default
+  labels:
+    app.kubernetes.io/name: loggen
+    app.kubernetes.io/instance: kubetail-demo-ansi
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loggen
+      app.kubernetes.io/instance: kubetail-demo-ansi
+  replicas: 3
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loggen
+        app.kubernetes.io/instance: kubetail-demo-ansi
+        app.kubernetes.io/version: "0.1.3"
+    spec:
+      containers:
+      - name: loggen
+        image: docker.io/kubetail/loggen:0.1.2
+        args: ["-ansi"]
+---

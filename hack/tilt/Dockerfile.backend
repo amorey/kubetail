@@ -1,0 +1,10 @@
+FROM golang:1.22.3
+
+WORKDIR /backend
+
+# copy
+COPY backend/build ./build
+COPY backend/templates ./templates
+
+ENTRYPOINT ["./build/server"]
+CMD []
