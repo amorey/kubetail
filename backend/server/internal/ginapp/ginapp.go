@@ -31,7 +31,7 @@ import (
 	adapter "github.com/gwatts/gin-adapter"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/internal/k8shelpers"
+	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
 )
 
 type GinApp struct {

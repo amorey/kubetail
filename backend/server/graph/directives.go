@@ -7,7 +7,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/kubetail-org/kubetail/graph/lib"
+	"github.com/kubetail-org/kubetail/backend/server/graph/lib"
 )
 
 var validate *validator.Validate
