@@ -55,7 +55,7 @@ spec:
               name: client
             - containerPort: 6222
               name: cluster
-            - containerPort: 7422
+            - containerPort: 742
               name: leafnodes
             - containerPort: 7777
               name: metrics
@@ -72,11 +72,7 @@ spec:
             - name: pid
               mountPath: /var/run/nats
 
-          resources:
-            limits:
-              memory: 200Mi
-            requests:
-              memory: 100Mi
+          resources: {}
 
           # Liveness/Readiness probes against the monitoring
           #
