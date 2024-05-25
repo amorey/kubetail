@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/kubetail-org/kubetail/graph/model"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"

@@ -16,7 +16,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/kubetail-org/kubetail/graph/model"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	v12 "k8s.io/api/apps/v1"
@@ -15573,7 +15573,7 @@ func (ec *executionContext) _Query_podLogHead(ctx context.Context, field graphql
 		if data, ok := tmp.(*model.PodLogQueryResponse); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/graph/model.PodLogQueryResponse`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/backend/server/graph/model.PodLogQueryResponse`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -15651,7 +15651,7 @@ func (ec *executionContext) _Query_podLogTail(ctx context.Context, field graphql
 		if data, ok := tmp.(*model.PodLogQueryResponse); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/graph/model.PodLogQueryResponse`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/backend/server/graph/model.PodLogQueryResponse`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16682,7 +16682,7 @@ func (ec *executionContext) _Subscription_podLogFollow(ctx context.Context, fiel
 		if data, ok := tmp.(<-chan *model.LogRecord); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/kubetail-org/kubetail/graph/model.LogRecord`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/kubetail-org/kubetail/backend/server/graph/model.LogRecord`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)

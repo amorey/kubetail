@@ -1,4 +1,4 @@
-module github.com/kubetail-org/kubetail
+module github.com/kubetail-org/kubetail/backend/server
 
 go 1.22.3
 

@@ -43,7 +43,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
-	"github.com/kubetail-org/kubetail/graph/model"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 )
 
 type Key int

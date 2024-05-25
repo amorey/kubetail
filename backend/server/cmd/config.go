@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/kubetail-org/kubetail/internal/ginapp"
+	"github.com/kubetail-org/kubetail/backend/server/internal/ginapp"
 )
 
 type Config struct {

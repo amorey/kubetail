@@ -25,7 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 
-	"github.com/kubetail-org/kubetail/graph"
+	"github.com/kubetail-org/kubetail/backend/server/graph"
 )
 
 // Add user to context if authenticated
