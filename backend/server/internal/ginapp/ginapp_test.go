@@ -25,7 +25,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
-	"github.com/kubetail-org/kubetail/graph"
+	"github.com/kubetail-org/kubetail/backend/server/graph"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -20,7 +20,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/internal/k8shelpers"
+	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
 )
 
 const k8sTokenSessionKey = "k8sToken"

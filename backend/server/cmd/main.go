@@ -33,7 +33,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kubetail-org/kubetail/internal/ginapp"
+	"github.com/kubetail-org/kubetail/backend/server/internal/ginapp"
 )
 
 type CLI struct {

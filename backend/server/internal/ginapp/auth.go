@@ -22,7 +22,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/kubetail-org/kubetail/internal/formerrors"
+	"github.com/kubetail-org/kubetail/backend/server/internal/formerrors"
 )
 
 type AuthMode string

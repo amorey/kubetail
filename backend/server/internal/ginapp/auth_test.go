@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/utils/pointer"
 
-	"github.com/kubetail-org/kubetail/internal/k8shelpers/mock"
+	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers/mock"
 )
 
 type AuthTestSuite struct {

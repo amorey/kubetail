@@ -24,7 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/graph"
+	"github.com/kubetail-org/kubetail/backend/server/graph"
 )
 
 type key int

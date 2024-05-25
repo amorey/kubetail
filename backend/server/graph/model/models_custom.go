@@ -22,7 +22,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubetail-org/kubetail/graph/lib"
+	"github.com/kubetail-org/kubetail/backend/server/graph/lib"
 )
 
 type List interface{}
