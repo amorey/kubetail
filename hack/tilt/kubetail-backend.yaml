@@ -111,13 +111,7 @@ spec:
           containerPort: 4000
         args:
         - --config=/etc/kubetail/config.yaml
-        resources:
-          requests:
-            memory: 20Mi
-            cpu: 250m
-          limits:
-            memory: 100Mi
-            cpu: 1000m
+        resources: {}
         volumeMounts:
         - name: config
           mountPath: /etc/kubetail

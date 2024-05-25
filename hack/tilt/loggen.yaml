@@ -24,10 +24,4 @@ spec:
       containers:
       - name: loggen
         image: docker.io/kubetail/loggen:0.1.2
-        resources:
-          requests:
-            memory: 10Mi
-            cpu: 100m
-          limits:
-            memory: 20Mi
-            cpu: 200m
+        resources: {}
