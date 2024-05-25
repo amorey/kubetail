@@ -25,6 +25,7 @@ docker_build_with_restart(
 
 # apply manifests
 k8s_yaml('hack/tilt/nats.yaml')
+k8s_yaml('hack/tilt/nats-box.yaml')
 k8s_yaml('hack/tilt/loggen.yaml')
 k8s_yaml('hack/tilt/loggen-ansi.yaml')
 k8s_yaml('hack/tilt/chaoskube.yaml')
