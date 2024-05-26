@@ -1,25 +1,44 @@
 load('ext://restart_process', 'docker_build_with_restart')
 
-# kubetail-backend
+# kubetail-agent
 local_resource(
-  'kubetail-backend-compile',
-  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o build/server ./cmd/server',
-  deps=['./backend'],
-  ignore=['./backend/build']
+  'kubetail-agent-compile',
+  'CGO_ENABLED=0 GOOS=linux go build -o .tilt/agent ./backend/agent/main.go',
+  deps=['./backend/agent']
 )
 
 docker_build_with_restart(
-  'kubetail-backend',
-  dockerfile='hack/tilt/Dockerfile.backend',
+  'kubetail-agent',
+  dockerfile='hack/tilt/Dockerfile.agent',
   context='.',
-  entrypoint="/backend/build/server -c /etc/kubetail/config.yaml",
+  entrypoint="/agent/agent",
   only=[
-    './backend/build',
-    './backend/templates'
+    './.tilt/agent',
   ],
   live_update=[
-    sync('./backend/build', '/backend/build'),
-    sync('./backend/templates', '/backend/templates')
+    sync('./.tilt/agent', '/agent/agent'),
+  ]
+)
+
+# kubetail-server
+local_resource(
+  'kubetail-server-compile',
+  'CGO_ENABLED=0 GOOS=linux go build -o .tilt/server ./backend/server/cmd/main.go',
+  deps=['./backend/server']
+)
+
+docker_build_with_restart(
+  'kubetail-server',
+  dockerfile='hack/tilt/Dockerfile.server',
+  context='.',
+  entrypoint="/server/server -c /etc/kubetail/config.yaml",
+  only=[
+    './.tilt/server',
+    './backend/server/templates'
+  ],
+  live_update=[
+    sync('./.tilt/server', '/server/server'),
+    sync('./backend/server/templates', '/server/templates')
   ]
 )
 
@@ -29,7 +48,8 @@ k8s_yaml('hack/tilt/nats-box.yaml')
 k8s_yaml('hack/tilt/loggen.yaml')
 k8s_yaml('hack/tilt/loggen-ansi.yaml')
 k8s_yaml('hack/tilt/chaoskube.yaml')
-k8s_yaml('hack/tilt/kubetail-backend.yaml')
+k8s_yaml('hack/tilt/kubetail-agent.yaml')
+k8s_yaml('hack/tilt/kubetail-server.yaml')
 
 # define resources
 k8s_resource(
@@ -51,13 +71,20 @@ k8s_resource(
 )
 
 k8s_resource(
-  'kubetail-backend',
+  'kubetail-agent',
+  resource_deps=[
+    'nats'
+  ]
+)
+
+k8s_resource(
+  'kubetail-server',
   port_forwards='4000:4000',
   objects=[
-    'kubetail-backend:serviceaccount',
-    'kubetail-backend:clusterrole',
-    'kubetail-backend:clusterrolebinding',
-    'kubetail-backend:configmap'
+    'kubetail-server:serviceaccount',
+    'kubetail-server:clusterrole',
+    'kubetail-server:clusterrolebinding',
+    'kubetail-server:configmap'
   ],
   resource_deps=[
     'nats'
