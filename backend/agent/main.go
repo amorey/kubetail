@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	fmt.Println("agent")
+	fmt.Println("agent2")
 
 	// initialize context and listen for termination signals
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
