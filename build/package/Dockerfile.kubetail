@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.3 AS backend-builder
+FROM golang:1.22.3 AS server-builder
 
-WORKDIR /backend
+WORKDIR /server
 
 # install dependencies (for cache)
-COPY backend/go.mod .
-COPY backend/go.sum .
+COPY backend/server/go.mod .
+COPY backend/server/go.sum .
 RUN go mod download
 
 # copy code
-COPY backend/ .
+COPY backend/server .
 
 # build server
-RUN CGO_ENABLED=0 go build -o server ./cmd/server
+RUN CGO_ENABLED=0 go build -o server ./cmd
 
 ENTRYPOINT ["./server"]
 CMD []
@@ -47,7 +47,7 @@ RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 # fetch dependencies
 COPY frontend/package.json ./
 COPY frontend/pnpm-lock.yaml ./
-RUN --mount=type=ssh pnpm install
+RUN pnpm install
 
 # copy code
 COPY frontend/ .
@@ -60,16 +60,16 @@ CMD []
 
 # -----------------------------------------------------------
 
-FROM alpine:3.19.1 AS debug
+FROM alpine:3.20.0 AS debug
 
 WORKDIR /app
 
 # copy certs for tls verification
-COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=server-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# copy backend
-COPY --from=backend-builder /backend/server /app/server
-COPY --from=backend-builder /backend/templates /app/templates
+# copy server
+COPY --from=server-builder /server/server /app/server
+COPY --from=server-builder /server/templates /app/templates
 
 # copy frontend
 COPY --from=frontend-builder /frontend/dist /app/website
@@ -84,11 +84,11 @@ FROM scratch AS final
 WORKDIR /app
 
 # copy certs for tls verification
-COPY --from=backend-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=server-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# copy backend
-COPY --from=backend-builder /backend/server /app/server
-COPY --from=backend-builder /backend/templates /app/templates
+# copy server
+COPY --from=server-builder /server/server /app/server
+COPY --from=server-builder /server/templates /app/templates
 
 # copy frontend
 COPY --from=frontend-builder /frontend/dist /app/website
