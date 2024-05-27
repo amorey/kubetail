@@ -196,7 +196,7 @@ func NewGinApp(config Config) (*GinApp, error) {
 	// health routes
 	root.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok1",
+			"status": "ok",
 		})
 	})
 
