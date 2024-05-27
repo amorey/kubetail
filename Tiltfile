@@ -3,7 +3,7 @@ load('ext://restart_process', 'docker_build_with_restart')
 # kubetail-agent
 local_resource(
   'kubetail-agent-compile',
-  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o .tilt/agent ./agent/main.go',
+  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/agent ./agent/main.go',
   deps=['./backend/agent']
 )
 
@@ -23,7 +23,7 @@ docker_build_with_restart(
 # kubetail-server
 local_resource(
   'kubetail-server-compile',
-  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o .tilt/server ./server/cmd/main.go',
+  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/server ./server/cmd/main.go',
   deps=['./backend/server']
 )
 
