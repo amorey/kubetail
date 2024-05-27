@@ -2,14 +2,6 @@ apiVersion: ctlptl.dev/v1alpha1
 kind: Registry
 name: ctlptl-registry
 port: 5005
-#---
-#apiVersion: ctlptl.dev/v1alpha1
-#kind: Cluster
-#product: k3d
-#registry: ctlptl-registry
-#k3d:
-#  v1alpha5Simple:
-#    servers: 3
 ---
 apiVersion: ctlptl.dev/v1alpha1
 kind: Cluster
@@ -19,13 +11,3 @@ minikube:
   startFlags:
     - --nodes=3
     - --addons=metrics-server
-#---
-#apiVersion: ctlptl.dev/v1alpha1
-#kind: Cluster
-#product: kind
-##registry: ctlptl-registry
-#kindV1Alpha4Cluster:
-#  nodes:
-#  - role: control-plane
-#  - role: worker
-#  - role: worker
