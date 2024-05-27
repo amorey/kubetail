@@ -18,6 +18,7 @@ registry: ctlptl-registry
 minikube:
   startFlags:
     - --nodes=3
+    - --addons=metrics-server
 #---
 #apiVersion: ctlptl.dev/v1alpha1
 #kind: Cluster
