@@ -3,13 +3,13 @@ load('ext://restart_process', 'docker_build_with_restart')
 # kubetail-agent
 local_resource(
   'kubetail-agent-compile',
-  'CGO_ENABLED=0 GOOS=linux go build -o .tilt/agent ./backend/agent/main.go',
+  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o .tilt/agent ./agent/main.go',
   deps=['./backend/agent']
 )
 
 docker_build_with_restart(
   'kubetail-agent',
-  dockerfile='hack/tilt/Dockerfile.agent',
+  dockerfile='hack/tilt/Dockerfile.kubetail-agent',
   context='.',
   entrypoint="/agent/agent",
   only=[
@@ -23,13 +23,13 @@ docker_build_with_restart(
 # kubetail-server
 local_resource(
   'kubetail-server-compile',
-  'CGO_ENABLED=0 GOOS=linux go build -o .tilt/server ./backend/server/cmd/main.go',
+  'cd backend && CGO_ENABLED=0 GOOS=linux go build -o .tilt/server ./server/cmd/main.go',
   deps=['./backend/server']
 )
 
 docker_build_with_restart(
   'kubetail-server',
-  dockerfile='hack/tilt/Dockerfile.server',
+  dockerfile='hack/tilt/Dockerfile.kubetail-server',
   context='.',
   entrypoint="/server/server -c /etc/kubetail/config.yaml",
   only=[
