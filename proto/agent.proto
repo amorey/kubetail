@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "backend/agent/pkg/nrpc";
+
+package nrpc;
+
+service ServerService {
+  rpc GetServerName (ServerRequest) returns (ServerResponse);
+}
+
+message ServerRequest {
+  string request_id = 1;
+}
+
+message ServerResponse {
+  string server_name = 1;
+}
