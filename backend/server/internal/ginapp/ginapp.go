@@ -15,6 +15,8 @@
 package ginapp
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -29,8 +31,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
 	adapter "github.com/gwatts/gin-adapter"
+	"github.com/nats-io/nats.go"
 	"k8s.io/client-go/rest"
 
+	"github.com/kubetail-org/kubetail/backend/agent/pkg/helloworld"
 	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
 )
 
@@ -191,6 +195,31 @@ func NewGinApp(config Config) (*GinApp, error) {
 
 	// health routes
 	root.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok1",
+		})
+	})
+
+	// nrpc test
+	root.GET("/nrpc", func(c *gin.Context) {
+		nc, err := nats.Connect("nats://nats:4222")
+		if err != nil {
+			panic(err)
+		}
+		defer nc.Close()
+
+		// This is our generated client.
+		cli := helloworld.NewGreeterClient(nc)
+
+		// Contact the server and print out its response.
+		resp, err := cli.SayHello(&helloworld.HelloRequest{Name: "world"})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// print
+		fmt.Printf("Greeting: %s\n", resp.GetMessage())
+
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
