@@ -1,10 +1,14 @@
 syntax = "proto3";
 
-option go_package = "agent/pkg/nrpc";
+package api;
 
-package nrpc;
+option go_package = "agent/pkg/api";
+
+import "nrpc.proto";
 
 service ServerService {
+  option (nrpc.serviceSubjectParams) = "nodeName";
+
   rpc GetServerName (ServerRequest) returns (ServerResponse);
 }
 
