@@ -15,8 +15,6 @@
 package ginapp
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -34,17 +32,23 @@ import (
 	"github.com/nats-io/nats.go"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/backend/agent/pkg/nrpc"
 	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
 )
 
 type GinApp struct {
 	*gin.Engine
 	k8sHelperService k8shelpers.Service
+	nc               *nats.Conn
 
 	// for testing
 	dynamicroutes *gin.RouterGroup
 	wraponce      gin.HandlerFunc
+}
+
+func (app *GinApp) Teardown() {
+	if app.nc != nil {
+		app.nc.Close()
+	}
 }
 
 // Create new kubetail Gin app
@@ -60,6 +64,10 @@ func NewGinApp(config Config) (*GinApp, error) {
 
 		// init k8s helper service
 		app.k8sHelperService = k8shelpers.NewK8sHelperService(k8sCfg, k8shelpers.Mode(config.AuthMode))
+
+		// TODO: make this handle when nats not available on startup
+		// init nats connection
+		app.nc = mustConnectNATS()
 
 		// add recovery middleware
 		app.Use(gin.Recovery())
@@ -186,7 +194,7 @@ func NewGinApp(config Config) (*GinApp, error) {
 
 			// graphql handler
 			h := &GraphQLHandlers{app}
-			endpointHandler := h.EndpointHandler(k8sCfg, config.AllowedNamespaces, csrfProtect)
+			endpointHandler := h.EndpointHandler(k8sCfg, app.nc, config.AllowedNamespaces, csrfProtect)
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}
@@ -195,31 +203,6 @@ func NewGinApp(config Config) (*GinApp, error) {
 
 	// health routes
 	root.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
-
-	// nrpc test
-	root.GET("/nrpc", func(c *gin.Context) {
-		nc, err := nats.Connect("nats://nats:4222")
-		if err != nil {
-			panic(err)
-		}
-		defer nc.Close()
-
-		// This is our generated client.
-		cli := nrpc.NewServerServiceClient(nc)
-
-		// Contact the server and print out its response.
-		resp, err := cli.GetServerName(&nrpc.ServerRequest{RequestId: "1"})
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// print
-		fmt.Printf("ServerName: %s\n", resp.GetServerName())
-
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})

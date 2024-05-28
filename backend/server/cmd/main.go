@@ -341,6 +341,7 @@ func main() {
 			if err != nil {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
+			defer app.Teardown()
 
 			// create server
 			server := http.Server{

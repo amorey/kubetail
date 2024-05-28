@@ -1,17 +1,3 @@
-// Copyright 2024 Andres Morey
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package graph
 
 // This file will be automatically regenerated based on the schema, any resolver implementations
@@ -22,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -34,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	agent "github.com/kubetail-org/kubetail/backend/agent/pkg/nrpc"
 )
 
 // Object is the resolver for the object field.
@@ -271,6 +260,34 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 	return out, nil
 }
 
+// PodLogMetadataGet is the resolver for the podLogMetadataGet field.
+func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, container string) (*model.PodLogMetadata, error) {
+	c := agent.NewServerServiceClient(r.nc)
+
+	resp, err := c.GetServerName(&agent.ServerRequest{})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(resp)
+	return nil, nil
+	/*
+		subject := "ServerService.GetServerName." + nodeName
+		req := agent.ServerRequest{}
+		resp := agent.ServerResponse{}
+		if err := nrpc.Call(&req, &resp, r.nc, subject, "protobuf", 5*time.Second); err != nil {
+			return nil, err
+		}
+		fmt.Println(resp)
+		return nil, nil
+	*/
+
+}
+
+// PodLogMetadataList is the resolver for the podLogMetadataList field.
+func (r *queryResolver) PodLogMetadataList(ctx context.Context, namespace *string) (*model.PodLogMetadataList, error) {
+	panic(fmt.Errorf("not implemented: PodLogMetadataList - podLogMetadataList"))
+}
+
 // PodLogHead is the resolver for the podLogHead field.
 func (r *queryResolver) PodLogHead(ctx context.Context, namespace *string, name string, container *string, after *string, since *string, first *int) (*model.PodLogQueryResponse, error) {
 	// init namespace
@@ -390,7 +407,6 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, option
 	}()
 
 	return outCh, nil
-
 }
 
 // CoreV1NodesWatch is the resolver for the coreV1NodesWatch field.
