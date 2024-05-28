@@ -38,16 +38,18 @@ func main() {
 	}
 	defer nc.Close()
 
-	// Our server implementation.
-	s := &server{name: os.Getenv("NODE_NAME")}
+	ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
+	if err != nil {
+		panic(err)
+	}
 
-	// The NATS handler from the agent.proto file.
-	h := agent.NewServerServiceHandler(ctx, nc, s)
+	type request = interface{}
 
-	// Start a NATS subscription using the handler. You can also use the
-	// QueueSubscribe() method for a load-balanced set of servers.
-	//subject := "ServerService.*." + os.Getenv("NODE_NAME")
-	sub, err := nc.Subscribe(h.Subject(), h.Handler)
+	sub, err := ec.Subscribe("agent."+os.Getenv("NODE_NAME"), func(subj string, reply string, r *request) {
+		fmt.Println(os.Getenv("NODE_NAME"))
+		fmt.Println(r)
+		ec.Publish(reply, nil)
+	})
 	if err != nil {
 		panic(err)
 	}
