@@ -4,7 +4,7 @@ package api;
 
 option go_package = "agent/pkg/api";
 
-import "nrpc.proto";
+import "proto/nrpc.proto";
 
 service ServerService {
   option (nrpc.serviceSubjectParams) = "nodeName";
