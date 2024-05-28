@@ -18,4 +18,9 @@ spec:
       containers:
       - name: kubetail-agent
         image: kubetail-agent
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         resources: {}
