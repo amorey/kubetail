@@ -9,16 +9,19 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/kubetail-org/kubetail/backend/agent/pkg/helloworld"
+	"github.com/kubetail-org/kubetail/backend/agent/pkg/nrpc"
 )
 
 // server implements the helloworld.GreeterServer interface.
-type server struct{}
+type server struct {
+	name string
+}
 
 // SayHello is an implementation of the SayHello method from the definition of
 // the Greeter service.
-func (s *server) SayHello(ctx context.Context, req *helloworld.HelloRequest) (resp *helloworld.HelloReply, err error) {
-	return &helloworld.HelloReply{Message: "Hello " + req.Name}, nil
+func (s *server) GetServerName(ctx context.Context, req *nrpc.ServerRequest) (resp *nrpc.ServerResponse, err error) {
+	fmt.Println(s.name)
+	return &nrpc.ServerResponse{ServerName: s.name}, nil
 }
 
 func main() {
@@ -36,10 +39,10 @@ func main() {
 	defer nc.Close()
 
 	// Our server implementation.
-	s := &server{}
+	s := &server{name: os.Getenv("POD_NAME")}
 
 	// The NATS handler from the helloworld.nrpc.proto file.
-	h := helloworld.NewGreeterHandler(ctx, nc, s)
+	h := nrpc.NewServerServiceHandler(ctx, nc, s)
 
 	// Start a NATS subscription using the handler. You can also use the
 	// QueueSubscribe() method for a load-balanced set of servers.

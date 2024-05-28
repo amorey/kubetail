@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "backend/agent/pkg/nrpc";
+option go_package = "agent/pkg/nrpc";
 
 package nrpc;
 
