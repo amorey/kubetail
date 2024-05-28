@@ -22,6 +22,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gin-gonic/gin"
+	"github.com/nats-io/nats.go"
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/backend/server/graph"
@@ -36,9 +37,9 @@ type GraphQLHandlers struct {
 }
 
 // GET|POST "/graphql": GraphQL query endpoint
-func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
+func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, nc *nats.Conn, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
 	// init resolver
-	r, err := graph.NewResolver(cfg, allowedNamespaces)
+	r, err := graph.NewResolver(cfg, nc, allowedNamespaces)
 	if err != nil {
 		panic(err)
 	}

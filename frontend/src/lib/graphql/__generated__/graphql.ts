@@ -564,6 +564,20 @@ export type PageInfo = {
   startCursor?: Maybe<Scalars['ID']['output']>;
 };
 
+export type PodLogMetadata = {
+  __typename?: 'PodLogMetadata';
+  container: Scalars['String']['output'];
+  lastModifiedAt: Scalars['Time']['output'];
+  name: Scalars['String']['output'];
+  namespace: Scalars['String']['output'];
+  size: Scalars['Int64']['output'];
+};
+
+export type PodLogMetadataList = {
+  __typename?: 'PodLogMetadataList';
+  items: Array<PodLogMetadata>;
+};
+
 export type PodLogQueryResponse = {
   __typename?: 'PodLogQueryResponse';
   pageInfo: PageInfo;
@@ -596,6 +610,9 @@ export type Query = {
   livezGet: HealthCheckResponse;
   /** Logs API */
   podLogHead?: Maybe<PodLogQueryResponse>;
+  /** Logs Metadata API */
+  podLogMetadataGet?: Maybe<PodLogMetadata>;
+  podLogMetadataList?: Maybe<PodLogMetadataList>;
   podLogTail?: Maybe<PodLogQueryResponse>;
   readyzGet: HealthCheckResponse;
 };
@@ -716,6 +733,19 @@ export type QueryPodLogHeadArgs = {
   name: Scalars['String']['input'];
   namespace?: InputMaybe<Scalars['String']['input']>;
   since?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryPodLogMetadataGetArgs = {
+  container: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  namespace: Scalars['String']['input'];
+  nodeName: Scalars['String']['input'];
+};
+
+
+export type QueryPodLogMetadataListArgs = {
+  namespace?: InputMaybe<Scalars['String']['input']>;
 };
 
 
