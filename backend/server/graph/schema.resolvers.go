@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -20,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	agent "github.com/kubetail-org/kubetail/backend/agent/pkg/nrpc"
 )
 
 // Object is the resolver for the object field.
@@ -255,6 +258,34 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 	}
 
 	return out, nil
+}
+
+// PodLogMetadataGet is the resolver for the podLogMetadataGet field.
+func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, container string) (*model.PodLogMetadata, error) {
+	c := agent.NewServerServiceClient(r.nc)
+
+	resp, err := c.GetServerName(&agent.ServerRequest{})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(resp)
+	return nil, nil
+	/*
+		subject := "ServerService.GetServerName." + nodeName
+		req := agent.ServerRequest{}
+		resp := agent.ServerResponse{}
+		if err := nrpc.Call(&req, &resp, r.nc, subject, "protobuf", 5*time.Second); err != nil {
+			return nil, err
+		}
+		fmt.Println(resp)
+		return nil, nil
+	*/
+
+}
+
+// PodLogMetadataList is the resolver for the podLogMetadataList field.
+func (r *queryResolver) PodLogMetadataList(ctx context.Context, namespace *string) (*model.PodLogMetadataList, error) {
+	panic(fmt.Errorf("not implemented: PodLogMetadataList - podLogMetadataList"))
 }
 
 // PodLogHead is the resolver for the podLogHead field.

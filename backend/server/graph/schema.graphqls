@@ -591,6 +591,20 @@ type PageInfo {
   startCursor: ID
 }
 
+# --- PodLogMetadata ---
+
+type PodLogMetadata {
+  name: String!
+  namespace: String!
+  container: String!
+  size: Int64!
+  lastModifiedAt: Time!
+}
+
+type PodLogMetadataList {
+  items: [PodLogMetadata!]!
+}
+
 # --- PodLogQueryResponse ---
 
 type PodLogQueryResponse {
@@ -640,6 +654,12 @@ type Query {
   coreV1PodsGet(namespace: String, name: String!, options: MetaV1GetOptions): CoreV1Pod
   coreV1PodsList(namespace: String, options: MetaV1ListOptions): CoreV1PodList
   coreV1PodsGetLogs(namespace: String, name: String!, options: CoreV1PodLogOptions): [LogRecord!]
+
+  """
+  Logs Metadata API
+  """
+  podLogMetadataGet(nodeName: String!, namespace: String!, name: String!, container: String!): PodLogMetadata
+  podLogMetadataList(namespace: String): PodLogMetadataList
 
   """
   Logs API

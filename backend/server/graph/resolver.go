@@ -18,6 +18,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/nats-io/nats.go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	dynamicFake "k8s.io/client-go/dynamic/fake"
@@ -34,6 +35,7 @@ import (
 
 type Resolver struct {
 	k8sCfg            *rest.Config
+	nc                *nats.Conn
 	allowedNamespaces []string
 	TestClientset     *fake.Clientset
 	TestDynamicClient *dynamicFake.FakeDynamicClient
@@ -122,7 +124,7 @@ func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
 	return namespaces, nil
 }
 
-func NewResolver(cfg *rest.Config, allowedNamespaces []string) (*Resolver, error) {
+func NewResolver(cfg *rest.Config, nc *nats.Conn, allowedNamespaces []string) (*Resolver, error) {
 	// try in-cluster config
-	return &Resolver{k8sCfg: cfg, allowedNamespaces: allowedNamespaces}, nil
+	return &Resolver{k8sCfg: cfg, nc: nc, allowedNamespaces: allowedNamespaces}, nil
 }

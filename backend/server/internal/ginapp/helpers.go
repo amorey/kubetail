@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
+	"github.com/nats-io/nats.go"
 )
 
 const k8sTokenSessionKey = "k8sToken"
@@ -53,4 +54,12 @@ func mustLoadTemplatesWithFuncs(glob string) *template.Template {
 	}
 
 	return parsedTemplates
+}
+
+func mustConnectNATS() *nats.Conn {
+	nc, err := nats.Connect("nats://nats:4222/") //nats.DefaultURL)
+	if err != nil {
+		panic(err)
+	}
+	return nc
 }
