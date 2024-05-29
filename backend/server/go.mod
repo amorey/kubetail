@@ -2,6 +2,8 @@ module github.com/kubetail-org/kubetail/backend/server
 
 go 1.22.3
 
+replace github.com/kubetail-org/kubetail/backend/common => ../common
+
 require (
 	github.com/99designs/gqlgen v0.17.46
 	github.com/gin-contrib/gzip v1.0.0
@@ -14,6 +16,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/gwatts/gin-adapter v1.0.0
 	github.com/hasura/go-graphql-client v0.10.0
+	github.com/kubetail-org/kubetail/backend/common v0.0.0-00010101000000-000000000000
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats.go v1.35.0
 	github.com/rs/zerolog v1.32.0
