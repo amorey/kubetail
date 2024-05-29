@@ -12,18 +12,18 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/kubetail-org/kubetail/backend/agent/pkg/api"
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
 
 // server implements the helloworld.GreeterServer interface.
 type server struct{}
 
 // implementation of GetFileInfo in PodLogMetadata service
-func (s *server) GetFileInfo(ctx context.Context, req *api.FileInfoRequest) (*api.FileInfoResponse, error) {
+func (s *server) GetFileInfo(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
 	// generate path
 	podDirName := fmt.Sprintf("%s_%s_%s", req.Namespace, req.Name, req.Uid)
 	podLogPath := filepath.Join("/var/log/pods", podDirName, req.Container, "0.log")
-
+	fmt.Println(podLogPath)
 	// get info
 	fileInfo, err := os.Stat(podLogPath)
 	if err != nil {
@@ -31,7 +31,7 @@ func (s *server) GetFileInfo(ctx context.Context, req *api.FileInfoRequest) (*ap
 	}
 
 	// init response
-	resp := &api.FileInfoResponse{
+	resp := &agentpb.FileInfoResponse{
 		Size:           fileInfo.Size(),
 		LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
 	}
@@ -56,7 +56,7 @@ func main() {
 	s := &server{}
 
 	// init handler
-	h := api.NewPodLogMetadataHandler(ctx, nc, s)
+	h := agentpb.NewPodLogMetadataHandler(ctx, nc, s)
 
 	// subscribe to requests
 	subject := strings.Replace(h.Subject(), "*", os.Getenv("NODE_NAME"), 1)

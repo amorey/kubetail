@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type FileInfo struct {
+	Size           int64      `json:"size"`
+	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
+}
+
 type HealthCheckResponse struct {
 	Status    HealthCheckStatus `json:"status"`
 	Message   *string           `json:"message,omitempty"`

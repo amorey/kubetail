@@ -329,6 +329,7 @@ export type CoreV1ContainerStateWaiting = {
 export type CoreV1ContainerStatus = {
   __typename?: 'CoreV1ContainerStatus';
   containerID: Scalars['String']['output'];
+  fileInfo?: Maybe<FileInfo>;
   image: Scalars['String']['output'];
   imageID: Scalars['String']['output'];
   lastTerminationState: CoreV1ContainerState;
@@ -449,6 +450,12 @@ export type CoreV1PodsWatchEvent = {
   __typename?: 'CoreV1PodsWatchEvent';
   object?: Maybe<CoreV1Pod>;
   type: WatchEventType;
+};
+
+export type FileInfo = {
+  __typename?: 'FileInfo';
+  lastModifiedAt?: Maybe<Scalars['Time']['output']>;
+  size: Scalars['Int64']['output'];
 };
 
 export type HealthCheckResponse = {
@@ -741,6 +748,7 @@ export type QueryPodLogMetadataGetArgs = {
   name: Scalars['String']['input'];
   namespace: Scalars['String']['input'];
   nodeName: Scalars['String']['input'];
+  uid: Scalars['ID']['input'];
 };
 
 
