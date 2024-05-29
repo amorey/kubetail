@@ -21,11 +21,11 @@ type server struct{}
 // implementation of GetFileInfo in PodLogMetadata service
 func (s *server) GetFileInfo(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
 	// generate path
-	podDirName := fmt.Sprintf("%s_%s_%s", req.Namespace, req.Name, req.Uid)
-	podLogPath := filepath.Join("/var/log/pods", podDirName, req.Container, "0.log")
-	fmt.Println(podLogPath)
+	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
+	containerLogPath := filepath.Join("/var/log/containers", fileName)
+	fmt.Println(containerLogPath)
 	// get info
-	fileInfo, err := os.Stat(podLogPath)
+	fileInfo, err := os.Lstat(containerLogPath)
 	if err != nil {
 		return nil, err
 	}

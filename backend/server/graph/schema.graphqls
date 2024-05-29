@@ -601,11 +601,12 @@ type PageInfo {
 # --- PodLogMetadata ---
 
 type PodLogMetadata {
-  name: String!
   namespace: String!
-  container: String!
+  podName: String!
+  containerName: String!
+  containerID: ID!
   size: Int64!
-  lastModifiedAt: Time!
+  lastModifiedAt: Time
 }
 
 type PodLogMetadataList {
@@ -665,7 +666,7 @@ type Query {
   """
   Logs Metadata API
   """
-  podLogMetadataGet(nodeName: String!, namespace: String!, name: String!, uid: ID!, container: String!): PodLogMetadata
+  podLogMetadataGet(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
   podLogMetadataList(namespace: String): PodLogMetadataList
 
   """

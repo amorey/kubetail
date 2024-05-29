@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/utils/ptr"
 )
 
 // Object is the resolver for the object field.
@@ -265,16 +266,16 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 }
 
 // PodLogMetadataGet is the resolver for the podLogMetadataGet field.
-func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, uid string, container string) (*model.PodLogMetadata, error) {
+func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (*model.PodLogMetadata, error) {
 	// init client
 	c := agentpb.NewPodLogMetadataClient(r.nc, nodeName)
 
 	// init request
 	req := &agentpb.FileInfoRequest{
-		Namespace: namespace,
-		Name:      name,
-		Uid:       uid,
-		Container: container,
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: containerName,
+		ContainerId:   containerID,
 	}
 
 	// make request
@@ -285,10 +286,11 @@ func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, 
 
 	metadata := &model.PodLogMetadata{
 		Namespace:      namespace,
-		Name:           name,
-		Container:      container,
+		PodName:        podName,
+		ContainerName:  containerName,
+		ContainerID:    containerID,
 		Size:           resp.GetSize(),
-		LastModifiedAt: resp.GetLastModifiedAt().AsTime(),
+		LastModifiedAt: ptr.To(resp.GetLastModifiedAt().AsTime()),
 	}
 
 	return metadata, nil
