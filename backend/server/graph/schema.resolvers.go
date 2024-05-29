@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -21,8 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-
-	agent "github.com/kubetail-org/kubetail/backend/agent/pkg/api"
 )
 
 // Object is the resolver for the object field.
@@ -53,6 +52,11 @@ func (r *batchV1CronJobsWatchEventResolver) Object(ctx context.Context, obj *wat
 // Object is the resolver for the object field.
 func (r *batchV1JobsWatchEventResolver) Object(ctx context.Context, obj *watch.Event) (*batchv1.Job, error) {
 	return typeassertRuntimeObject[*batchv1.Job](obj.Object)
+}
+
+// FileInfo is the resolver for the fileInfo field.
+func (r *coreV1ContainerStatusResolver) FileInfo(ctx context.Context, obj *corev1.ContainerStatus) (*model.FileInfo, error) {
+	panic(fmt.Errorf("not implemented: FileInfo - fileInfo"))
 }
 
 // Object is the resolver for the object field.
@@ -261,35 +265,33 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 }
 
 // PodLogMetadataGet is the resolver for the podLogMetadataGet field.
-func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, container string) (*model.PodLogMetadata, error) {
+func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, uid string, container string) (*model.PodLogMetadata, error) {
 	// init client
-	c := agent.NewPodLogMetadataClient(r.nc, nodeName)
+	c := agentpb.NewPodLogMetadataClient(r.nc, nodeName)
+
+	// init request
+	req := &agentpb.FileInfoRequest{
+		Namespace: namespace,
+		Name:      name,
+		Uid:       uid,
+		Container: container,
+	}
 
 	// make request
-	resp, err := c.GetFileInfo(&agent.FileInfoRequest{})
+	resp, err := c.GetFileInfo(req)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(resp)
-	fmt.Println(resp.GetSize())
-	fmt.Println(resp.GetLastModifiedAt())
-	return nil, nil
-	/*
-		ec, err := nats.NewEncodedConn(r.nc, nats.JSON_ENCODER)
-		if err != nil {
-			return nil, err
-		}
+	metadata := &model.PodLogMetadata{
+		Namespace:      namespace,
+		Name:           name,
+		Container:      container,
+		Size:           resp.GetSize(),
+		LastModifiedAt: resp.GetLastModifiedAt().AsTime(),
+	}
 
-		resp := new(interface{})
-		err = ec.RequestWithContext(ctx, "agent."+nodeName, nil, resp)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(resp)
-
-		return nil, nil
-	*/
+	return metadata, nil
 }
 
 // PodLogMetadataList is the resolver for the podLogMetadataList field.
@@ -555,6 +557,11 @@ func (r *Resolver) BatchV1JobsWatchEvent() BatchV1JobsWatchEventResolver {
 	return &batchV1JobsWatchEventResolver{r}
 }
 
+// CoreV1ContainerStatus returns CoreV1ContainerStatusResolver implementation.
+func (r *Resolver) CoreV1ContainerStatus() CoreV1ContainerStatusResolver {
+	return &coreV1ContainerStatusResolver{r}
+}
+
 // CoreV1NamespacesWatchEvent returns CoreV1NamespacesWatchEventResolver implementation.
 func (r *Resolver) CoreV1NamespacesWatchEvent() CoreV1NamespacesWatchEventResolver {
 	return &coreV1NamespacesWatchEventResolver{r}
@@ -582,6 +589,7 @@ type appsV1ReplicaSetsWatchEventResolver struct{ *Resolver }
 type appsV1StatefulSetsWatchEventResolver struct{ *Resolver }
 type batchV1CronJobsWatchEventResolver struct{ *Resolver }
 type batchV1JobsWatchEventResolver struct{ *Resolver }
+type coreV1ContainerStatusResolver struct{ *Resolver }
 type coreV1NamespacesWatchEventResolver struct{ *Resolver }
 type coreV1NodesWatchEventResolver struct{ *Resolver }
 type coreV1PodsWatchEventResolver struct{ *Resolver }

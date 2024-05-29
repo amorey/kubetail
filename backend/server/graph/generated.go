@@ -53,6 +53,7 @@ type ResolverRoot interface {
 	AppsV1StatefulSetsWatchEvent() AppsV1StatefulSetsWatchEventResolver
 	BatchV1CronJobsWatchEvent() BatchV1CronJobsWatchEventResolver
 	BatchV1JobsWatchEvent() BatchV1JobsWatchEventResolver
+	CoreV1ContainerStatus() CoreV1ContainerStatusResolver
 	CoreV1NamespacesWatchEvent() CoreV1NamespacesWatchEventResolver
 	CoreV1NodesWatchEvent() CoreV1NodesWatchEventResolver
 	CoreV1PodsWatchEvent() CoreV1PodsWatchEventResolver
@@ -319,6 +320,7 @@ type ComplexityRoot struct {
 
 	CoreV1ContainerStatus struct {
 		ContainerID          func(childComplexity int) int
+		FileInfo             func(childComplexity int) int
 		Image                func(childComplexity int) int
 		ImageID              func(childComplexity int) int
 		LastTerminationState func(childComplexity int) int
@@ -410,6 +412,11 @@ type ComplexityRoot struct {
 	CoreV1PodsWatchEvent struct {
 		Object func(childComplexity int) int
 		Type   func(childComplexity int) int
+	}
+
+	FileInfo struct {
+		LastModifiedAt func(childComplexity int) int
+		Size           func(childComplexity int) int
 	}
 
 	HealthCheckResponse struct {
@@ -544,6 +551,9 @@ type BatchV1CronJobsWatchEventResolver interface {
 }
 type BatchV1JobsWatchEventResolver interface {
 	Object(ctx context.Context, obj *watch.Event) (*v13.Job, error)
+}
+type CoreV1ContainerStatusResolver interface {
+	FileInfo(ctx context.Context, obj *v11.ContainerStatus) (*model.FileInfo, error)
 }
 type CoreV1NamespacesWatchEventResolver interface {
 	Object(ctx context.Context, obj *watch.Event) (*v11.Namespace, error)
@@ -1601,6 +1611,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CoreV1ContainerStatus.ContainerID(childComplexity), true
 
+	case "CoreV1ContainerStatus.fileInfo":
+		if e.complexity.CoreV1ContainerStatus.FileInfo == nil {
+			break
+		}
+
+		return e.complexity.CoreV1ContainerStatus.FileInfo(childComplexity), true
+
 	case "CoreV1ContainerStatus.image":
 		if e.complexity.CoreV1ContainerStatus.Image == nil {
 			break
@@ -1985,6 +2002,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CoreV1PodsWatchEvent.Type(childComplexity), true
+
+	case "FileInfo.lastModifiedAt":
+		if e.complexity.FileInfo.LastModifiedAt == nil {
+			break
+		}
+
+		return e.complexity.FileInfo.LastModifiedAt(childComplexity), true
+
+	case "FileInfo.size":
+		if e.complexity.FileInfo.Size == nil {
+			break
+		}
+
+		return e.complexity.FileInfo.Size(childComplexity), true
 
 	case "HealthCheckResponse.message":
 		if e.complexity.HealthCheckResponse.Message == nil {
@@ -10893,6 +10924,53 @@ func (ec *executionContext) fieldContext_CoreV1ContainerStatus_started(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _CoreV1ContainerStatus_fileInfo(ctx context.Context, field graphql.CollectedField, obj *v11.ContainerStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CoreV1ContainerStatus_fileInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CoreV1ContainerStatus().FileInfo(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.FileInfo)
+	fc.Result = res
+	return ec.marshalOFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋserverᚋgraphᚋmodelᚐFileInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CoreV1ContainerStatus_fileInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CoreV1ContainerStatus",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "size":
+				return ec.fieldContext_FileInfo_size(ctx, field)
+			case "lastModifiedAt":
+				return ec.fieldContext_FileInfo_lastModifiedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FileInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CoreV1Namespace_id(ctx context.Context, field graphql.CollectedField, obj *v11.Namespace) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CoreV1Namespace_id(ctx, field)
 	if err != nil {
@@ -13044,6 +13122,8 @@ func (ec *executionContext) fieldContext_CoreV1PodStatus_containerStatuses(_ con
 				return ec.fieldContext_CoreV1ContainerStatus_containerID(ctx, field)
 			case "started":
 				return ec.fieldContext_CoreV1ContainerStatus_started(ctx, field)
+			case "fileInfo":
+				return ec.fieldContext_CoreV1ContainerStatus_fileInfo(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type CoreV1ContainerStatus", field.Name)
 		},
@@ -13145,6 +13225,91 @@ func (ec *executionContext) fieldContext_CoreV1PodsWatchEvent_object(_ context.C
 				return ec.fieldContext_CoreV1Pod_status(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type CoreV1Pod", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileInfo_size(ctx context.Context, field graphql.CollectedField, obj *model.FileInfo) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FileInfo_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FileInfo_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FileInfo_lastModifiedAt(ctx context.Context, field graphql.CollectedField, obj *model.FileInfo) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FileInfo_lastModifiedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastModifiedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FileInfo_lastModifiedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FileInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -21568,45 +21733,78 @@ func (ec *executionContext) _CoreV1ContainerStatus(ctx context.Context, sel ast.
 		case "name":
 			out.Values[i] = ec._CoreV1ContainerStatus_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "state":
 			out.Values[i] = ec._CoreV1ContainerStatus_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastTerminationState":
 			out.Values[i] = ec._CoreV1ContainerStatus_lastTerminationState(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ready":
 			out.Values[i] = ec._CoreV1ContainerStatus_ready(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "restartCount":
 			out.Values[i] = ec._CoreV1ContainerStatus_restartCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "image":
 			out.Values[i] = ec._CoreV1ContainerStatus_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "imageID":
 			out.Values[i] = ec._CoreV1ContainerStatus_imageID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "containerID":
 			out.Values[i] = ec._CoreV1ContainerStatus_containerID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "started":
 			out.Values[i] = ec._CoreV1ContainerStatus_started(ctx, field, obj)
+		case "fileInfo":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CoreV1ContainerStatus_fileInfo(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -22334,6 +22532,47 @@ func (ec *executionContext) _CoreV1PodsWatchEvent(ctx context.Context, sel ast.S
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var fileInfoImplementors = []string{"FileInfo"}
+
+func (ec *executionContext) _FileInfo(ctx context.Context, sel ast.SelectionSet, obj *model.FileInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fileInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FileInfo")
+		case "size":
+			out.Values[i] = ec._FileInfo_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastModifiedAt":
+			out.Values[i] = ec._FileInfo_lastModifiedAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25458,6 +25697,13 @@ func (ec *executionContext) marshalOCoreV1PodsWatchEvent2ᚖk8sᚗioᚋapimachin
 	return ec._CoreV1PodsWatchEvent(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋserverᚋgraphᚋmodelᚐFileInfo(ctx context.Context, sel ast.SelectionSet, v *model.FileInfo) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._FileInfo(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -25696,6 +25942,22 @@ func (ec *executionContext) marshalOStringMap2map(ctx context.Context, sel ast.S
 		return graphql.Null
 	}
 	res := model.MarshalStringMap(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
 	return res
 }
 
