@@ -15,9 +15,9 @@ service PodLogMetadata {
 
 message FileInfoRequest {
   string namespace = 1;
-  string name = 2;
-  string uid = 3;
-  string container = 4;
+  string pod_name = 2;
+  string container_name = 3;
+  string container_id = 4;
 }
 
 message FileInfoResponse {

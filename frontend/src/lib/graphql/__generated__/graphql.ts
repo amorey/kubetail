@@ -573,10 +573,11 @@ export type PageInfo = {
 
 export type PodLogMetadata = {
   __typename?: 'PodLogMetadata';
-  container: Scalars['String']['output'];
-  lastModifiedAt: Scalars['Time']['output'];
-  name: Scalars['String']['output'];
+  containerID: Scalars['ID']['output'];
+  containerName: Scalars['String']['output'];
+  lastModifiedAt?: Maybe<Scalars['Time']['output']>;
   namespace: Scalars['String']['output'];
+  podName: Scalars['String']['output'];
   size: Scalars['Int64']['output'];
 };
 
@@ -744,11 +745,11 @@ export type QueryPodLogHeadArgs = {
 
 
 export type QueryPodLogMetadataGetArgs = {
-  container: Scalars['String']['input'];
-  name: Scalars['String']['input'];
+  containerID: Scalars['ID']['input'];
+  containerName: Scalars['String']['input'];
   namespace: Scalars['String']['input'];
   nodeName: Scalars['String']['input'];
-  uid: Scalars['ID']['input'];
+  podName: Scalars['String']['input'];
 };
 
 

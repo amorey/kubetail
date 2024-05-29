@@ -37,11 +37,12 @@ type PageInfo struct {
 }
 
 type PodLogMetadata struct {
-	Name           string    `json:"name"`
-	Namespace      string    `json:"namespace"`
-	Container      string    `json:"container"`
-	Size           int64     `json:"size"`
-	LastModifiedAt time.Time `json:"lastModifiedAt"`
+	Namespace      string     `json:"namespace"`
+	PodName        string     `json:"podName"`
+	ContainerName  string     `json:"containerName"`
+	ContainerID    string     `json:"containerID"`
+	Size           int64      `json:"size"`
+	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
 }
 
 type PodLogMetadataList struct {
