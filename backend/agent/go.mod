@@ -5,7 +5,7 @@ go 1.22.3
 require (
 	github.com/nats-io/nats.go v1.35.0
 	github.com/nats-rpc/nrpc v0.0.0-20231018091755-18e69326f052
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (

@@ -4,18 +4,23 @@ package api;
 
 option go_package = "agent/pkg/api";
 
+import "google/protobuf/timestamp.proto";
 import "proto/nrpc.proto";
 
-service ServerService {
+service PodLogMetadata {
   option (nrpc.serviceSubjectParams) = "nodeName";
 
-  rpc GetServerName (ServerRequest) returns (ServerResponse);
+  rpc GetFileInfo (FileInfoRequest) returns (FileInfoResponse);
 }
 
-message ServerRequest {
-  string request_id = 1;
+message FileInfoRequest {
+  string namespace = 1;
+  string name = 2;
+  string uid = 3;
+  string container = 4;
 }
 
-message ServerResponse {
-  string server_name = 1;
+message FileInfoResponse {
+  int64 size = 1;
+  google.protobuf.Timestamp last_modified_at = 2;
 }

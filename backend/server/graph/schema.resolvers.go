@@ -15,13 +15,14 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/kubetail-org/kubetail/backend/server/graph/model"
-	"github.com/nats-io/nats.go"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	agent "github.com/kubetail-org/kubetail/backend/agent/pkg/api"
 )
 
 // Object is the resolver for the object field.
@@ -261,19 +262,34 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 
 // PodLogMetadataGet is the resolver for the podLogMetadataGet field.
 func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, container string) (*model.PodLogMetadata, error) {
-	ec, err := nats.NewEncodedConn(r.nc, nats.JSON_ENCODER)
+	// init client
+	c := agent.NewPodLogMetadataClient(r.nc, nodeName)
+
+	// make request
+	resp, err := c.GetFileInfo(&agent.FileInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	resp := new(interface{})
-	err = ec.RequestWithContext(ctx, "agent."+nodeName, nil, resp)
-	if err != nil {
-		return nil, err
-	}
 	fmt.Println(resp)
-
+	fmt.Println(resp.GetSize())
+	fmt.Println(resp.GetLastModifiedAt())
 	return nil, nil
+	/*
+		ec, err := nats.NewEncodedConn(r.nc, nats.JSON_ENCODER)
+		if err != nil {
+			return nil, err
+		}
+
+		resp := new(interface{})
+		err = ec.RequestWithContext(ctx, "agent."+nodeName, nil, resp)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(resp)
+
+		return nil, nil
+	*/
 }
 
 // PodLogMetadataList is the resolver for the podLogMetadataList field.
