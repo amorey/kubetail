@@ -504,7 +504,7 @@ type ComplexityRoot struct {
 		CoreV1PodsList         func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		LivezGet               func(childComplexity int) int
 		PodLogHead             func(childComplexity int, namespace *string, name string, container *string, after *string, since *string, first *int) int
-		PodLogMetadataGet      func(childComplexity int, nodeName string, namespace string, name string, container string) int
+		PodLogMetadataGet      func(childComplexity int, nodeName string, namespace string, name string, uid string, container string) int
 		PodLogMetadataList     func(childComplexity int, namespace *string) int
 		PodLogTail             func(childComplexity int, namespace *string, name string, container *string, before *string, last *int) int
 		ReadyzGet              func(childComplexity int) int
@@ -572,7 +572,7 @@ type QueryResolver interface {
 	CoreV1PodsGet(ctx context.Context, namespace *string, name string, options *v1.GetOptions) (*v11.Pod, error)
 	CoreV1PodsList(ctx context.Context, namespace *string, options *v1.ListOptions) (*v11.PodList, error)
 	CoreV1PodsGetLogs(ctx context.Context, namespace *string, name string, options *v11.PodLogOptions) ([]model.LogRecord, error)
-	PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, container string) (*model.PodLogMetadata, error)
+	PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, uid string, container string) (*model.PodLogMetadata, error)
 	PodLogMetadataList(ctx context.Context, namespace *string) (*model.PodLogMetadataList, error)
 	PodLogHead(ctx context.Context, namespace *string, name string, container *string, after *string, since *string, first *int) (*model.PodLogQueryResponse, error)
 	PodLogTail(ctx context.Context, namespace *string, name string, container *string, before *string, last *int) (*model.PodLogQueryResponse, error)
@@ -2492,7 +2492,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.PodLogMetadataGet(childComplexity, args["nodeName"].(string), args["namespace"].(string), args["name"].(string), args["container"].(string)), true
+		return e.complexity.Query.PodLogMetadataGet(childComplexity, args["nodeName"].(string), args["namespace"].(string), args["name"].(string), args["uid"].(string), args["container"].(string)), true
 
 	case "Query.podLogMetadataList":
 		if e.complexity.Query.PodLogMetadataList == nil {
@@ -3415,14 +3415,23 @@ func (ec *executionContext) field_Query_podLogMetadataGet_args(ctx context.Conte
 	}
 	args["name"] = arg2
 	var arg3 string
-	if tmp, ok := rawArgs["container"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("container"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+	if tmp, ok := rawArgs["uid"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("uid"))
+		arg3, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["container"] = arg3
+	args["uid"] = arg3
+	var arg4 string
+	if tmp, ok := rawArgs["container"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("container"))
+		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["container"] = arg4
 	return args, nil
 }
 
@@ -15968,7 +15977,7 @@ func (ec *executionContext) _Query_podLogMetadataGet(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PodLogMetadataGet(rctx, fc.Args["nodeName"].(string), fc.Args["namespace"].(string), fc.Args["name"].(string), fc.Args["container"].(string))
+		return ec.resolvers.Query().PodLogMetadataGet(rctx, fc.Args["nodeName"].(string), fc.Args["namespace"].(string), fc.Args["name"].(string), fc.Args["uid"].(string), fc.Args["container"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -24586,6 +24595,21 @@ func (ec *executionContext) unmarshalNID2k8sᚗioᚋapimachineryᚋpkgᚋtypes�
 
 func (ec *executionContext) marshalNID2k8sᚗioᚋapimachineryᚋpkgᚋtypesᚐUID(ctx context.Context, sel ast.SelectionSet, v types.UID) graphql.Marshaler {
 	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
