@@ -11,25 +11,25 @@ import (
 	"github.com/nats-rpc/nrpc"
 )
 
-// ServerServiceServer is the interface that providers of the service
-// ServerService should implement.
-type ServerServiceServer interface {
-	GetServerName(ctx context.Context, req *ServerRequest) (*ServerResponse, error)
+// PodLogMetadataServer is the interface that providers of the service
+// PodLogMetadata should implement.
+type PodLogMetadataServer interface {
+	GetFileInfo(ctx context.Context, req *FileInfoRequest) (*FileInfoResponse, error)
 }
 
-// ServerServiceHandler provides a NATS subscription handler that can serve a
-// subscription using a given ServerServiceServer implementation.
-type ServerServiceHandler struct {
+// PodLogMetadataHandler provides a NATS subscription handler that can serve a
+// subscription using a given PodLogMetadataServer implementation.
+type PodLogMetadataHandler struct {
 	ctx     context.Context
 	workers *nrpc.WorkerPool
 	nc      nrpc.NatsConn
-	server  ServerServiceServer
+	server  PodLogMetadataServer
 
 	encodings []string
 }
 
-func NewServerServiceHandler(ctx context.Context, nc nrpc.NatsConn, s ServerServiceServer) *ServerServiceHandler {
-	return &ServerServiceHandler{
+func NewPodLogMetadataHandler(ctx context.Context, nc nrpc.NatsConn, s PodLogMetadataServer) *PodLogMetadataHandler {
+	return &PodLogMetadataHandler{
 		ctx:    ctx,
 		nc:     nc,
 		server: s,
@@ -38,8 +38,8 @@ func NewServerServiceHandler(ctx context.Context, nc nrpc.NatsConn, s ServerServ
 	}
 }
 
-func NewServerServiceConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s ServerServiceServer) *ServerServiceHandler {
-	return &ServerServiceHandler{
+func NewPodLogMetadataConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsConn, s PodLogMetadataServer) *PodLogMetadataHandler {
+	return &PodLogMetadataHandler{
 		workers: workers,
 		nc:      nc,
 		server:  s,
@@ -47,15 +47,15 @@ func NewServerServiceConcurrentHandler(workers *nrpc.WorkerPool, nc nrpc.NatsCon
 }
 
 // SetEncodings sets the output encodings when using a '*Publish' function
-func (h *ServerServiceHandler) SetEncodings(encodings []string) {
+func (h *PodLogMetadataHandler) SetEncodings(encodings []string) {
 	h.encodings = encodings
 }
 
-func (h *ServerServiceHandler) Subject() string {
-	return "ServerService.*.>"
+func (h *PodLogMetadataHandler) Subject() string {
+	return "PodLogMetadata.*.>"
 }
 
-func (h *ServerServiceHandler) Handler(msg *nats.Msg) {
+func (h *PodLogMetadataHandler) Handler(msg *nats.Msg) {
 	var ctx context.Context
 	if h.workers != nil {
 		ctx = h.workers.Context
@@ -65,9 +65,9 @@ func (h *ServerServiceHandler) Handler(msg *nats.Msg) {
 	request := nrpc.NewRequest(ctx, h.nc, msg.Subject, msg.Reply)
 	// extract method name & encoding from subject
 	_, svcParams, name, tail, err := nrpc.ParseSubject(
-		"", 0, "ServerService", 1, msg.Subject)
+		"", 0, "PodLogMetadata", 1, msg.Subject)
 	if err != nil {
-		log.Printf("ServerServiceHanlder: ServerService subject parsing failed: %v", err)
+		log.Printf("PodLogMetadataHanlder: PodLogMetadata subject parsing failed: %v", err)
 		return
 	}
 
@@ -78,22 +78,22 @@ func (h *ServerServiceHandler) Handler(msg *nats.Msg) {
 	// call handler and form response
 	var immediateError *nrpc.Error
 	switch name {
-	case "GetServerName":
+	case "GetFileInfo":
 		_, request.Encoding, err = nrpc.ParseSubjectTail(0, request.SubjectTail)
 		if err != nil {
-			log.Printf("GetServerNameHanlder: GetServerName subject parsing failed: %v", err)
+			log.Printf("GetFileInfoHanlder: GetFileInfo subject parsing failed: %v", err)
 			break
 		}
-		var req ServerRequest
+		var req FileInfoRequest
 		if err := nrpc.Unmarshal(request.Encoding, msg.Data, &req); err != nil {
-			log.Printf("GetServerNameHandler: GetServerName request unmarshal failed: %v", err)
+			log.Printf("GetFileInfoHandler: GetFileInfo request unmarshal failed: %v", err)
 			immediateError = &nrpc.Error{
 				Type: nrpc.Error_CLIENT,
 				Message: "bad request received: " + err.Error(),
 			}
 		} else {
 			request.Handler = func(ctx context.Context)(proto.Message, error){
-				innerResp, err := h.server.GetServerName(ctx, &req)
+				innerResp, err := h.server.GetFileInfo(ctx, &req)
 				if err != nil {
 					return nil, err
 				}
@@ -101,7 +101,7 @@ func (h *ServerServiceHandler) Handler(msg *nats.Msg) {
 			}
 		}
 	default:
-		log.Printf("ServerServiceHandler: unknown name %q", name)
+		log.Printf("PodLogMetadataHandler: unknown name %q", name)
 		immediateError = &nrpc.Error{
 			Type: nrpc.Error_CLIENT,
 			Message: "unknown name: " + name,
@@ -121,13 +121,13 @@ func (h *ServerServiceHandler) Handler(msg *nats.Msg) {
 
 	if immediateError != nil {
 		if err := request.SendReply(nil, immediateError); err != nil {
-			log.Printf("ServerServiceHandler: ServerService handler failed to publish the response: %s", err)
+			log.Printf("PodLogMetadataHandler: PodLogMetadata handler failed to publish the response: %s", err)
 		}
 	} else {
 	}
 }
 
-type ServerServiceClient struct {
+type PodLogMetadataClient struct {
 	nc      nrpc.NatsConn
 	Subject string
 	SvcParamnodeName string
@@ -135,22 +135,22 @@ type ServerServiceClient struct {
 	Timeout time.Duration
 }
 
-func NewServerServiceClient(nc nrpc.NatsConn, svcParamnodeName string) *ServerServiceClient {
-	return &ServerServiceClient{
+func NewPodLogMetadataClient(nc nrpc.NatsConn, svcParamnodeName string) *PodLogMetadataClient {
+	return &PodLogMetadataClient{
 		nc:      nc,
-		Subject: "ServerService",
+		Subject: "PodLogMetadata",
 		SvcParamnodeName: svcParamnodeName,
 		Encoding: "protobuf",
 		Timeout: 5 * time.Second,
 	}
 }
 
-func (c *ServerServiceClient) GetServerName(req *ServerRequest) (*ServerResponse, error) {
+func (c *PodLogMetadataClient) GetFileInfo(req *FileInfoRequest) (*FileInfoResponse, error) {
 
-	subject := c.Subject + "." + c.SvcParamnodeName + "." + "GetServerName"
+	subject := c.Subject + "." + c.SvcParamnodeName + "." + "GetFileInfo"
 
 	// call
-	var resp = ServerResponse{}
+	var resp = FileInfoResponse{}
 	if err := nrpc.Call(req, &resp, c.nc, subject, c.Encoding, c.Timeout); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ type Client struct {
 	nc      nrpc.NatsConn
 	defaultEncoding string
 	defaultTimeout time.Duration
-	ServerService *ServerServiceClient
+	PodLogMetadata *PodLogMetadataClient
 }
 
 func NewClient(nc nrpc.NatsConn) *Client {
@@ -176,33 +176,33 @@ func NewClient(nc nrpc.NatsConn) *Client {
 
 func (c *Client) SetEncoding(encoding string) {
 	c.defaultEncoding = encoding
-	if c.ServerService != nil {
-		c.ServerService.Encoding = encoding
+	if c.PodLogMetadata != nil {
+		c.PodLogMetadata.Encoding = encoding
 	}
 }
 
 func (c *Client) SetTimeout(t time.Duration) {
 	c.defaultTimeout = t
-	if c.ServerService != nil {
-		c.ServerService.Timeout = t
+	if c.PodLogMetadata != nil {
+		c.PodLogMetadata.Timeout = t
 	}
 }
 
-func (c *Client) SetServerServiceParams(
+func (c *Client) SetPodLogMetadataParams(
 	nodeName string,
 ) {
-	c.ServerService = NewServerServiceClient(
+	c.PodLogMetadata = NewPodLogMetadataClient(
 		c.nc,
 		nodeName,
 	)
-	c.ServerService.Encoding = c.defaultEncoding
-	c.ServerService.Timeout = c.defaultTimeout
+	c.PodLogMetadata.Encoding = c.defaultEncoding
+	c.PodLogMetadata.Timeout = c.defaultTimeout
 }
 
-func (c *Client) NewServerService(
+func (c *Client) NewPodLogMetadata(
 	nodeName string,
-) *ServerServiceClient {
-	client := NewServerServiceClient(
+) *PodLogMetadataClient {
+	client := NewPodLogMetadataClient(
 		c.nc,
 		nodeName,
 	)

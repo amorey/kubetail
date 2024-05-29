@@ -658,7 +658,7 @@ type Query {
   """
   Logs Metadata API
   """
-  podLogMetadataGet(nodeName: String!, namespace: String!, name: String!, container: String!): PodLogMetadata
+  podLogMetadataGet(nodeName: String!, namespace: String!, name: String!, uid: ID!, container: String!): PodLogMetadata
   podLogMetadataList(namespace: String): PodLogMetadataList
 
   """
