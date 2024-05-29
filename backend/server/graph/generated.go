@@ -475,10 +475,11 @@ type ComplexityRoot struct {
 	}
 
 	PodLogMetadata struct {
-		Container      func(childComplexity int) int
+		ContainerID    func(childComplexity int) int
+		ContainerName  func(childComplexity int) int
 		LastModifiedAt func(childComplexity int) int
-		Name           func(childComplexity int) int
 		Namespace      func(childComplexity int) int
+		PodName        func(childComplexity int) int
 		Size           func(childComplexity int) int
 	}
 
@@ -511,7 +512,7 @@ type ComplexityRoot struct {
 		CoreV1PodsList         func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		LivezGet               func(childComplexity int) int
 		PodLogHead             func(childComplexity int, namespace *string, name string, container *string, after *string, since *string, first *int) int
-		PodLogMetadataGet      func(childComplexity int, nodeName string, namespace string, name string, uid string, container string) int
+		PodLogMetadataGet      func(childComplexity int, nodeName string, namespace string, podName string, containerName string, containerID string) int
 		PodLogMetadataList     func(childComplexity int, namespace *string) int
 		PodLogTail             func(childComplexity int, namespace *string, name string, container *string, before *string, last *int) int
 		ReadyzGet              func(childComplexity int) int
@@ -582,7 +583,7 @@ type QueryResolver interface {
 	CoreV1PodsGet(ctx context.Context, namespace *string, name string, options *v1.GetOptions) (*v11.Pod, error)
 	CoreV1PodsList(ctx context.Context, namespace *string, options *v1.ListOptions) (*v11.PodList, error)
 	CoreV1PodsGetLogs(ctx context.Context, namespace *string, name string, options *v11.PodLogOptions) ([]model.LogRecord, error)
-	PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, name string, uid string, container string) (*model.PodLogMetadata, error)
+	PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (*model.PodLogMetadata, error)
 	PodLogMetadataList(ctx context.Context, namespace *string) (*model.PodLogMetadataList, error)
 	PodLogHead(ctx context.Context, namespace *string, name string, container *string, after *string, since *string, first *int) (*model.PodLogQueryResponse, error)
 	PodLogTail(ctx context.Context, namespace *string, name string, container *string, before *string, last *int) (*model.PodLogQueryResponse, error)
@@ -2234,12 +2235,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PageInfo.StartCursor(childComplexity), true
 
-	case "PodLogMetadata.container":
-		if e.complexity.PodLogMetadata.Container == nil {
+	case "PodLogMetadata.containerID":
+		if e.complexity.PodLogMetadata.ContainerID == nil {
 			break
 		}
 
-		return e.complexity.PodLogMetadata.Container(childComplexity), true
+		return e.complexity.PodLogMetadata.ContainerID(childComplexity), true
+
+	case "PodLogMetadata.containerName":
+		if e.complexity.PodLogMetadata.ContainerName == nil {
+			break
+		}
+
+		return e.complexity.PodLogMetadata.ContainerName(childComplexity), true
 
 	case "PodLogMetadata.lastModifiedAt":
 		if e.complexity.PodLogMetadata.LastModifiedAt == nil {
@@ -2248,19 +2256,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PodLogMetadata.LastModifiedAt(childComplexity), true
 
-	case "PodLogMetadata.name":
-		if e.complexity.PodLogMetadata.Name == nil {
-			break
-		}
-
-		return e.complexity.PodLogMetadata.Name(childComplexity), true
-
 	case "PodLogMetadata.namespace":
 		if e.complexity.PodLogMetadata.Namespace == nil {
 			break
 		}
 
 		return e.complexity.PodLogMetadata.Namespace(childComplexity), true
+
+	case "PodLogMetadata.podName":
+		if e.complexity.PodLogMetadata.PodName == nil {
+			break
+		}
+
+		return e.complexity.PodLogMetadata.PodName(childComplexity), true
 
 	case "PodLogMetadata.size":
 		if e.complexity.PodLogMetadata.Size == nil {
@@ -2523,7 +2531,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.PodLogMetadataGet(childComplexity, args["nodeName"].(string), args["namespace"].(string), args["name"].(string), args["uid"].(string), args["container"].(string)), true
+		return e.complexity.Query.PodLogMetadataGet(childComplexity, args["nodeName"].(string), args["namespace"].(string), args["podName"].(string), args["containerName"].(string), args["containerID"].(string)), true
 
 	case "Query.podLogMetadataList":
 		if e.complexity.Query.PodLogMetadataList == nil {
@@ -3437,32 +3445,32 @@ func (ec *executionContext) field_Query_podLogMetadataGet_args(ctx context.Conte
 	}
 	args["namespace"] = arg1
 	var arg2 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["podName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podName"))
 		arg2, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["name"] = arg2
+	args["podName"] = arg2
 	var arg3 string
-	if tmp, ok := rawArgs["uid"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("uid"))
-		arg3, err = ec.unmarshalNID2string(ctx, tmp)
+	if tmp, ok := rawArgs["containerName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("containerName"))
+		arg3, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["uid"] = arg3
+	args["containerName"] = arg3
 	var arg4 string
-	if tmp, ok := rawArgs["container"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("container"))
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+	if tmp, ok := rawArgs["containerID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("containerID"))
+		arg4, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["container"] = arg4
+	args["containerID"] = arg4
 	return args, nil
 }
 
@@ -14672,50 +14680,6 @@ func (ec *executionContext) fieldContext_PageInfo_startCursor(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _PodLogMetadata_name(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PodLogMetadata_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PodLogMetadata_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PodLogMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _PodLogMetadata_namespace(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PodLogMetadata_namespace(ctx, field)
 	if err != nil {
@@ -14760,8 +14724,8 @@ func (ec *executionContext) fieldContext_PodLogMetadata_namespace(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _PodLogMetadata_container(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PodLogMetadata_container(ctx, field)
+func (ec *executionContext) _PodLogMetadata_podName(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PodLogMetadata_podName(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14774,7 +14738,7 @@ func (ec *executionContext) _PodLogMetadata_container(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Container, nil
+		return obj.PodName, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14791,7 +14755,7 @@ func (ec *executionContext) _PodLogMetadata_container(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PodLogMetadata_container(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PodLogMetadata_podName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PodLogMetadata",
 		Field:      field,
@@ -14799,6 +14763,94 @@ func (ec *executionContext) fieldContext_PodLogMetadata_container(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodLogMetadata_containerName(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PodLogMetadata_containerName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ContainerName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PodLogMetadata_containerName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodLogMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PodLogMetadata_containerID(ctx context.Context, field graphql.CollectedField, obj *model.PodLogMetadata) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PodLogMetadata_containerID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ContainerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PodLogMetadata_containerID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PodLogMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -14869,14 +14921,11 @@ func (ec *executionContext) _PodLogMetadata_lastModifiedAt(ctx context.Context, 
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PodLogMetadata_lastModifiedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -14931,12 +14980,14 @@ func (ec *executionContext) fieldContext_PodLogMetadataList_items(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "name":
-				return ec.fieldContext_PodLogMetadata_name(ctx, field)
 			case "namespace":
 				return ec.fieldContext_PodLogMetadata_namespace(ctx, field)
-			case "container":
-				return ec.fieldContext_PodLogMetadata_container(ctx, field)
+			case "podName":
+				return ec.fieldContext_PodLogMetadata_podName(ctx, field)
+			case "containerName":
+				return ec.fieldContext_PodLogMetadata_containerName(ctx, field)
+			case "containerID":
+				return ec.fieldContext_PodLogMetadata_containerID(ctx, field)
 			case "size":
 				return ec.fieldContext_PodLogMetadata_size(ctx, field)
 			case "lastModifiedAt":
@@ -16142,7 +16193,7 @@ func (ec *executionContext) _Query_podLogMetadataGet(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PodLogMetadataGet(rctx, fc.Args["nodeName"].(string), fc.Args["namespace"].(string), fc.Args["name"].(string), fc.Args["uid"].(string), fc.Args["container"].(string))
+		return ec.resolvers.Query().PodLogMetadataGet(rctx, fc.Args["nodeName"].(string), fc.Args["namespace"].(string), fc.Args["podName"].(string), fc.Args["containerName"].(string), fc.Args["containerID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16164,12 +16215,14 @@ func (ec *executionContext) fieldContext_Query_podLogMetadataGet(ctx context.Con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "name":
-				return ec.fieldContext_PodLogMetadata_name(ctx, field)
 			case "namespace":
 				return ec.fieldContext_PodLogMetadata_namespace(ctx, field)
-			case "container":
-				return ec.fieldContext_PodLogMetadata_container(ctx, field)
+			case "podName":
+				return ec.fieldContext_PodLogMetadata_podName(ctx, field)
+			case "containerName":
+				return ec.fieldContext_PodLogMetadata_containerName(ctx, field)
+			case "containerID":
+				return ec.fieldContext_PodLogMetadata_containerID(ctx, field)
 			case "size":
 				return ec.fieldContext_PodLogMetadata_size(ctx, field)
 			case "lastModifiedAt":
@@ -23007,18 +23060,23 @@ func (ec *executionContext) _PodLogMetadata(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PodLogMetadata")
-		case "name":
-			out.Values[i] = ec._PodLogMetadata_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "namespace":
 			out.Values[i] = ec._PodLogMetadata_namespace(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "container":
-			out.Values[i] = ec._PodLogMetadata_container(ctx, field, obj)
+		case "podName":
+			out.Values[i] = ec._PodLogMetadata_podName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "containerName":
+			out.Values[i] = ec._PodLogMetadata_containerName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "containerID":
+			out.Values[i] = ec._PodLogMetadata_containerID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -23029,9 +23087,6 @@ func (ec *executionContext) _PodLogMetadata(ctx context.Context, sel ast.Selecti
 			}
 		case "lastModifiedAt":
 			out.Values[i] = ec._PodLogMetadata_lastModifiedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
