@@ -14,7 +14,8 @@ import (
 // PodLogMetadataServer is the interface that providers of the service
 // PodLogMetadata should implement.
 type PodLogMetadataServer interface {
-	GetFileInfo(ctx context.Context, req *FileInfoRequest) (*FileInfoResponse, error)
+	FileInfoGet(ctx context.Context, req *FileInfoRequest) (*FileInfoResponse, error)
+	FileInfoWatch(ctx context.Context, req *FileInfoRequest, pushRep func(*FileInfoResponse)) (error)
 }
 
 // PodLogMetadataHandler provides a NATS subscription handler that can serve a
@@ -78,26 +79,48 @@ func (h *PodLogMetadataHandler) Handler(msg *nats.Msg) {
 	// call handler and form response
 	var immediateError *nrpc.Error
 	switch name {
-	case "GetFileInfo":
+	case "FileInfoGet":
 		_, request.Encoding, err = nrpc.ParseSubjectTail(0, request.SubjectTail)
 		if err != nil {
-			log.Printf("GetFileInfoHanlder: GetFileInfo subject parsing failed: %v", err)
+			log.Printf("FileInfoGetHanlder: FileInfoGet subject parsing failed: %v", err)
 			break
 		}
 		var req FileInfoRequest
 		if err := nrpc.Unmarshal(request.Encoding, msg.Data, &req); err != nil {
-			log.Printf("GetFileInfoHandler: GetFileInfo request unmarshal failed: %v", err)
+			log.Printf("FileInfoGetHandler: FileInfoGet request unmarshal failed: %v", err)
 			immediateError = &nrpc.Error{
 				Type: nrpc.Error_CLIENT,
 				Message: "bad request received: " + err.Error(),
 			}
 		} else {
 			request.Handler = func(ctx context.Context)(proto.Message, error){
-				innerResp, err := h.server.GetFileInfo(ctx, &req)
+				innerResp, err := h.server.FileInfoGet(ctx, &req)
 				if err != nil {
 					return nil, err
 				}
 				return innerResp, err
+			}
+		}
+	case "FileInfoWatch":
+		_, request.Encoding, err = nrpc.ParseSubjectTail(0, request.SubjectTail)
+		if err != nil {
+			log.Printf("FileInfoWatchHanlder: FileInfoWatch subject parsing failed: %v", err)
+			break
+		}
+		var req FileInfoRequest
+		if err := nrpc.Unmarshal(request.Encoding, msg.Data, &req); err != nil {
+			log.Printf("FileInfoWatchHandler: FileInfoWatch request unmarshal failed: %v", err)
+			immediateError = &nrpc.Error{
+				Type: nrpc.Error_CLIENT,
+				Message: "bad request received: " + err.Error(),
+			}
+		} else {
+			request.EnableStreamedReply()
+			request.Handler = func(ctx context.Context)(proto.Message, error){
+				err := h.server.FileInfoWatch(ctx, &req, func(rep *FileInfoResponse){
+					request.SendStreamReply(rep)
+				})
+				return nil, err
 			}
 		}
 	default:
@@ -145,9 +168,9 @@ func NewPodLogMetadataClient(nc nrpc.NatsConn, svcParamnodeName string) *PodLogM
 	}
 }
 
-func (c *PodLogMetadataClient) GetFileInfo(req *FileInfoRequest) (*FileInfoResponse, error) {
+func (c *PodLogMetadataClient) FileInfoGet(req *FileInfoRequest) (*FileInfoResponse, error) {
 
-	subject := c.Subject + "." + c.SvcParamnodeName + "." + "GetFileInfo"
+	subject := c.Subject + "." + c.SvcParamnodeName + "." + "FileInfoGet"
 
 	// call
 	var resp = FileInfoResponse{}
@@ -156,6 +179,32 @@ func (c *PodLogMetadataClient) GetFileInfo(req *FileInfoRequest) (*FileInfoRespo
 	}
 
 	return &resp, nil
+}
+
+func (c *PodLogMetadataClient) FileInfoWatch(
+	ctx context.Context,
+	req *FileInfoRequest,
+	cb func (context.Context, *FileInfoResponse),
+) error {
+	subject := c.Subject + "." + c.SvcParamnodeName + "." + "FileInfoWatch"
+
+	sub, err := nrpc.StreamCall(ctx, c.nc, subject, req, c.Encoding, c.Timeout)
+	if err != nil {
+		return err
+	}
+
+	var res FileInfoResponse
+	for {
+		err = sub.Next(&res)
+		if err != nil {
+			break
+		}
+		cb(ctx, &res)
+	}
+	if err == nrpc.ErrEOS {
+		err = nil
+	}
+	return err
 }
 
 type Client struct {

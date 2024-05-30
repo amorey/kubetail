@@ -744,6 +744,11 @@ type Subscription {
   coreV1PodLogTail(namespace: String, name: String!, options: CoreV1PodLogOptions): LogRecord
 
   """
+  Logs Metadata watch
+  """
+  podLogMetadataWatch(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
+
+  """
   Logs API
   """
   podLogFollow(
