@@ -279,7 +279,7 @@ func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, 
 	}
 
 	// make request
-	resp, err := c.GetFileInfo(req)
+	resp, err := c.FileInfoGet(req)
 	if err != nil {
 		return nil, err
 	}
@@ -467,6 +467,47 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 			logRecord := newLogRecordFromLogLine(scanner.Text())
 			outCh <- &logRecord
 		}
+		close(outCh)
+	}()
+
+	return outCh, nil
+}
+
+// PodLogMetadataWatch is the resolver for the podLogMetadataWatch field.
+func (r *subscriptionResolver) PodLogMetadataWatch(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (<-chan *model.PodLogMetadata, error) {
+	outCh := make(chan *model.PodLogMetadata)
+
+	// forward data to output channel
+	c := agentpb.NewPodLogMetadataClient(r.nc, nodeName)
+
+	// init request
+	req := &agentpb.FileInfoRequest{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: containerName,
+		ContainerId:   containerID,
+	}
+
+	// run listener in a goroutine
+	go func() {
+		err := c.FileInfoWatch(ctx, req, func(ctx context.Context, resp *agentpb.FileInfoResponse) {
+			metadata := &model.PodLogMetadata{
+				Namespace:      namespace,
+				PodName:        podName,
+				ContainerName:  containerName,
+				ContainerID:    containerID,
+				Size:           resp.GetSize(),
+				LastModifiedAt: ptr.To(resp.GetLastModifiedAt().AsTime()),
+			}
+
+			outCh <- metadata
+		})
+
+		if err != nil {
+			transport.AddSubscriptionError(ctx, ErrInternalServerError)
+		}
+
+		// listener finished
 		close(outCh)
 	}()
 
