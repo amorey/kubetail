@@ -10,7 +10,11 @@ import "proto/nrpc.proto";
 service PodLogMetadata {
   option (nrpc.serviceSubjectParams) = "nodeName";
 
-  rpc GetFileInfo (FileInfoRequest) returns (FileInfoResponse);
+  rpc FileInfoGet (FileInfoRequest) returns (FileInfoResponse);
+
+  rpc FileInfoWatch (FileInfoRequest) returns (FileInfoResponse) {
+    option (nrpc.streamedReply) = true;
+  }
 }
 
 message FileInfoRequest {

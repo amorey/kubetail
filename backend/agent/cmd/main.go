@@ -9,23 +9,24 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
 
-// server implements the helloworld.GreeterServer interface.
+// server implements the agentpb.PodLogMetadataServer interface.
 type server struct{}
 
 // implementation of GetFileInfo in PodLogMetadata service
-func (s *server) GetFileInfo(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
+func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
 	// generate path
 	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
 	containerLogPath := filepath.Join("/var/log/containers", fileName)
-	fmt.Println(containerLogPath)
+
 	// get info
-	fileInfo, err := os.Lstat(containerLogPath)
+	fileInfo, err := os.Stat(containerLogPath)
 	if err != nil {
 		return nil, err
 	}
@@ -38,9 +39,52 @@ func (s *server) GetFileInfo(ctx context.Context, req *agentpb.FileInfoRequest) 
 	return resp, nil
 }
 
-func main() {
-	fmt.Println("agent2")
+// implementation of FileInfoWatch in PodLogMetadata service
+func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest, send func(*agentpb.FileInfoResponse)) error {
+	fmt.Println("starting watcher")
 
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+
+	// generate path
+	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.GetPodName(), req.GetNamespace(), req.GetContainerName(), req.GetContainerId())
+	containerLogPath := filepath.Join("/var/log/containers", fileName)
+
+	// Add a path.
+	err = watcher.Add(containerLogPath)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			if event.Has(fsnotify.Write) {
+				resp, err := s.FileInfoGet(ctx, req)
+				if err != nil {
+					return err
+				}
+				send(resp)
+			}
+		case err := <-watcher.Errors:
+			if err != nil {
+				return err
+			}
+			return nil
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func main() {
 	// initialize context and listen for termination signals
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -69,6 +113,4 @@ func main() {
 	// wait for context
 	<-ctx.Done()
 	stop() // stop receiving signals as soon as possible
-
-	fmt.Println("exiting")
 }
