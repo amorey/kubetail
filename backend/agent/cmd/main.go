@@ -3,23 +3,23 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"strings"
-	"syscall"
+	"time"
 
-	"github.com/fsnotify/fsnotify"
-	"github.com/nats-io/nats.go"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
 
 // server implements the agentpb.PodLogMetadataServer interface.
-type server struct{}
+type server struct {
+	agentpb.UnimplementedPodLogMetadataServer
+}
 
-// implementation of GetFileInfo in PodLogMetadata service
+// implementation of FileInfoGet in PodLogMetadata service
 func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
 	// generate path
 	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
@@ -40,77 +40,75 @@ func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) 
 }
 
 // implementation of FileInfoWatch in PodLogMetadata service
-func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest, send func(*agentpb.FileInfoResponse)) error {
-	fmt.Println("starting watcher")
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
+func (s *server) FileInfoWatch(req *agentpb.FileInfoRequest, stream agentpb.PodLogMetadata_FileInfoWatchServer) error {
+	for i := 0; i < 10; i++ {
+		res := &agentpb.FileInfoResponse{Size: int64(i)}
+		if err := stream.Send(res); err != nil {
+			return err
+		}
+		time.Sleep(1 * time.Second)
 	}
-	defer watcher.Close()
+	return nil
+	/*
+		fmt.Println("starting watcher")
 
-	// generate path
-	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.GetPodName(), req.GetNamespace(), req.GetContainerName(), req.GetContainerId())
-	containerLogPath := filepath.Join("/var/log/containers", fileName)
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
+		defer watcher.Close()
 
-	// Add a path.
-	err = watcher.Add(containerLogPath)
-	if err != nil {
-		return err
-	}
+		// generate path
+		fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.GetPodName(), req.GetNamespace(), req.GetContainerName(), req.GetContainerId())
+		containerLogPath := filepath.Join("/var/log/containers", fileName)
 
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
+		// Add a path.
+		err = watcher.Add(containerLogPath)
+		if err != nil {
+			return err
+		}
 
-			if event.Has(fsnotify.Write) {
-				resp, err := s.FileInfoGet(ctx, req)
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return nil
+				}
+
+				if event.Has(fsnotify.Write) {
+					resp, err := s.FileInfoGet(ctx, req)
+					if err != nil {
+						return err
+					}
+					send(resp)
+				}
+			case err := <-watcher.Errors:
 				if err != nil {
 					return err
 				}
-				send(resp)
+				return nil
+			case <-ctx.Done():
+				return nil
 			}
-		case err := <-watcher.Errors:
-			if err != nil {
-				return err
-			}
-			return nil
-		case <-ctx.Done():
-			return nil
-		}
-	}
+		}*/
 }
 
 func main() {
-	// initialize context and listen for termination signals
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	// Connect to a nats server
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
-	defer nc.Close()
-
-	// init server
+	// init service
 	s := &server{}
 
-	// init handler
-	h := agentpb.NewPodLogMetadataHandler(ctx, nc, s)
+	// init grpc server
+	grpcServer := grpc.NewServer()
+	agentpb.RegisterPodLogMetadataServer(grpcServer, s)
 
-	// subscribe to requests
-	subject := strings.Replace(h.Subject(), "*", os.Getenv("NODE_NAME"), 1)
-	sub, err := nc.QueueSubscribe(subject, "callonce", h.Handler)
+	// listen
+	lis, err := net.Listen("tcp", ":5000")
 	if err != nil {
 		panic(err)
 	}
-	defer sub.Unsubscribe()
 
-	// wait for context
-	<-ctx.Done()
-	stop() // stop receiving signals as soon as possible
+	// start grpc server
+	if err := grpcServer.Serve(lis); err != nil {
+		panic(err)
+	}
 }

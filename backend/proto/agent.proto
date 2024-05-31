@@ -5,16 +5,10 @@ package agentpb;
 option go_package = "common/agentpb";
 
 import "google/protobuf/timestamp.proto";
-import "proto/nrpc.proto";
 
 service PodLogMetadata {
-  option (nrpc.serviceSubjectParams) = "nodeName";
-
   rpc FileInfoGet (FileInfoRequest) returns (FileInfoResponse);
-
-  rpc FileInfoWatch (FileInfoRequest) returns (FileInfoResponse) {
-    option (nrpc.streamedReply) = true;
-  }
+  rpc FileInfoWatch (FileInfoRequest) returns (stream FileInfoResponse);
 }
 
 message FileInfoRequest {
