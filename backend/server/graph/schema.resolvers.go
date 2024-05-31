@@ -504,7 +504,8 @@ func (r *subscriptionResolver) PodLogMetadataWatch(ctx context.Context, nodeName
 		})
 
 		if err != nil {
-			transport.AddSubscriptionError(ctx, ErrInternalServerError)
+			gqlerror := NewError("INTERNAL_SERVER_ERROR", err.Error())
+			transport.AddSubscriptionError(ctx, gqlerror)
 		}
 
 		// listener finished

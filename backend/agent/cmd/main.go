@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -41,8 +43,6 @@ func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) 
 
 // implementation of FileInfoWatch in PodLogMetadata service
 func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest, send func(*agentpb.FileInfoResponse)) error {
-	fmt.Println("starting watcher")
-
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -73,11 +73,11 @@ func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest
 				}
 				send(resp)
 			}
-		case err := <-watcher.Errors:
-			if err != nil {
-				return err
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
 			}
-			return nil
+			return err
 		case <-ctx.Done():
 			return nil
 		}
@@ -85,6 +85,9 @@ func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest
 }
 
 func main() {
+	// disable logging for nrpc
+	log.SetOutput(io.Discard)
+
 	// initialize context and listen for termination signals
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
