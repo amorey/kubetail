@@ -4,7 +4,10 @@ load('ext://restart_process', 'docker_build_with_restart')
 local_resource(
   'kubetail-agent-compile',
   'cd backend && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/agent ./agent/cmd/main.go',
-  deps=['./backend/agent']
+  deps=[
+    './backend/agent',
+    './backend/common/agentpb'
+  ]
 )
 
 docker_build_with_restart(
@@ -24,7 +27,10 @@ docker_build_with_restart(
 local_resource(
   'kubetail-server-compile',
   'cd backend && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/server ./server/cmd/main.go',
-  deps=['./backend/server']
+  deps=[
+    './backend/server',
+    './backend/common/agentpb'
+  ]
 )
 
 docker_build_with_restart(

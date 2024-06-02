@@ -213,6 +213,18 @@ const DisplayItems = ({
               >
                 Created
               </DataTable.HeaderCell>
+              <DataTable.HeaderCell
+                sortField="size"
+                initialSortDirection="DESC"
+              >
+                Size
+              </DataTable.HeaderCell>
+              <DataTable.HeaderCell
+                sortField="lastModifiedAt"
+                initialSortDirection="DESC"
+              >
+                Last Event
+              </DataTable.HeaderCell>
               <DataTable.HeaderCell>&nbsp;</DataTable.HeaderCell>
             </DataTable.Row>
           </DataTable.Header>
@@ -236,6 +248,8 @@ const DisplayItems = ({
                   <DataTable.DataCell>
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
+                  <DataTable.DataCell></DataTable.DataCell>
+                  <DataTable.DataCell></DataTable.DataCell>
                   <DataTable.DataCell>
                     <a
                       target="_blank"
