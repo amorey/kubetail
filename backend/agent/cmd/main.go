@@ -19,7 +19,9 @@ import (
 )
 
 // server implements the agentpb.PodLogMetadataServer interface.
-type server struct{}
+type server struct {
+	nodeName string
+}
 
 // implementation of GetFileInfo in PodLogMetadata service
 func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
@@ -84,6 +86,12 @@ func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest
 	}
 }
 
+// implementation of GetFileInfo in PodLogMetadata service
+func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
+	fmt.Printf("FileInfoList %s\n", s.nodeName)
+	return nil, nil
+}
+
 func main() {
 	// disable logging for nrpc
 	log.SetOutput(io.Discard)
@@ -100,7 +108,7 @@ func main() {
 	defer nc.Close()
 
 	// init server
-	s := &server{}
+	s := &server{nodeName: os.Getenv("NODE_NAME")}
 
 	// init handler
 	h := agentpb.NewPodLogMetadataHandler(ctx, nc, s)
