@@ -12,11 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-type FileInfo struct {
-	Size           int64      `json:"size"`
-	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
-}
-
 type HealthCheckResponse struct {
 	Status    HealthCheckStatus `json:"status"`
 	Message   *string           `json:"message,omitempty"`
@@ -66,19 +61,6 @@ type PageInfo struct {
 	HasPreviousPage bool `json:"hasPreviousPage"`
 	// When paginating backwards, the cursor to continue.
 	StartCursor *string `json:"startCursor,omitempty"`
-}
-
-type PodLogMetadata struct {
-	Namespace      string     `json:"namespace"`
-	PodName        string     `json:"podName"`
-	ContainerName  string     `json:"containerName"`
-	ContainerID    string     `json:"containerID"`
-	Size           int64      `json:"size"`
-	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
-}
-
-type PodLogMetadataList struct {
-	Items []PodLogMetadata `json:"items"`
 }
 
 type PodLogQueryResponse struct {
