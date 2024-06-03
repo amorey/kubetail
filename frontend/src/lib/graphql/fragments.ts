@@ -94,6 +94,12 @@ export const HOME_STATEFULSETS_LIST_ITEM_FRAGMENT = gql(`
   }
 `);
 
+export const HOME_LOGMETADATA_LIST_ITEM_FRAGMENT = gql(`
+  fragment HomeLogMetadataListItemFragment on LogMetadata {
+    ...HomeGenericListItemFragment
+  }
+`);
+
 /**
  * Console fragments
  */

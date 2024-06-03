@@ -14,15 +14,15 @@ import (
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/kubetail-org/kubetail/backend/common/agentpb"
-	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/ptr"
+
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 )
 
 // Object is the resolver for the object field.
@@ -53,11 +53,6 @@ func (r *batchV1CronJobsWatchEventResolver) Object(ctx context.Context, obj *wat
 // Object is the resolver for the object field.
 func (r *batchV1JobsWatchEventResolver) Object(ctx context.Context, obj *watch.Event) (*batchv1.Job, error) {
 	return typeassertRuntimeObject[*batchv1.Job](obj.Object)
-}
-
-// FileInfo is the resolver for the fileInfo field.
-func (r *coreV1ContainerStatusResolver) FileInfo(ctx context.Context, obj *corev1.ContainerStatus) (*model.FileInfo, error) {
-	panic(fmt.Errorf("not implemented: FileInfo - fileInfo"))
 }
 
 // Object is the resolver for the object field.
@@ -274,54 +269,22 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 	}
 
 	// init client
-	c := agentpb.NewLogMetadataClient(r.nc)
+	c := agentpb.NewLogMetadataClient(r.nc, "nodeName")
 
 	// init request
 	req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
 
 	// execute
-	resp, err := c.FileInfoList(req)
+	err = c.FileInfoListPoll(req, 3, func(resp *agentpb.FileInfoListResponse) error {
+		fmt.Println(resp)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
+	//fmt.Println(resp)
 
 	return &model.LogMetadataList{}, nil
-}
-
-// PodLogMetadataGet is the resolver for the podLogMetadataGet field.
-func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (*model.PodLogMetadata, error) {
-	// init client
-	c := agentpb.NewPodLogMetadataClient(r.nc, nodeName)
-
-	// init request
-	req := &agentpb.FileInfoRequest{
-		Namespace:     namespace,
-		PodName:       podName,
-		ContainerName: containerName,
-		ContainerId:   containerID,
-	}
-
-	// make request
-	resp, err := c.FileInfoGet(req)
-	if err != nil {
-		return nil, err
-	}
-
-	metadata := &model.PodLogMetadata{
-		Namespace:      namespace,
-		PodName:        podName,
-		ContainerName:  containerName,
-		ContainerID:    containerID,
-		Size:           resp.GetSize(),
-		LastModifiedAt: ptr.To(resp.GetLastModifiedAt().AsTime()),
-	}
-
-	return metadata, nil
-}
-
-// PodLogMetadataList is the resolver for the podLogMetadataList field.
-func (r *queryResolver) PodLogMetadataList(ctx context.Context, namespace *string) (*model.PodLogMetadataList, error) {
-	panic(fmt.Errorf("not implemented: PodLogMetadataList - podLogMetadataList"))
 }
 
 // PodLogHead is the resolver for the podLogHead field.
@@ -501,48 +464,6 @@ func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *
 	panic(fmt.Errorf("not implemented: LogMetadataWatch - logMetadataWatch"))
 }
 
-// PodLogMetadataWatch is the resolver for the podLogMetadataWatch field.
-func (r *subscriptionResolver) PodLogMetadataWatch(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (<-chan *model.PodLogMetadata, error) {
-	outCh := make(chan *model.PodLogMetadata)
-
-	// forward data to output channel
-	c := agentpb.NewPodLogMetadataClient(r.nc, nodeName)
-
-	// init request
-	req := &agentpb.FileInfoRequest{
-		Namespace:     namespace,
-		PodName:       podName,
-		ContainerName: containerName,
-		ContainerId:   containerID,
-	}
-
-	// run listener in a goroutine
-	go func() {
-		err := c.FileInfoWatch(ctx, req, func(ctx context.Context, resp *agentpb.FileInfoResponse) {
-			metadata := &model.PodLogMetadata{
-				Namespace:      namespace,
-				PodName:        podName,
-				ContainerName:  containerName,
-				ContainerID:    containerID,
-				Size:           resp.GetSize(),
-				LastModifiedAt: ptr.To(resp.GetLastModifiedAt().AsTime()),
-			}
-
-			outCh <- metadata
-		})
-
-		if err != nil {
-			gqlerror := NewError("INTERNAL_SERVER_ERROR", err.Error())
-			transport.AddSubscriptionError(ctx, gqlerror)
-		}
-
-		// listener finished
-		close(outCh)
-	}()
-
-	return outCh, nil
-}
-
 // PodLogFollow is the resolver for the podLogFollow field.
 func (r *subscriptionResolver) PodLogFollow(ctx context.Context, namespace *string, name string, container *string, after *string, since *string) (<-chan *model.LogRecord, error) {
 	// init namespace
@@ -629,11 +550,6 @@ func (r *Resolver) BatchV1JobsWatchEvent() BatchV1JobsWatchEventResolver {
 	return &batchV1JobsWatchEventResolver{r}
 }
 
-// CoreV1ContainerStatus returns CoreV1ContainerStatusResolver implementation.
-func (r *Resolver) CoreV1ContainerStatus() CoreV1ContainerStatusResolver {
-	return &coreV1ContainerStatusResolver{r}
-}
-
 // CoreV1NamespacesWatchEvent returns CoreV1NamespacesWatchEventResolver implementation.
 func (r *Resolver) CoreV1NamespacesWatchEvent() CoreV1NamespacesWatchEventResolver {
 	return &coreV1NamespacesWatchEventResolver{r}
@@ -661,7 +577,6 @@ type appsV1ReplicaSetsWatchEventResolver struct{ *Resolver }
 type appsV1StatefulSetsWatchEventResolver struct{ *Resolver }
 type batchV1CronJobsWatchEventResolver struct{ *Resolver }
 type batchV1JobsWatchEventResolver struct{ *Resolver }
-type coreV1ContainerStatusResolver struct{ *Resolver }
 type coreV1NamespacesWatchEventResolver struct{ *Resolver }
 type coreV1NodesWatchEventResolver struct{ *Resolver }
 type coreV1PodsWatchEventResolver struct{ *Resolver }
