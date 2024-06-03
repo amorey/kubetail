@@ -199,9 +199,7 @@ export const HOME_LOGMETADATA_LIST_FETCH = gql(`
     logMetadataList(namespace: $namespace) {
       ...HomeGenericListFragment
       items {
-        containerID
-        size
-        lastModifiedAt
+        ...HomeLogMetadataListItemFragment
       }
     }
   }
@@ -212,9 +210,7 @@ export const HOME_LOGMETADATA_LIST_WATCH = gql(`
     logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {
       type
       object {
-        containerID
-        size
-        lastModifiedAt
+        ...HomeLogMetadataListItemFragment
       }
     }
   }

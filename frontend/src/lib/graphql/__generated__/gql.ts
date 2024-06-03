@@ -23,6 +23,7 @@ const documents = {
     "\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n  }\n": types.HomePodsListItemFragmentFragmentDoc,
     "\n  fragment HomeReplicaSetsListItemFragment on AppsV1ReplicaSet {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeReplicaSetsListItemFragmentFragmentDoc,
     "\n  fragment HomeStatefulSetsListItemFragment on AppsV1StatefulSet {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeStatefulSetsListItemFragmentFragmentDoc,
+    "\n  fragment HomeLogMetadataListItemFragment on LogMetadata {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeLogMetadataListItemFragmentFragmentDoc,
     "\n  fragment ConsoleLoggingResourcesGenericObjectFragment on Object {\n    id\n    metadata {\n      namespace\n      name\n      uid\n      creationTimestamp\n      deletionTimestamp\n      resourceVersion\n      ownerReferences {\n        name\n        uid\n        controller\n      }\n    }\n  }\n": types.ConsoleLoggingResourcesGenericObjectFragmentFragmentDoc,
     "\n  fragment ConsoleLoggingResourcesCronJobFragment on BatchV1CronJob {\n    ...ConsoleLoggingResourcesGenericObjectFragment\n    spec {\n      jobTemplate {\n        spec {\n          selector {\n            matchLabels\n          }\n        }\n      }\n    }\n  }\n": types.ConsoleLoggingResourcesCronJobFragmentFragmentDoc,
     "\n  fragment ConsoleLoggingResourcesDaemonSetFragment on AppsV1DaemonSet {\n    ...ConsoleLoggingResourcesGenericObjectFragment\n    spec {\n      selector {\n        matchLabels\n      }\n    }\n  }\n": types.ConsoleLoggingResourcesDaemonSetFragmentFragmentDoc,
@@ -71,6 +72,8 @@ const documents = {
     "\n  subscription HomeReplicaSetsListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    appsV1ReplicaSetsWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeReplicaSetsListItemFragment\n      }\n    }\n  }\n": types.HomeReplicaSetsListWatchDocument,
     "\n  query HomeStatefulSetsListFetch($namespace: String = \"\", $continue: String = \"\") {\n    appsV1StatefulSetsList(namespace: $namespace, options: { limit: \"50\", continue: $continue }) {\n      ...HomeGenericListFragment\n      items {\n        ...HomeStatefulSetsListItemFragment\n      }\n    }\n  }\n": types.HomeStatefulSetsListFetchDocument,
     "\n  subscription HomeStatefulSetsListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    appsV1StatefulSetsWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeStatefulSetsListItemFragment\n      }\n    }\n  }\n": types.HomeStatefulSetsListWatchDocument,
+    "\n  query HomeLogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      ...HomeGenericListFragment\n      items {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n": types.HomeLogMetadataListFetchDocument,
+    "\n  subscription HomeLogMetadataListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n": types.HomeLogMetadataListWatchDocument,
     "\n  query ConsoleLoggingResourcesCronJobGet($namespace: String!, $name: String!) {\n    batchV1CronJobsGet(namespace: $namespace, name: $name) {\n      ...ConsoleLoggingResourcesCronJobFragment\n    }\n  }\n": types.ConsoleLoggingResourcesCronJobGetDocument,
     "\n  subscription ConsoleLoggingResourcesCronJobWatch($namespace: String!, $fieldSelector: String!) {\n    batchV1CronJobsWatch(namespace: $namespace, options: { fieldSelector: $fieldSelector }) {\n      type\n      object {\n        ...ConsoleLoggingResourcesCronJobFragment\n      }\n    }\n  }\n": types.ConsoleLoggingResourcesCronJobWatchDocument,
     "\n  query ConsoleLoggingResourcesDaemonSetGet($namespace: String!, $name: String!) {\n    appsV1DaemonSetsGet(namespace: $namespace, name: $name) {\n      ...ConsoleLoggingResourcesDaemonSetFragment\n    }    \n  }\n": types.ConsoleLoggingResourcesDaemonSetGetDocument,
@@ -212,6 +215,10 @@ export function gql(source: "\n  fragment HomeReplicaSetsListItemFragment on App
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  fragment HomeStatefulSetsListItemFragment on AppsV1StatefulSet {\n    ...HomeGenericListItemFragment\n  }\n"): (typeof documents)["\n  fragment HomeStatefulSetsListItemFragment on AppsV1StatefulSet {\n    ...HomeGenericListItemFragment\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  fragment HomeLogMetadataListItemFragment on LogMetadata {\n    ...HomeGenericListItemFragment\n  }\n"): (typeof documents)["\n  fragment HomeLogMetadataListItemFragment on LogMetadata {\n    ...HomeGenericListItemFragment\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -404,6 +411,14 @@ export function gql(source: "\n  query HomeStatefulSetsListFetch($namespace: Str
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  subscription HomeStatefulSetsListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    appsV1StatefulSetsWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeStatefulSetsListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription HomeStatefulSetsListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    appsV1StatefulSetsWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeStatefulSetsListItemFragment\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query HomeLogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      ...HomeGenericListFragment\n      items {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  query HomeLogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      ...HomeGenericListFragment\n      items {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  subscription HomeLogMetadataListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription HomeLogMetadataListWatch($namespace: String = \"\", $resourceVersion: String = \"\") {\n    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {\n      type\n      object {\n        ...HomeLogMetadataListItemFragment\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

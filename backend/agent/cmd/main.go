@@ -7,13 +7,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/nats-io/nats.go"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
@@ -24,25 +20,30 @@ type server struct {
 }
 
 // implementation of GetFileInfo in PodLogMetadata service
-func (s *server) FileInfoGet(ctx context.Context, req *agentpb.FileInfoRequest) (*agentpb.FileInfoResponse, error) {
-	// generate path
-	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
-	containerLogPath := filepath.Join("/var/log/containers", fileName)
+func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
+	fmt.Println(s.nodeName)
+	/*
+		// generate path
+		fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
+		containerLogPath := filepath.Join("/var/log/containers", fileName)
 
-	// get info
-	fileInfo, err := os.Stat(containerLogPath)
-	if err != nil {
-		return nil, err
-	}
+		// get info
+		fileInfo, err := os.Stat(containerLogPath)
+		if err != nil {
+			return nil, err
+		}
 
-	// init response
-	resp := &agentpb.FileInfoResponse{
-		Size:           fileInfo.Size(),
-		LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
-	}
-	return resp, nil
+		// init response
+		resp := &agentpb.FileInfoResponse{
+			Size:           fileInfo.Size(),
+			LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
+		}
+		return resp, nil
+	*/
+	return &agentpb.FileInfoListResponse{}, nil
 }
 
+/*
 // implementation of FileInfoWatch in PodLogMetadata service
 func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest, send func(*agentpb.FileInfoResponse)) error {
 	watcher, err := fsnotify.NewWatcher()
@@ -85,12 +86,7 @@ func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest
 		}
 	}
 }
-
-// implementation of GetFileInfo in PodLogMetadata service
-func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
-	fmt.Printf("FileInfoList %s\n", s.nodeName)
-	return nil, nil
-}
+*/
 
 func main() {
 	// disable logging for nrpc
@@ -111,15 +107,23 @@ func main() {
 	s := &server{nodeName: os.Getenv("NODE_NAME")}
 
 	// init handler
-	h := agentpb.NewPodLogMetadataHandler(ctx, nc, s)
+	h := agentpb.NewLogMetadataHandler(ctx, nc, s)
 
 	// subscribe to requests
-	subject := strings.Replace(h.Subject(), "*", os.Getenv("NODE_NAME"), 1)
-	sub, err := nc.QueueSubscribe(subject, "callonce", h.Handler)
+	sub, err := nc.Subscribe(h.Subject(), h.Handler)
 	if err != nil {
 		panic(err)
 	}
 	defer sub.Unsubscribe()
+
+	/*
+		subject := strings.Replace(h.Subject(), "*", os.Getenv("NODE_NAME"), 1)
+		sub, err := nc.QueueSubscribe(subject, "callonce", h.Handler)
+		if err != nil {
+			panic(err)
+		}
+		defer sub.Unsubscribe()
+	*/
 
 	// wait for context
 	<-ctx.Done()

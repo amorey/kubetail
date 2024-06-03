@@ -9,7 +9,8 @@
       "BatchV1JobList",
       "CoreV1NamespaceList",
       "CoreV1NodeList",
-      "CoreV1PodList"
+      "CoreV1PodList",
+      "LogMetadataList"
     ],
     "Object": [
       "AppsV1DaemonSet",
@@ -20,7 +21,8 @@
       "BatchV1Job",
       "CoreV1Namespace",
       "CoreV1Node",
-      "CoreV1Pod"
+      "CoreV1Pod",
+      "LogMetadata"
     ]
   }
 }

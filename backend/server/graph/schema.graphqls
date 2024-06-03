@@ -356,7 +356,6 @@ type CoreV1ContainerStatus {
   imageID: String!
   containerID: String!
   started: Boolean
-  fileInfo: FileInfo
 }
 
 # https://pkg.go.dev/k8s.io/api/core/v1#Namespace
@@ -471,12 +470,6 @@ type CoreV1PodSpec {
 type CoreV1PodsWatchEvent {
   type: WatchEventType!
   object: CoreV1Pod
-}
-
-# --- FileInfo ---
-type FileInfo {
-  size: Int64!
-  lastModifiedAt: Time
 }
 
 # --- Health Check ---
@@ -625,21 +618,6 @@ type PageInfo {
   startCursor: ID
 }
 
-# --- PodLogMetadata ---
-
-type PodLogMetadata {
-  namespace: String!
-  podName: String!
-  containerName: String!
-  containerID: ID!
-  size: Int64!
-  lastModifiedAt: Time
-}
-
-type PodLogMetadataList {
-  items: [PodLogMetadata!]!
-}
-
 # --- PodLogQueryResponse ---
 
 type PodLogQueryResponse {
@@ -694,8 +672,6 @@ type Query {
   Logs Metadata API
   """
   logMetadataList(namespace: String): LogMetadataList
-  podLogMetadataGet(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
-  podLogMetadataList(namespace: String): PodLogMetadataList
 
   """
   Logs API
@@ -774,8 +750,7 @@ type Subscription {
   """
   Logs Metadata watch
   """
-  logMetadataWatch(namespace: String): LogMetadataWatchEvent
-  podLogMetadataWatch(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
+  logMetadataWatch(namespace: String, options: MetaV1ListOptions): LogMetadataWatchEvent
 
   """
   Logs API

@@ -21,37 +21,12 @@ option go_package = "common/agentpb";
 import "google/protobuf/timestamp.proto";
 import "nrpc.proto";
 
-service PodLogMetadata {
+service LogMetadata {
   option (nrpc.serviceSubjectParams) = "nodeName";
-
-  rpc FileInfoGet (FileInfoRequest) returns (FileInfoResponse);
 
   rpc FileInfoList (FileInfoListRequest) returns (FileInfoListResponse) {
     option (nrpc.pollingEnabled) = true;
   };
-
-  rpc FileInfoWatch (FileInfoRequest) returns (FileInfoResponse) {
-    option (nrpc.streamedReply) = true;
-  }
-}
-
-message FileInfoRequest {
-  string namespace = 1;
-  string pod_name = 2;
-  string container_name = 3;
-  string container_id = 4;
-}
-
-message FileInfoResponse {
-  int64 size = 1;
-  google.protobuf.Timestamp last_modified_at = 2;
-}
-
-message Metadata {
-  string namespace = 1;
-  string pod_name = 2;
-  string container_name = 3;
-  string container_id = 4;
 }
 
 message FileInfo {
@@ -61,9 +36,16 @@ message FileInfo {
 }
 
 message FileInfoListRequest {
-  string namespace = 1;
+  repeated string namespaces = 1;
 }
 
 message FileInfoListResponse {
   repeated FileInfo items = 1;
+}
+
+message Metadata {
+  string namespace = 1;
+  string pod_name = 2;
+  string container_name = 3;
+  string container_id = 4;
 }
