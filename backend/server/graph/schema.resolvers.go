@@ -10,19 +10,22 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"slices"
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/kubetail-org/kubetail/backend/common/agentpb"
-	"github.com/kubetail-org/kubetail/backend/server/graph/model"
+	"k8s.io/utils/ptr"
 )
 
 // Object is the resolver for the object field.
@@ -268,21 +271,26 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 		return nil, err
 	}
 
+	// init connection
+	addr := ptr.To("10.244.1.5:5000")
+	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
 	// init client
-	c := agentpb.NewLogMetadataClient(r.nc, "nodeName")
+	c := agentpb.NewLogMetadataClient(conn)
 
 	// init request
 	req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
 
 	// execute
-	err = c.FileInfoListPoll(req, 3, func(resp *agentpb.FileInfoListResponse) error {
-		fmt.Println(resp)
-		return nil
-	})
+	resp, err := c.FileInfoList(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println(resp)
+	fmt.Println(resp)
 
 	return &model.LogMetadataList{}, nil
 }
@@ -460,7 +468,7 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 }
 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
-func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *model.LogMetadataWatchEvent, error) {
+func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string, options *metav1.ListOptions) (<-chan *model.LogMetadataWatchEvent, error) {
 	panic(fmt.Errorf("not implemented: LogMetadataWatch - logMetadataWatch"))
 }
 
