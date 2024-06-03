@@ -534,7 +534,7 @@ type ComplexityRoot struct {
 		CoreV1PodLogTail        func(childComplexity int, namespace *string, name string, options *v11.PodLogOptions) int
 		CoreV1PodsWatch         func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		LivezWatch              func(childComplexity int) int
-		LogMetadataWatch        func(childComplexity int, namespace *string) int
+		LogMetadataWatch        func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		PodLogFollow            func(childComplexity int, namespace *string, name string, container *string, after *string, since *string) int
 		ReadyzWatch             func(childComplexity int) int
 	}
@@ -602,7 +602,7 @@ type SubscriptionResolver interface {
 	CoreV1NodesWatch(ctx context.Context, options *v1.ListOptions) (<-chan *watch.Event, error)
 	CoreV1PodsWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *watch.Event, error)
 	CoreV1PodLogTail(ctx context.Context, namespace *string, name string, options *v11.PodLogOptions) (<-chan *model.LogRecord, error)
-	LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *model.LogMetadataWatchEvent, error)
+	LogMetadataWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *model.LogMetadataWatchEvent, error)
 	PodLogFollow(ctx context.Context, namespace *string, name string, container *string, after *string, since *string) (<-chan *model.LogRecord, error)
 	LivezWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
 	ReadyzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
@@ -2712,7 +2712,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Subscription.LogMetadataWatch(childComplexity, args["namespace"].(*string)), true
+		return e.complexity.Subscription.LogMetadataWatch(childComplexity, args["namespace"].(*string), args["options"].(*v1.ListOptions)), true
 
 	case "Subscription.podLogFollow":
 		if e.complexity.Subscription.PodLogFollow == nil {
@@ -3778,6 +3778,15 @@ func (ec *executionContext) field_Subscription_logMetadataWatch_args(ctx context
 		}
 	}
 	args["namespace"] = arg0
+	var arg1 *v1.ListOptions
+	if tmp, ok := rawArgs["options"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("options"))
+		arg1, err = ec.unmarshalOMetaV1ListOptions2ᚖk8sᚗioᚋapimachineryᚋpkgᚋapisᚋmetaᚋv1ᚐListOptions(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["options"] = arg1
 	return args, nil
 }
 
@@ -17522,7 +17531,7 @@ func (ec *executionContext) _Subscription_logMetadataWatch(ctx context.Context, 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().LogMetadataWatch(rctx, fc.Args["namespace"].(*string))
+		return ec.resolvers.Subscription().LogMetadataWatch(rctx, fc.Args["namespace"].(*string), fc.Args["options"].(*v1.ListOptions))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

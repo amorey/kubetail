@@ -3,19 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
+	"net"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/nats-io/nats.go"
+	"google.golang.org/grpc"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
 
 // server implements the agentpb.PodLogMetadataServer interface.
 type server struct {
+	agentpb.UnimplementedLogMetadataServer
 	nodeName string
 }
 
@@ -43,89 +41,22 @@ func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequ
 	return &agentpb.FileInfoListResponse{}, nil
 }
 
-/*
-// implementation of FileInfoWatch in PodLogMetadata service
-func (s *server) FileInfoWatch(ctx context.Context, req *agentpb.FileInfoRequest, send func(*agentpb.FileInfoResponse)) error {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-	defer watcher.Close()
-
-	// generate path
-	fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.GetPodName(), req.GetNamespace(), req.GetContainerName(), req.GetContainerId())
-	containerLogPath := filepath.Join("/var/log/containers", fileName)
-
-	// Add a path.
-	err = watcher.Add(containerLogPath)
-	if err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
-
-			if event.Has(fsnotify.Write) {
-				resp, err := s.FileInfoGet(ctx, req)
-				if err != nil {
-					return err
-				}
-				send(resp)
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
-			}
-			return err
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-*/
-
 func main() {
-	// disable logging for nrpc
-	log.SetOutput(io.Discard)
-
-	// initialize context and listen for termination signals
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	// Connect to a nats server
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
-	defer nc.Close()
-
-	// init server
+	// init service
 	s := &server{nodeName: os.Getenv("NODE_NAME")}
 
-	// init handler
-	h := agentpb.NewLogMetadataHandler(ctx, nc, s)
+	// init grpc server
+	grpcServer := grpc.NewServer()
+	agentpb.RegisterLogMetadataServer(grpcServer, s)
 
-	// subscribe to requests
-	sub, err := nc.Subscribe(h.Subject(), h.Handler)
+	// listen
+	lis, err := net.Listen("tcp", ":5000")
 	if err != nil {
 		panic(err)
 	}
-	defer sub.Unsubscribe()
 
-	/*
-		subject := strings.Replace(h.Subject(), "*", os.Getenv("NODE_NAME"), 1)
-		sub, err := nc.QueueSubscribe(subject, "callonce", h.Handler)
-		if err != nil {
-			panic(err)
-		}
-		defer sub.Unsubscribe()
-	*/
-
-	// wait for context
-	<-ctx.Done()
-	stop() // stop receiving signals as soon as possible
+	// start grpc server
+	if err := grpcServer.Serve(lis); err != nil {
+		panic(err)
+	}
 }

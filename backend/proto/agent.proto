@@ -19,14 +19,9 @@ package agentpb;
 option go_package = "common/agentpb";
 
 import "google/protobuf/timestamp.proto";
-import "nrpc.proto";
 
 service LogMetadata {
-  option (nrpc.serviceSubjectParams) = "nodeName";
-
-  rpc FileInfoList (FileInfoListRequest) returns (FileInfoListResponse) {
-    option (nrpc.pollingEnabled) = true;
-  };
+  rpc FileInfoList (FileInfoListRequest) returns (FileInfoListResponse);
 }
 
 message FileInfo {
