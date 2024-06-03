@@ -267,7 +267,25 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 
 // LogMetadataList is the resolver for the logMetadataList field.
 func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*model.LogMetadataList, error) {
-	panic(fmt.Errorf("not implemented: LogMetadataList - logMetadataList"))
+	// init namespaces
+	namespaces, err := r.ToNamespaces(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// init client
+	c := agentpb.NewLogMetadataClient(r.nc)
+
+	// init request
+	req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
+
+	// execute
+	resp, err := c.FileInfoList(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.LogMetadataList{}, nil
 }
 
 // PodLogMetadataGet is the resolver for the podLogMetadataGet field.
