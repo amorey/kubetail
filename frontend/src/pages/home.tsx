@@ -353,6 +353,13 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
+  const logMetadata = useListQueryWithSubscription({
+    query: ops.HOME_LOGMETADATA_LIST_FETCH,
+    subscription: ops.HOME_LOGMETADATA_LIST_WATCH,
+    queryDataKey: 'logMetadataList',
+    subscriptionDataKey: 'logMetadataWatch',
+  });
+
   return (
     <>
       {loading && <LoadingModal />}
