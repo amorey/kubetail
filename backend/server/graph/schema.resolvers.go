@@ -265,6 +265,11 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 	return out, nil
 }
 
+// LogMetadataList is the resolver for the logMetadataList field.
+func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*model.LogMetadataList, error) {
+	panic(fmt.Errorf("not implemented: LogMetadataList - logMetadataList"))
+}
+
 // PodLogMetadataGet is the resolver for the podLogMetadataGet field.
 func (r *queryResolver) PodLogMetadataGet(ctx context.Context, nodeName string, namespace string, podName string, containerName string, containerID string) (*model.PodLogMetadata, error) {
 	// init client
@@ -471,6 +476,11 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 	}()
 
 	return outCh, nil
+}
+
+// LogMetadataWatch is the resolver for the logMetadataWatch field.
+func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *model.LogMetadataWatchEvent, error) {
+	panic(fmt.Errorf("not implemented: LogMetadataWatch - logMetadataWatch"))
 }
 
 // PodLogMetadataWatch is the resolver for the podLogMetadataWatch field.
