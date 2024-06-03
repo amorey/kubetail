@@ -7,6 +7,9 @@ import (
 	"io"
 	"strconv"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 type FileInfo struct {
@@ -18,6 +21,35 @@ type HealthCheckResponse struct {
 	Status    HealthCheckStatus `json:"status"`
 	Message   *string           `json:"message,omitempty"`
 	Timestamp time.Time         `json:"timestamp"`
+}
+
+type LogMetadata struct {
+	ID         string              `json:"id"`
+	Kind       string              `json:"kind"`
+	APIVersion string              `json:"apiVersion"`
+	Metadata   v1.ObjectMeta       `json:"metadata"`
+	FileInfo   LogMetadataFileInfo `json:"fileInfo"`
+}
+
+func (LogMetadata) IsObject() {}
+
+type LogMetadataFileInfo struct {
+	Size           int64      `json:"size"`
+	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
+}
+
+type LogMetadataList struct {
+	Kind       string        `json:"kind"`
+	APIVersion string        `json:"apiVersion"`
+	Metadata   v1.ListMeta   `json:"metadata"`
+	Items      []LogMetadata `json:"items"`
+}
+
+func (LogMetadataList) IsList() {}
+
+type LogMetadataWatchEvent struct {
+	Type   watch.EventType `json:"type"`
+	Object *LogMetadata    `json:"object,omitempty"`
 }
 
 type LogRecord struct {

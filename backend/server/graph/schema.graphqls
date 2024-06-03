@@ -492,6 +492,33 @@ enum HealthCheckStatus {
   FAILURE
 }
 
+# --- Log Metadata ---
+
+type LogMetadata implements Object {
+  id: ID!
+  kind: String!
+  apiVersion: String!
+  metadata: MetaV1ObjectMeta!
+  fileInfo: LogMetadataFileInfo!
+}
+
+type LogMetadataFileInfo {
+  size: Int64!
+  lastModifiedAt: Time
+}
+
+type LogMetadataList implements List {
+  kind: String!
+  apiVersion: String!
+  metadata: MetaV1ListMeta!
+  items: [LogMetadata!]!
+}
+
+type LogMetadataWatchEvent {
+  type: WatchEventType!
+  object: LogMetadata
+}
+
 # --- Log Record ---
 
 type LogRecord {
@@ -666,6 +693,7 @@ type Query {
   """
   Logs Metadata API
   """
+  logMetadataList(namespace: String): LogMetadataList
   podLogMetadataGet(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
   podLogMetadataList(namespace: String): PodLogMetadataList
 
@@ -746,6 +774,7 @@ type Subscription {
   """
   Logs Metadata watch
   """
+  logMetadataWatch(namespace: String): LogMetadataWatchEvent
   podLogMetadataWatch(nodeName: String!, namespace: String!, podName: String!, containerName: String!, containerID: ID!): PodLogMetadata
 
   """
