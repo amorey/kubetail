@@ -15,6 +15,9 @@
 package grpchelpers
 
 import (
+	"sync"
+
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -24,11 +27,26 @@ type GrpcConnectionManagerInterface interface {
 }
 
 type GrpcConnectionManager struct {
+	mu           sync.Mutex
 	k8sClientset kubernetes.Interface
+	conns        map[string]*grpc.ClientConn
 }
 
 func (cm *GrpcConnectionManager) Get(nodeName string) *grpc.ClientConn {
-	panic("not implemented")
+	return cm.conns[nodeName]
+}
+
+func (cm *GrpcConnectionManager) GetAll() []*grpc.ClientConn {
+	return maps.Values(cm.conns)
+}
+
+func (cm *GrpcConnectionManager) Teardown() {
+	cm.mu.Lock()
+	defer cm.mu.Unlock()
+
+	for _, conn := range cm.conns {
+		conn.Close()
+	}
 }
 
 func NewGrpcConnectionManager() (*GrpcConnectionManager, error) {
