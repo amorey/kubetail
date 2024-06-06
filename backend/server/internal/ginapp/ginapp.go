@@ -32,6 +32,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"k8s.io/client-go/rest"
 
+	"github.com/kubetail-org/kubetail/backend/server/internal/grpchelpers"
 	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
 )
 
@@ -39,6 +40,7 @@ type GinApp struct {
 	*gin.Engine
 	k8sHelperService k8shelpers.Service
 	nc               *nats.Conn
+	gcm              *grpchelpers.ConnectionManager
 
 	// for testing
 	dynamicroutes *gin.RouterGroup
@@ -46,8 +48,14 @@ type GinApp struct {
 }
 
 func (app *GinApp) Teardown() {
+	// close nats connection
 	if app.nc != nil {
 		app.nc.Close()
+	}
+
+	// teardown grpc connection manager
+	if app.gcm != nil {
+		app.gcm.Teardown()
 	}
 }
 
@@ -65,9 +73,12 @@ func NewGinApp(config Config) (*GinApp, error) {
 		// init k8s helper service
 		app.k8sHelperService = k8shelpers.NewK8sHelperService(k8sCfg, k8shelpers.Mode(config.AuthMode))
 
-		// TODO: make this handle when nats not available on startup
 		// init nats connection
+		// TODO: make this handle when nats not available on startup
 		app.nc = mustConnectNATS()
+
+		// init grpc connection manager
+		app.gcm = mustNewGcrpConnectionManager()
 
 		// add recovery middleware
 		app.Use(gin.Recovery())
@@ -194,7 +205,7 @@ func NewGinApp(config Config) (*GinApp, error) {
 
 			// graphql handler
 			h := &GraphQLHandlers{app}
-			endpointHandler := h.EndpointHandler(k8sCfg, app.nc, config.AllowedNamespaces, csrfProtect)
+			endpointHandler := h.EndpointHandler(k8sCfg, app.nc, app.gcm, config.AllowedNamespaces, csrfProtect)
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}

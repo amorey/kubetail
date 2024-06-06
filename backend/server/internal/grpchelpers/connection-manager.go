@@ -15,32 +15,37 @@
 package grpchelpers
 
 import (
+	"context"
 	"sync"
 
 	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-type GrpcConnectionManagerInterface interface {
+type ConnectionManagerInterface interface {
 }
 
-type GrpcConnectionManager struct {
+type ConnectionManager struct {
 	mu           sync.Mutex
 	k8sClientset kubernetes.Interface
 	conns        map[string]*grpc.ClientConn
 }
 
-func (cm *GrpcConnectionManager) Get(nodeName string) *grpc.ClientConn {
+// Get
+func (cm *ConnectionManager) Get(nodeName string) *grpc.ClientConn {
 	return cm.conns[nodeName]
 }
 
-func (cm *GrpcConnectionManager) GetAll() []*grpc.ClientConn {
+// GetAll
+func (cm *ConnectionManager) GetAll() []*grpc.ClientConn {
 	return maps.Values(cm.conns)
 }
 
-func (cm *GrpcConnectionManager) Teardown() {
+// Teardown
+func (cm *ConnectionManager) Teardown() {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
@@ -49,7 +54,8 @@ func (cm *GrpcConnectionManager) Teardown() {
 	}
 }
 
-func NewGrpcConnectionManager() (*GrpcConnectionManager, error) {
+// NewGrpcConnectionManager
+func NewConnectionManager(ctx context.Context) (*ConnectionManager, error) {
 	cfg, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
@@ -60,5 +66,13 @@ func NewGrpcConnectionManager() (*GrpcConnectionManager, error) {
 		return nil, err
 	}
 
-	return &GrpcConnectionManager{k8sClientset: clientset}, nil
+	go func() {
+		options := metav1.ListOptions{LabelSelector: "app.kubernetes.io/name: kubetail-agent"}
+		watchAPI, err := clientset.CoreV1().Pods("default").Watch(ctx, options)
+		if err != nil {
+			return nil, err
+		}
+	}()
+
+	return &ConnectionManager{k8sClientset: clientset}, nil
 }

@@ -36,12 +36,12 @@ import (
 //go:generate go run github.com/99designs/gqlgen generate
 
 type Resolver struct {
-	k8sCfg                *rest.Config
-	nc                    *nats.Conn
-	grcpConnectionManager grpchelpers.GrpcConnectionManagerInterface
-	allowedNamespaces     []string
-	TestClientset         *fake.Clientset
-	TestDynamicClient     *dynamicFake.FakeDynamicClient
+	k8sCfg            *rest.Config
+	nc                *nats.Conn
+	gcm               grpchelpers.ConnectionManagerInterface
+	allowedNamespaces []string
+	TestClientset     *fake.Clientset
+	TestDynamicClient *dynamicFake.FakeDynamicClient
 }
 
 func (r *Resolver) K8SClientset(ctx context.Context) kubernetes.Interface {
@@ -127,19 +127,13 @@ func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
 	return namespaces, nil
 }
 
-func NewResolver(cfg *rest.Config, nc *nats.Conn, allowedNamespaces []string) (*Resolver, error) {
-	// init grpc connection manager
-	cm, err := grpchelpers.NewGrpcConnectionManager()
-	if err != nil {
-		return nil, err
-	}
-
+func NewResolver(cfg *rest.Config, nc *nats.Conn, gcm *grpchelpers.ConnectionManager, allowedNamespaces []string) (*Resolver, error) {
 	// init resolver
 	r := &Resolver{
-		k8sCfg:                cfg,
-		nc:                    nc,
-		grcpConnectionManager: cm,
-		allowedNamespaces:     allowedNamespaces,
+		k8sCfg:            cfg,
+		nc:                nc,
+		gcm:               gcm,
+		allowedNamespaces: allowedNamespaces,
 	}
 
 	return r, nil
