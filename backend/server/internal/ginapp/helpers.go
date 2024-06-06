@@ -18,10 +18,11 @@ import (
 	"html/template"
 	"path"
 
+	"github.com/nats-io/nats.go"
 	"k8s.io/client-go/rest"
 
+	"github.com/kubetail-org/kubetail/backend/server/internal/grpchelpers"
 	"github.com/kubetail-org/kubetail/backend/server/internal/k8shelpers"
-	"github.com/nats-io/nats.go"
 )
 
 const k8sTokenSessionKey = "k8sToken"
@@ -62,4 +63,12 @@ func mustConnectNATS() *nats.Conn {
 		panic(err)
 	}
 	return nc
+}
+
+func mustNewGcrpConnectionManager() *grpchelpers.ConnectionManager {
+	gcm, err := grpchelpers.NewConnectionManager()
+	if err != nil {
+		panic(err)
+	}
+	return gcm
 }

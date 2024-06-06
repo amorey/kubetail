@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/backend/server/graph"
+	"github.com/kubetail-org/kubetail/backend/server/internal/grpchelpers"
 )
 
 type key int
@@ -37,9 +38,9 @@ type GraphQLHandlers struct {
 }
 
 // GET|POST "/graphql": GraphQL query endpoint
-func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, nc *nats.Conn, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
+func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, nc *nats.Conn, gcm *grpchelpers.ConnectionManager, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
 	// init resolver
-	r, err := graph.NewResolver(cfg, nc, allowedNamespaces)
+	r, err := graph.NewResolver(cfg, nc, gcm, allowedNamespaces)
 	if err != nil {
 		panic(err)
 	}
