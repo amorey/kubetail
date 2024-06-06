@@ -15,8 +15,6 @@ import (
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/kubetail-org/kubetail/backend/common/agentpb"
-	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	appsv1 "k8s.io/api/apps/v1"
@@ -26,6 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/utils/ptr"
+
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
+	"github.com/kubetail-org/kubetail/backend/server/graph/model"
 )
 
 // Object is the resolver for the object field.

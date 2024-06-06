@@ -70,8 +70,10 @@ func NewConnectionManager(ctx context.Context) (*ConnectionManager, error) {
 		options := metav1.ListOptions{LabelSelector: "app.kubernetes.io/name: kubetail-agent"}
 		watchAPI, err := clientset.CoreV1().Pods("default").Watch(ctx, options)
 		if err != nil {
-			return nil, err
+			zlog.
+			return
 		}
+
 	}()
 
 	return &ConnectionManager{k8sClientset: clientset}, nil
