@@ -5,11 +5,18 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path"
+	"regexp"
+	"slices"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
+
+// Define a regex pattern to match the filename format
+var logfileRegex = regexp.MustCompile(`^(?P<PodName>[^_]+)_(?P<Namespace>[^_]+)_(?P<ContainerName>.+)-(?P<ContainerID>[^-]+)\.log$`)
 
 // server implements the agentpb.PodLogMetadataServer interface.
 type server struct {
@@ -19,26 +26,57 @@ type server struct {
 
 // implementation of GetFileInfo in PodLogMetadata service
 func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
-	fmt.Println(s.nodeName)
-	/*
-		// generate path
-		fileName := fmt.Sprintf("%s_%s_%s-%s.log", req.PodName, req.Namespace, req.ContainerName, req.ContainerId)
-		containerLogPath := filepath.Join("/var/log/containers", fileName)
+	if len(req.Namespaces) == 0 {
+		return nil, fmt.Errorf("Non-empty `Namespaces` required")
+	}
 
+	files, err := os.ReadDir("/var/log/containers")
+	if err != nil {
+		return nil, err
+	}
+
+	items := []*agentpb.FileInfo{}
+
+	for _, file := range files {
 		// get info
-		fileInfo, err := os.Stat(containerLogPath)
+		fileInfo, err := os.Stat(path.Join("/var/log/containers", file.Name()))
 		if err != nil {
 			return nil, err
 		}
 
-		// init response
-		resp := &agentpb.FileInfoResponse{
+		matches := logfileRegex.FindStringSubmatch(file.Name())
+		if matches == nil {
+			return nil, fmt.Errorf("filename format incorrect: %s", file.Name())
+		}
+
+		// extract vars
+		podName := matches[1]
+		namespace := matches[2]
+		containerName := matches[3]
+		containerID := matches[4]
+
+		// skip if namespace not in request args
+		if req.Namespaces[0] != "" && !slices.Contains(req.Namespaces, namespace) {
+			continue
+		}
+
+		// init item
+		item := &agentpb.FileInfo{
+			Metadata: &agentpb.Metadata{
+				Namespace:     namespace,
+				PodName:       podName,
+				ContainerName: containerName,
+				ContainerId:   containerID,
+			},
 			Size:           fileInfo.Size(),
 			LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
 		}
-		return resp, nil
-	*/
-	return &agentpb.FileInfoListResponse{}, nil
+
+		// append to list
+		items = append(items, item)
+	}
+
+	return &agentpb.FileInfoListResponse{Items: items}, nil
 }
 
 func main() {

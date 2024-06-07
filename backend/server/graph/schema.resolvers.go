@@ -271,8 +271,9 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 	}
 
 	// get gprc connections
-	conns := r.gcm.GetAll()
 	var wg sync.WaitGroup
+	conns := r.gcm.GetAll()
+	resps := []*agentpb.FileInfoListResponse{}
 
 	for _, conn := range conns {
 		wg.Add(1)
@@ -290,13 +291,36 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 			if err != nil {
 				return
 			}
-			fmt.Println(resp)
+
+			resps = append(resps, resp)
 		}(conn)
 	}
 
 	wg.Wait()
 
-	return &model.LogMetadataList{}, nil
+	// throw error if response is missing
+	if len(resps) != len(conns) {
+		return nil, fmt.Errorf("response missing")
+	}
+
+	// concat items
+	items := []model.LogMetadata{}
+	for _, resp := range resps {
+		for _, fileInfo := range resp.GetItems() {
+			metadata := fileInfo.GetMetadata()
+
+			item := model.LogMetadata{
+				ID: fmt.Sprintf("%s/%s/%s/%s", metadata.Namespace, metadata.PodName, metadata.ContainerName, metadata.ContainerId),
+				FileInfo: model.LogMetadataFileInfo{
+					Size: fileInfo.GetSize(),
+				},
+			}
+
+			items = append(items, item)
+		}
+	}
+
+	return &model.LogMetadataList{Items: items}, nil
 }
 
 // PodLogHead is the resolver for the podLogHead field.
