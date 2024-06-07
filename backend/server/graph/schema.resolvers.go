@@ -10,20 +10,18 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 	"github.com/kubetail-org/kubetail/backend/server/graph/model"
@@ -272,26 +270,31 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 		return nil, err
 	}
 
-	// init connection
-	addr := ptr.To("10.244.1.5:5000")
-	conn, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+	// get gprc connections
+	conns := r.gcm.GetAll()
+	var wg sync.WaitGroup
+
+	for _, conn := range conns {
+		wg.Add(1)
+		go func(conn *grpc.ClientConn) {
+			defer wg.Done()
+
+			// init client
+			c := agentpb.NewLogMetadataClient(conn)
+
+			// init request
+			req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
+
+			// execute
+			resp, err := c.FileInfoList(ctx, req)
+			if err != nil {
+				return
+			}
+			fmt.Println(resp)
+		}(conn)
 	}
-	defer conn.Close()
 
-	// init client
-	c := agentpb.NewLogMetadataClient(conn)
-
-	// init request
-	req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
-
-	// execute
-	resp, err := c.FileInfoList(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println(resp)
+	wg.Wait()
 
 	return &model.LogMetadataList{}, nil
 }
