@@ -492,6 +492,7 @@ type LogMetadata implements Object {
   kind: String!
   apiVersion: String!
   metadata: MetaV1ObjectMeta!
+  spec: LogMetadataSpec!
   fileInfo: LogMetadataFileInfo!
 }
 
@@ -505,6 +506,14 @@ type LogMetadataList implements List {
   apiVersion: String!
   metadata: MetaV1ListMeta!
   items: [LogMetadata!]!
+}
+
+type LogMetadataSpec {
+  nodeName: String!
+  namespace: String!
+  podName: String!
+  containerName: String!
+  containerId: ID!
 }
 
 type LogMetadataWatchEvent {

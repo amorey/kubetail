@@ -22,6 +22,7 @@ import "google/protobuf/timestamp.proto";
 
 service LogMetadata {
   rpc FileInfoList (FileInfoListRequest) returns (FileInfoListResponse);
+  rpc FileInfoWatch (FileInfoWatchRequest) returns (stream FileInfoWatchEvent);
 }
 
 message FileInfo {
@@ -39,8 +40,18 @@ message FileInfoListResponse {
 }
 
 message Metadata {
-  string namespace = 1;
-  string pod_name = 2;
-  string container_name = 3;
-  string container_id = 4;
+  string node_name = 1;
+  string namespace = 2;
+  string pod_name = 3;
+  string container_name = 4;
+  string container_id = 5;
+}
+
+message FileInfoWatchRequest {
+  repeated string namespaces = 1;
+}
+
+message FileInfoWatchEvent {
+  string type = 1;
+  FileInfo object = 2;
 }
