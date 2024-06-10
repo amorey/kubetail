@@ -23,6 +23,7 @@ type LogMetadata struct {
 	Kind       string              `json:"kind"`
 	APIVersion string              `json:"apiVersion"`
 	Metadata   v1.ObjectMeta       `json:"metadata"`
+	Spec       LogMetadataSpec     `json:"spec"`
 	FileInfo   LogMetadataFileInfo `json:"fileInfo"`
 }
 
@@ -41,6 +42,14 @@ type LogMetadataList struct {
 }
 
 func (LogMetadataList) IsList() {}
+
+type LogMetadataSpec struct {
+	NodeName      string `json:"nodeName"`
+	Namespace     string `json:"namespace"`
+	PodName       string `json:"podName"`
+	ContainerName string `json:"containerName"`
+	ContainerID   string `json:"containerId"`
+}
 
 type LogMetadataWatchEvent struct {
 	Type   watch.EventType `json:"type"`

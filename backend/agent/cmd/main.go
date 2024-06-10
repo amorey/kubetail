@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"path"
 	"regexp"
 	"slices"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -24,10 +26,10 @@ type server struct {
 	nodeName string
 }
 
-// implementation of GetFileInfo in PodLogMetadata service
+// implementation of FileInfoList in PodLogMetadata service
 func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
 	if len(req.Namespaces) == 0 {
-		return nil, fmt.Errorf("Non-empty `Namespaces` required")
+		return nil, fmt.Errorf("non-empty `namespaces` required")
 	}
 
 	files, err := os.ReadDir("/var/log/containers")
@@ -63,6 +65,7 @@ func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequ
 		// init item
 		item := &agentpb.FileInfo{
 			Metadata: &agentpb.Metadata{
+				NodeName:      s.nodeName,
 				Namespace:     namespace,
 				PodName:       podName,
 				ContainerName: containerName,
@@ -77,6 +80,32 @@ func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequ
 	}
 
 	return &agentpb.FileInfoListResponse{Items: items}, nil
+}
+
+// implementation of FileInfoWatch in PodLogMetadata service
+func (s *server) FileInfoWatch(req *agentpb.FileInfoWatchRequest, stream agentpb.LogMetadata_FileInfoWatchServer) error {
+	ctx := stream.Context()
+	ticker := time.NewTicker(500 * time.Millisecond)
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Printf("[%s] client disconnected\n", s.nodeName)
+			return nil
+		case <-ticker.C:
+			ev := agentpb.FileInfoWatchEvent{
+				Type: "ADDED",
+				Object: &agentpb.FileInfo{
+					Metadata: &agentpb.Metadata{
+						NodeName: s.nodeName,
+					},
+					Size: int64(rand.Int()),
+				},
+			}
+			fmt.Println(ev)
+			stream.Send(&ev)
+		}
+	}
 }
 
 func main() {
