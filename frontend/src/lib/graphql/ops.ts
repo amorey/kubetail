@@ -194,29 +194,6 @@ export const HOME_STATEFULSETS_LIST_WATCH = gql(`
   }
 `);
 
-export const HOME_LOGMETADATA_LIST_FETCH = gql(`
-  query HomeLogMetadataListFetch($namespace: String = "") {
-    logMetadataList(namespace: $namespace) {
-      ...HomeGenericListFragment
-      items {
-        ...HomeLogMetadataListItemFragment
-      }
-    }
-  }
-`);
-
-export const HOME_LOGMETADATA_LIST_WATCH = gql(`
-  subscription HomeLogMetadataListWatch($namespace: String = "", $resourceVersion: String = "") {
-    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {
-      type
-      object {
-        ...HomeLogMetadataListItemFragment
-      }
-    }
-  }
-`);
-
-
 /**
  * Console queries
  */
@@ -1111,6 +1088,34 @@ export const FOLLOW_CONTAINER_LOG = gql(`
     }
   }
 `);
+
+/**
+ * LogMetadata
+ */
+
+export const LOGMETADATA_LIST_FETCH = gql(`
+  query LogMetadataListFetch($namespace: String = "") {
+    logMetadataList(namespace: $namespace) {
+      ...HomeGenericListFragment
+      items {
+        ...HomeLogMetadataListItemFragment
+      }
+    }
+  }
+`);
+
+/*
+export const LOGMETADATA_LIST_WATCH = gql(`
+  subscription LogMetadataListWatch($namespace: String = "", $resourceVersion: String = "") {
+    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {
+      type
+      object {
+        ...HomeLogMetadataListItemFragment
+      }
+    }
+  }
+`);*/
+
 
 /**
  * Health checks

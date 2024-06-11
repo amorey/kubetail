@@ -17,6 +17,8 @@ import type { TypedDocumentNode, OperationVariables } from '@apollo/client';
 import distinctColors from 'distinct-colors';
 import { useEffect, useRef, useState } from 'react';
 
+import * as ops from '@/lib/graphql/ops';
+
 type GenericListFragment = {
   metadata: {
     continue: string;
@@ -140,9 +142,7 @@ export function useGetQueryWithSubscription<
   const retryOnError = useRetryOnError();
 
   // get workload object
-  const {
-    loading, error, data, subscribeToMore, refetch,
-  } = useQuery(args.query, {
+  const { loading, error, data, subscribeToMore, refetch } = useQuery(args.query, {
     skip: args.skip,
     variables: args.variables,
     onError: () => {
@@ -192,9 +192,7 @@ export function useListQueryWithSubscription<
   const retryOnError = useRetryOnError();
 
   // initial query
-  const {
-    loading, error, data, fetchMore, subscribeToMore, refetch,
-  } = useQuery(args.query, {
+  const { loading, error, data, fetchMore, subscribeToMore, refetch } = useQuery(args.query, {
     skip: args.skip,
     variables: args.variables,
     onError: () => {
@@ -293,9 +291,7 @@ export function useCounterQueryWithSubscription<
   const retryOnError = useRetryOnError();
 
   // initial query
-  const {
-    loading, error, data, subscribeToMore, refetch,
-  } = useQuery(args.query, {
+  const { loading, error, data, subscribeToMore, refetch } = useQuery(args.query, {
     skip: args.skip,
     variables: args.variables,
     onError: () => {
@@ -352,6 +348,25 @@ export function useCounterQueryWithSubscription<
   return {
     loading, error, count,
   };
+}
+
+/**
+ * LogMetadata hook
+ */
+
+export function useLogMetadata() {
+  /*
+  const retryOnError = useRetryOnError();
+
+  // initial query
+  const { loading, error, data, subscribeToMore, refetch } = useQuery(ops.HOME_LOGMETADATA_LIST_FETCH, {
+    skip: args.skip,
+    variables: args.variables,
+    onError: () => {
+      retryOnError(refetch);
+    },
+  });
+  */
 }
 
 /**

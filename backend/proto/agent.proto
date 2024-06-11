@@ -21,17 +21,29 @@ option go_package = "common/agentpb";
 import "google/protobuf/timestamp.proto";
 
 service LogMetadata {
-  rpc FileInfoList (FileInfoListRequest) returns (FileInfoListResponse);
-  rpc FileInfoWatch (FileInfoWatchRequest) returns (stream FileInfoWatchEvent);
+  rpc List (LogMetadataListRequest) returns (LogMetadataListResponse);
+  rpc Watch (LogMetadataWatchRequest) returns (stream LogMetadataWatchEvent);
 }
 
-message FileInfo {
-  Metadata metadata = 1;
-  int64 size = 2;
-  google.protobuf.Timestamp last_modified_at = 3;  
+message LogMetadata {
+  LogMetadataSpec spec = 1;
+  LogMetadataFileInfo = 2;
 }
 
-message FileInfoListRequest {
+message LogMetadataFileInfo {
+  int64 size = 1;
+  google.protobuf.Timestamp last_modified_at = 2;
+}
+
+message LogMetadataSpec {
+  string node_name = 1;
+  string namespace = 2;
+  string pod_name = 3;
+  string container_name = 4;
+  string container_id = 5;
+}
+
+message LogMetadataListRequest {
   repeated string namespaces = 1;
 }
 
