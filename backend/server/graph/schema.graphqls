@@ -487,11 +487,7 @@ enum HealthCheckStatus {
 
 # --- Log Metadata ---
 
-type LogMetadata implements Object {
-  id: ID!
-  kind: String!
-  apiVersion: String!
-  metadata: MetaV1ObjectMeta!
+type LogMetadata {
   spec: LogMetadataSpec!
   fileInfo: LogMetadataFileInfo!
 }
@@ -501,10 +497,7 @@ type LogMetadataFileInfo {
   lastModifiedAt: Time
 }
 
-type LogMetadataList implements List {
-  kind: String!
-  apiVersion: String!
-  metadata: MetaV1ListMeta!
+type LogMetadataList {
   items: [LogMetadata!]!
 }
 

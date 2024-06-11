@@ -20,14 +20,14 @@ option go_package = "common/agentpb";
 
 import "google/protobuf/timestamp.proto";
 
-service LogMetadata {
+service LogMetadataService {
   rpc List (LogMetadataListRequest) returns (LogMetadataListResponse);
   rpc Watch (LogMetadataWatchRequest) returns (stream LogMetadataWatchEvent);
 }
 
 message LogMetadata {
   LogMetadataSpec spec = 1;
-  LogMetadataFileInfo = 2;
+  LogMetadataFileInfo fileInfo = 2;
 }
 
 message LogMetadataFileInfo {
@@ -47,23 +47,15 @@ message LogMetadataListRequest {
   repeated string namespaces = 1;
 }
 
-message FileInfoListResponse {
-  repeated FileInfo items = 1;
+message LogMetadataListResponse {
+  repeated LogMetadata items = 1;
 }
 
-message Metadata {
-  string node_name = 1;
-  string namespace = 2;
-  string pod_name = 3;
-  string container_name = 4;
-  string container_id = 5;
-}
-
-message FileInfoWatchRequest {
+message LogMetadataWatchRequest {
   repeated string namespaces = 1;
 }
 
-message FileInfoWatchEvent {
+message LogMetadataWatchEvent {
   string type = 1;
-  FileInfo object = 2;
+  LogMetadata object = 2;
 }

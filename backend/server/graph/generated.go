@@ -419,12 +419,8 @@ type ComplexityRoot struct {
 	}
 
 	LogMetadata struct {
-		APIVersion func(childComplexity int) int
-		FileInfo   func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Kind       func(childComplexity int) int
-		Metadata   func(childComplexity int) int
-		Spec       func(childComplexity int) int
+		FileInfo func(childComplexity int) int
+		Spec     func(childComplexity int) int
 	}
 
 	LogMetadataFileInfo struct {
@@ -433,10 +429,7 @@ type ComplexityRoot struct {
 	}
 
 	LogMetadataList struct {
-		APIVersion func(childComplexity int) int
-		Items      func(childComplexity int) int
-		Kind       func(childComplexity int) int
-		Metadata   func(childComplexity int) int
+		Items func(childComplexity int) int
 	}
 
 	LogMetadataSpec struct {
@@ -2029,40 +2022,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.HealthCheckResponse.Timestamp(childComplexity), true
 
-	case "LogMetadata.apiVersion":
-		if e.complexity.LogMetadata.APIVersion == nil {
-			break
-		}
-
-		return e.complexity.LogMetadata.APIVersion(childComplexity), true
-
 	case "LogMetadata.fileInfo":
 		if e.complexity.LogMetadata.FileInfo == nil {
 			break
 		}
 
 		return e.complexity.LogMetadata.FileInfo(childComplexity), true
-
-	case "LogMetadata.id":
-		if e.complexity.LogMetadata.ID == nil {
-			break
-		}
-
-		return e.complexity.LogMetadata.ID(childComplexity), true
-
-	case "LogMetadata.kind":
-		if e.complexity.LogMetadata.Kind == nil {
-			break
-		}
-
-		return e.complexity.LogMetadata.Kind(childComplexity), true
-
-	case "LogMetadata.metadata":
-		if e.complexity.LogMetadata.Metadata == nil {
-			break
-		}
-
-		return e.complexity.LogMetadata.Metadata(childComplexity), true
 
 	case "LogMetadata.spec":
 		if e.complexity.LogMetadata.Spec == nil {
@@ -2085,33 +2050,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LogMetadataFileInfo.Size(childComplexity), true
 
-	case "LogMetadataList.apiVersion":
-		if e.complexity.LogMetadataList.APIVersion == nil {
-			break
-		}
-
-		return e.complexity.LogMetadataList.APIVersion(childComplexity), true
-
 	case "LogMetadataList.items":
 		if e.complexity.LogMetadataList.Items == nil {
 			break
 		}
 
 		return e.complexity.LogMetadataList.Items(childComplexity), true
-
-	case "LogMetadataList.kind":
-		if e.complexity.LogMetadataList.Kind == nil {
-			break
-		}
-
-		return e.complexity.LogMetadataList.Kind(childComplexity), true
-
-	case "LogMetadataList.metadata":
-		if e.complexity.LogMetadataList.Metadata == nil {
-			break
-		}
-
-		return e.complexity.LogMetadataList.Metadata(childComplexity), true
 
 	case "LogMetadataSpec.containerId":
 		if e.complexity.LogMetadataSpec.ContainerID == nil {
@@ -13365,202 +13309,6 @@ func (ec *executionContext) fieldContext_HealthCheckResponse_timestamp(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _LogMetadata_id(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadata_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadata_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LogMetadata_kind(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadata_kind(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Kind, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadata_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LogMetadata_apiVersion(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadata_apiVersion(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.APIVersion, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadata_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LogMetadata_metadata(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadata) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadata_metadata(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Metadata, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(v1.ObjectMeta)
-	fc.Result = res
-	return ec.marshalNMetaV1ObjectMeta2k8sᚗioᚋapimachineryᚋpkgᚋapisᚋmetaᚋv1ᚐObjectMeta(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadata_metadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "uid":
-				return ec.fieldContext_MetaV1ObjectMeta_uid(ctx, field)
-			case "name":
-				return ec.fieldContext_MetaV1ObjectMeta_name(ctx, field)
-			case "namespace":
-				return ec.fieldContext_MetaV1ObjectMeta_namespace(ctx, field)
-			case "resourceVersion":
-				return ec.fieldContext_MetaV1ObjectMeta_resourceVersion(ctx, field)
-			case "creationTimestamp":
-				return ec.fieldContext_MetaV1ObjectMeta_creationTimestamp(ctx, field)
-			case "deletionTimestamp":
-				return ec.fieldContext_MetaV1ObjectMeta_deletionTimestamp(ctx, field)
-			case "labels":
-				return ec.fieldContext_MetaV1ObjectMeta_labels(ctx, field)
-			case "annotations":
-				return ec.fieldContext_MetaV1ObjectMeta_annotations(ctx, field)
-			case "ownerReferences":
-				return ec.fieldContext_MetaV1ObjectMeta_ownerReferences(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type MetaV1ObjectMeta", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _LogMetadata_spec(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadata) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogMetadata_spec(ctx, field)
 	if err != nil {
@@ -13752,146 +13500,6 @@ func (ec *executionContext) fieldContext_LogMetadataFileInfo_lastModifiedAt(_ co
 	return fc, nil
 }
 
-func (ec *executionContext) _LogMetadataList_kind(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataList) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadataList_kind(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Kind, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadataList_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadataList",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LogMetadataList_apiVersion(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataList) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadataList_apiVersion(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.APIVersion, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadataList_apiVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadataList",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LogMetadataList_metadata(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataList) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_LogMetadataList_metadata(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Metadata, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(v1.ListMeta)
-	fc.Result = res
-	return ec.marshalNMetaV1ListMeta2k8sᚗioᚋapimachineryᚋpkgᚋapisᚋmetaᚋv1ᚐListMeta(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_LogMetadataList_metadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LogMetadataList",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "resourceVersion":
-				return ec.fieldContext_MetaV1ListMeta_resourceVersion(ctx, field)
-			case "continue":
-				return ec.fieldContext_MetaV1ListMeta_continue(ctx, field)
-			case "remainingItemCount":
-				return ec.fieldContext_MetaV1ListMeta_remainingItemCount(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type MetaV1ListMeta", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _LogMetadataList_items(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataList) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogMetadataList_items(ctx, field)
 	if err != nil {
@@ -13931,14 +13539,6 @@ func (ec *executionContext) fieldContext_LogMetadataList_items(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LogMetadata_id(ctx, field)
-			case "kind":
-				return ec.fieldContext_LogMetadata_kind(ctx, field)
-			case "apiVersion":
-				return ec.fieldContext_LogMetadata_apiVersion(ctx, field)
-			case "metadata":
-				return ec.fieldContext_LogMetadata_metadata(ctx, field)
 			case "spec":
 				return ec.fieldContext_LogMetadata_spec(ctx, field)
 			case "fileInfo":
@@ -14250,14 +13850,6 @@ func (ec *executionContext) fieldContext_LogMetadataWatchEvent_object(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_LogMetadata_id(ctx, field)
-			case "kind":
-				return ec.fieldContext_LogMetadata_kind(ctx, field)
-			case "apiVersion":
-				return ec.fieldContext_LogMetadata_apiVersion(ctx, field)
-			case "metadata":
-				return ec.fieldContext_LogMetadata_metadata(ctx, field)
 			case "spec":
 				return ec.fieldContext_LogMetadata_spec(ctx, field)
 			case "fileInfo":
@@ -16713,12 +16305,6 @@ func (ec *executionContext) fieldContext_Query_logMetadataList(ctx context.Conte
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "kind":
-				return ec.fieldContext_LogMetadataList_kind(ctx, field)
-			case "apiVersion":
-				return ec.fieldContext_LogMetadataList_apiVersion(ctx, field)
-			case "metadata":
-				return ec.fieldContext_LogMetadataList_metadata(ctx, field)
 			case "items":
 				return ec.fieldContext_LogMetadataList_items(ctx, field)
 			}
@@ -20153,13 +19739,6 @@ func (ec *executionContext) _List(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._CoreV1PodList(ctx, sel, obj)
-	case model.LogMetadataList:
-		return ec._LogMetadataList(ctx, sel, &obj)
-	case *model.LogMetadataList:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._LogMetadataList(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -20232,13 +19811,6 @@ func (ec *executionContext) _Object(ctx context.Context, sel ast.SelectionSet, o
 			return graphql.Null
 		}
 		return ec._CoreV1Pod(ctx, sel, obj)
-	case model.LogMetadata:
-		return ec._LogMetadata(ctx, sel, &obj)
-	case *model.LogMetadata:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._LogMetadata(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -23145,7 +22717,7 @@ func (ec *executionContext) _HealthCheckResponse(ctx context.Context, sel ast.Se
 	return out
 }
 
-var logMetadataImplementors = []string{"LogMetadata", "Object"}
+var logMetadataImplementors = []string{"LogMetadata"}
 
 func (ec *executionContext) _LogMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.LogMetadata) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, logMetadataImplementors)
@@ -23156,26 +22728,6 @@ func (ec *executionContext) _LogMetadata(ctx context.Context, sel ast.SelectionS
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LogMetadata")
-		case "id":
-			out.Values[i] = ec._LogMetadata_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "kind":
-			out.Values[i] = ec._LogMetadata_kind(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "apiVersion":
-			out.Values[i] = ec._LogMetadata_apiVersion(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "metadata":
-			out.Values[i] = ec._LogMetadata_metadata(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "spec":
 			out.Values[i] = ec._LogMetadata_spec(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -23250,7 +22802,7 @@ func (ec *executionContext) _LogMetadataFileInfo(ctx context.Context, sel ast.Se
 	return out
 }
 
-var logMetadataListImplementors = []string{"LogMetadataList", "List"}
+var logMetadataListImplementors = []string{"LogMetadataList"}
 
 func (ec *executionContext) _LogMetadataList(ctx context.Context, sel ast.SelectionSet, obj *model.LogMetadataList) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, logMetadataListImplementors)
@@ -23261,21 +22813,6 @@ func (ec *executionContext) _LogMetadataList(ctx context.Context, sel ast.Select
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("LogMetadataList")
-		case "kind":
-			out.Values[i] = ec._LogMetadataList_kind(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "apiVersion":
-			out.Values[i] = ec._LogMetadataList_apiVersion(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "metadata":
-			out.Values[i] = ec._LogMetadataList_metadata(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "items":
 			out.Values[i] = ec._LogMetadataList_items(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
