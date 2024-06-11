@@ -29,7 +29,7 @@ import Footer from '@/components/widgets/Footer';
 import ProfilePicDropdown from '@/components/widgets/ProfilePicDropdown';
 import * as ops from '@/lib/graphql/ops';
 import { getBasename, joinPaths } from '@/lib/helpers';
-import { useListQueryWithSubscription } from '@/lib/hooks';
+import { useListQueryWithSubscription, useLogMetadata } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
 
 const Namespaces = ({
@@ -248,8 +248,12 @@ const DisplayItems = ({
                   <DataTable.DataCell>
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
-                  <DataTable.DataCell></DataTable.DataCell>
-                  <DataTable.DataCell></DataTable.DataCell>
+                  <DataTable.DataCell>
+                    2
+                  </DataTable.DataCell>
+                  <DataTable.DataCell>
+                    xxx
+                  </DataTable.DataCell>
                   <DataTable.DataCell>
                     <a
                       target="_blank"
@@ -353,13 +357,9 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
-  const logMetadata = useListQueryWithSubscription({
-    query: ops.HOME_LOGMETADATA_LIST_FETCH,
-    subscription: ops.HOME_LOGMETADATA_LIST_WATCH,
-    queryDataKey: 'logMetadataList',
-    subscriptionDataKey: 'logMetadataWatch',
-  });
-
+  const logMetadata = useLogMetadata();
+  console.log(logMetadata);
+  
   return (
     <>
       {loading && <LoadingModal />}

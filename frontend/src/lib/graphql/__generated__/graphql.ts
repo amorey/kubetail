@@ -477,6 +477,7 @@ export type LogMetadata = Object & {
   id: Scalars['ID']['output'];
   kind: Scalars['String']['output'];
   metadata: MetaV1ObjectMeta;
+  spec: LogMetadataSpec;
 };
 
 export type LogMetadataFileInfo = {
@@ -491,6 +492,15 @@ export type LogMetadataList = List & {
   items: Array<LogMetadata>;
   kind: Scalars['String']['output'];
   metadata: MetaV1ListMeta;
+};
+
+export type LogMetadataSpec = {
+  __typename?: 'LogMetadataSpec';
+  containerId: Scalars['ID']['output'];
+  containerName: Scalars['String']['output'];
+  namespace: Scalars['String']['output'];
+  nodeName: Scalars['String']['output'];
+  podName: Scalars['String']['output'];
 };
 
 export type LogMetadataWatchEvent = {
