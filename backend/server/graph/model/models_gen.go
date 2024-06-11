@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -19,15 +18,9 @@ type HealthCheckResponse struct {
 }
 
 type LogMetadata struct {
-	ID         string              `json:"id"`
-	Kind       string              `json:"kind"`
-	APIVersion string              `json:"apiVersion"`
-	Metadata   v1.ObjectMeta       `json:"metadata"`
-	Spec       LogMetadataSpec     `json:"spec"`
-	FileInfo   LogMetadataFileInfo `json:"fileInfo"`
+	Spec     LogMetadataSpec     `json:"spec"`
+	FileInfo LogMetadataFileInfo `json:"fileInfo"`
 }
-
-func (LogMetadata) IsObject() {}
 
 type LogMetadataFileInfo struct {
 	Size           int64      `json:"size"`
@@ -35,13 +28,8 @@ type LogMetadataFileInfo struct {
 }
 
 type LogMetadataList struct {
-	Kind       string        `json:"kind"`
-	APIVersion string        `json:"apiVersion"`
-	Metadata   v1.ListMeta   `json:"metadata"`
-	Items      []LogMetadata `json:"items"`
+	Items []LogMetadata `json:"items"`
 }
-
-func (LogMetadataList) IsList() {}
 
 type LogMetadataSpec struct {
 	NodeName      string `json:"nodeName"`

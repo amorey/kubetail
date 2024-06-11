@@ -310,7 +310,6 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 			metadata := fileInfo.GetMetadata()
 
 			item := model.LogMetadata{
-				ID: fmt.Sprintf("%s/%s/%s/%s/%s", metadata.NodeName, metadata.Namespace, metadata.PodName, metadata.ContainerName, metadata.ContainerId),
 				Spec: model.LogMetadataSpec{
 					NodeName:      metadata.NodeName,
 					Namespace:     metadata.Namespace,
