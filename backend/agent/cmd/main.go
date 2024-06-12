@@ -38,6 +38,7 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 	}
 
 	items := []*agentpb.LogMetadata{}
+	maxTime := time.Time{}
 
 	for _, file := range files {
 		// get info
@@ -62,6 +63,8 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 			continue
 		}
 
+		lastModifiedAt := fileInfo.ModTime()
+
 		// init item
 		item := &agentpb.LogMetadata{
 			Spec: &agentpb.LogMetadataSpec{
@@ -79,13 +82,23 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 
 		// append to list
 		items = append(items, item)
+
+		// update maxTime
+		if lastModifiedAt.After(maxTime) {
+			maxTime = lastModifiedAt
+		}
 	}
 
-	return &agentpb.LogMetadataList{Items: items}, nil
+	list := &agentpb.LogMetadataList{
+		ResourceVersion: maxTime.Format(time.RFC3339Nano),
+		Items:           items,
+	}
+
+	return list, nil
 }
 
 // implementation of FileInfoWatch in PodLogMetadata service
-func (s *server) FileInfoWatch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogMetadataService_WatchServer) error {
+func (s *server) Watch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogMetadataService_WatchServer) error {
 	ctx := stream.Context()
 	ticker := time.NewTicker(500 * time.Millisecond)
 
