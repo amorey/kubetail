@@ -498,6 +498,7 @@ type LogMetadataFileInfo {
 }
 
 type LogMetadataList {
+  resourceVersion: String!
   items: [LogMetadata!]!
 }
 

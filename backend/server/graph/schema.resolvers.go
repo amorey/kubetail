@@ -290,13 +290,9 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 			// execute
 			resp, err := c.List(ctx, req)
 			if err != nil {
-				errs = append(errs, &gqlerror.Error{
-					Message: fmt.Errorf("%s: %w", conn.CanonicalTarget(), err).Error(),
-					Extensions: map[string]interface{}{
-						"code": "KUBETAIL_GRPC_ERROR",
-					},
-				})
+				errs = append(errs, NewGrpcError(conn, err))
 			} else {
+				fmt.Println(resp.ResourceVersion)
 				resps = append(resps, resp)
 			}
 		}(conn)

@@ -44,7 +44,8 @@ message LogMetadataSpec {
 }
 
 message LogMetadataList {
-  repeated LogMetadata items = 1;
+  string resourceVersion = 1;
+  repeated LogMetadata items = 2;
 }
 
 message LogMetadataListRequest {
