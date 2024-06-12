@@ -366,6 +366,22 @@ models:
       object:
         resolver: true
 
+  # --- LogMetadata ---
+  LogMetadata:
+    model: github.com/kubetail-org/kubetail/backend/common/agentpb.LogMetadata
+
+  LogMetadataFileInfo:
+    model: github.com/kubetail-org/kubetail/backend/common/agentpb.LogMetadataFileInfo
+
+  LogMetadataList:
+    model: github.com/kubetail-org/kubetail/backend/common/agentpb.LogMetadataList
+
+  LogMetadataSpec:
+    model: github.com/kubetail-org/kubetail/backend/common/agentpb.LogMetadataSpec
+
+  #LogMetadataWatchEvent:
+  #  model: github.com/kubetail-org/kubetail/backend/common/agentpb.LogMetadataWatchEvent
+
   # --- MetaV1 ---
   MetaV1GetOptions:
     model: k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions
@@ -408,6 +424,10 @@ models:
 
   StringMap:
     model: github.com/kubetail-org/kubetail/backend/server/graph/model.StringMap
+
+  TimestampPBTimestamp:
+    model:
+      - github.com/kubetail-org/kubetail/backend/server/graph/model.TimestampPBTimestamp
 
   # --- gqlgen ---
   ID:

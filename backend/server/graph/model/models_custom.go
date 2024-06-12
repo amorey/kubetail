@@ -18,8 +18,10 @@ import (
 	"encoding/json"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubetail-org/kubetail/backend/server/graph/lib"
@@ -80,4 +82,35 @@ func UnmarshalMetaV1Time(v interface{}) (metav1.Time, error) {
 		return t, err
 	}
 	return t, lib.NewValidationError("metav1time", "Expected RFC3339 formatted string")
+}
+
+// TimestampPBTimestamp scalar
+func TimestampPBTimestamp(ts *timestamppb.Timestamp) graphql.Marshaler {
+	t := ts.AsTime()
+
+	if t.IsZero() {
+		return graphql.Null
+	}
+
+	return graphql.WriterFunc(func(w io.Writer) {
+		b, _ := t.MarshalJSON()
+		w.Write(b)
+	})
+}
+
+func UnmarshalTimestampPBTimestamp(v interface{}) (*timestamppb.Timestamp, error) {
+	// convert to string
+	tmpStr, ok := v.(string)
+	if !ok {
+		return nil, lib.NewValidationError("timestamppbtimestamp", "Expected RFC3339 formatted string")
+	}
+
+	// convert to time
+	t, err := time.Parse(time.RFC3339Nano, tmpStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert to timestamppb.Timestamp
+	return timestamppb.New(t), nil
 }

@@ -21,7 +21,7 @@ option go_package = "common/agentpb";
 import "google/protobuf/timestamp.proto";
 
 service LogMetadataService {
-  rpc List (LogMetadataListRequest) returns (LogMetadataListResponse);
+  rpc List (LogMetadataListRequest) returns (LogMetadataList);
   rpc Watch (LogMetadataWatchRequest) returns (stream LogMetadataWatchEvent);
 }
 
@@ -43,12 +43,12 @@ message LogMetadataSpec {
   string container_id = 5;
 }
 
-message LogMetadataListRequest {
-  repeated string namespaces = 1;
+message LogMetadataList {
+  repeated LogMetadata items = 1;
 }
 
-message LogMetadataListResponse {
-  repeated LogMetadata items = 1;
+message LogMetadataListRequest {
+  repeated string namespaces = 1;
 }
 
 message LogMetadataWatchRequest {

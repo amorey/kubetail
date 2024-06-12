@@ -22,12 +22,12 @@ var logfileRegex = regexp.MustCompile(`^(?P<PodName>[^_]+)_(?P<Namespace>[^_]+)_
 
 // server implements the agentpb.PodLogMetadataServer interface.
 type server struct {
-	agentpb.UnimplementedLogMetadataServer
+	agentpb.UnimplementedLogMetadataServiceServer
 	nodeName string
 }
 
 // implementation of FileInfoList in PodLogMetadata service
-func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequest) (*agentpb.FileInfoListResponse, error) {
+func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) (*agentpb.LogMetadataList, error) {
 	if len(req.Namespaces) == 0 {
 		return nil, fmt.Errorf("non-empty `namespaces` required")
 	}
@@ -37,7 +37,7 @@ func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequ
 		return nil, err
 	}
 
-	items := []*agentpb.FileInfo{}
+	items := []*agentpb.LogMetadata{}
 
 	for _, file := range files {
 		// get info
@@ -63,27 +63,29 @@ func (s *server) FileInfoList(ctx context.Context, req *agentpb.FileInfoListRequ
 		}
 
 		// init item
-		item := &agentpb.FileInfo{
-			Metadata: &agentpb.Metadata{
+		item := &agentpb.LogMetadata{
+			Spec: &agentpb.LogMetadataSpec{
 				NodeName:      s.nodeName,
 				Namespace:     namespace,
 				PodName:       podName,
 				ContainerName: containerName,
 				ContainerId:   containerID,
 			},
-			Size:           fileInfo.Size(),
-			LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
+			FileInfo: &agentpb.LogMetadataFileInfo{
+				Size:           fileInfo.Size(),
+				LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
+			},
 		}
 
 		// append to list
 		items = append(items, item)
 	}
 
-	return &agentpb.FileInfoListResponse{Items: items}, nil
+	return &agentpb.LogMetadataList{Items: items}, nil
 }
 
 // implementation of FileInfoWatch in PodLogMetadata service
-func (s *server) FileInfoWatch(req *agentpb.FileInfoWatchRequest, stream agentpb.LogMetadata_FileInfoWatchServer) error {
+func (s *server) FileInfoWatch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogMetadataService_WatchServer) error {
 	ctx := stream.Context()
 	ticker := time.NewTicker(500 * time.Millisecond)
 
@@ -93,16 +95,17 @@ func (s *server) FileInfoWatch(req *agentpb.FileInfoWatchRequest, stream agentpb
 			fmt.Printf("[%s] client disconnected\n", s.nodeName)
 			return nil
 		case <-ticker.C:
-			ev := agentpb.FileInfoWatchEvent{
+			ev := agentpb.LogMetadataWatchEvent{
 				Type: "ADDED",
-				Object: &agentpb.FileInfo{
-					Metadata: &agentpb.Metadata{
+				Object: &agentpb.LogMetadata{
+					Spec: &agentpb.LogMetadataSpec{
 						NodeName: s.nodeName,
 					},
-					Size: int64(rand.Int()),
+					FileInfo: &agentpb.LogMetadataFileInfo{
+						Size: int64(rand.Int()),
+					},
 				},
 			}
-			fmt.Println(ev)
 			stream.Send(&ev)
 		}
 	}
@@ -114,7 +117,7 @@ func main() {
 
 	// init grpc server
 	grpcServer := grpc.NewServer()
-	agentpb.RegisterLogMetadataServer(grpcServer, s)
+	agentpb.RegisterLogMetadataServiceServer(grpcServer, s)
 
 	// listen
 	lis, err := net.Listen("tcp", ":5000")

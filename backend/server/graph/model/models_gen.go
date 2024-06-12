@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -17,31 +18,9 @@ type HealthCheckResponse struct {
 	Timestamp time.Time         `json:"timestamp"`
 }
 
-type LogMetadata struct {
-	Spec     LogMetadataSpec     `json:"spec"`
-	FileInfo LogMetadataFileInfo `json:"fileInfo"`
-}
-
-type LogMetadataFileInfo struct {
-	Size           int64      `json:"size"`
-	LastModifiedAt *time.Time `json:"lastModifiedAt,omitempty"`
-}
-
-type LogMetadataList struct {
-	Items []LogMetadata `json:"items"`
-}
-
-type LogMetadataSpec struct {
-	NodeName      string `json:"nodeName"`
-	Namespace     string `json:"namespace"`
-	PodName       string `json:"podName"`
-	ContainerName string `json:"containerName"`
-	ContainerID   string `json:"containerId"`
-}
-
 type LogMetadataWatchEvent struct {
-	Type   watch.EventType `json:"type"`
-	Object *LogMetadata    `json:"object,omitempty"`
+	Type   watch.EventType      `json:"type"`
+	Object *agentpb.LogMetadata `json:"object,omitempty"`
 }
 
 type LogRecord struct {
