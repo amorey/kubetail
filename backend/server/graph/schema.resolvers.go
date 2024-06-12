@@ -17,6 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 	"github.com/kubetail-org/kubetail/backend/server/graph/model"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -24,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/utils/ptr"
 )
 
 // Object is the resolver for the object field.
@@ -263,17 +263,21 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 }
 
 // LogMetadataList is the resolver for the logMetadataList field.
-func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*model.LogMetadataList, error) {
+func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*agentpb.LogMetadataList, error) {
 	// init namespaces
 	namespaces, err := r.ToNamespaces(namespace)
 	if err != nil {
 		return nil, err
 	}
 
+	// init request
+	req := &agentpb.LogMetadataListRequest{Namespaces: namespaces}
+
 	// get gprc connections
 	var wg sync.WaitGroup
 	conns := r.gcm.GetAll()
-	resps := []*agentpb.FileInfoListResponse{}
+	resps := []*agentpb.LogMetadataList{}
+	errs := gqlerror.List{}
 
 	for _, conn := range conns {
 		wg.Add(1)
@@ -281,53 +285,37 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 			defer wg.Done()
 
 			// init client
-			c := agentpb.NewLogMetadataClient(conn)
-
-			// init request
-			req := &agentpb.FileInfoListRequest{Namespaces: namespaces}
+			c := agentpb.NewLogMetadataServiceClient(conn)
 
 			// execute
-			resp, err := c.FileInfoList(ctx, req)
+			resp, err := c.List(ctx, req)
 			if err != nil {
-				return
+				errs = append(errs, &gqlerror.Error{
+					Message: fmt.Errorf("%s: %w", conn.CanonicalTarget(), err).Error(),
+					Extensions: map[string]interface{}{
+						"code": "KUBETAIL_GRPC_ERROR",
+					},
+				})
+			} else {
+				resps = append(resps, resp)
 			}
-
-			resps = append(resps, resp)
 		}(conn)
 	}
 
 	wg.Wait()
 
 	// throw error if response is missing
-	if len(resps) != len(conns) {
-		return nil, fmt.Errorf("response missing")
+	if len(errs) != 0 {
+		return nil, errs
 	}
 
 	// concat items
-	items := []model.LogMetadata{}
+	combinedList := &agentpb.LogMetadataList{Items: []*agentpb.LogMetadata{}}
 	for _, resp := range resps {
-		for _, fileInfo := range resp.GetItems() {
-			metadata := fileInfo.GetMetadata()
-
-			item := model.LogMetadata{
-				Spec: model.LogMetadataSpec{
-					NodeName:      metadata.NodeName,
-					Namespace:     metadata.Namespace,
-					PodName:       metadata.PodName,
-					ContainerName: metadata.ContainerName,
-					ContainerID:   metadata.ContainerId,
-				},
-				FileInfo: model.LogMetadataFileInfo{
-					Size:           fileInfo.GetSize(),
-					LastModifiedAt: ptr.To(fileInfo.GetLastModifiedAt().AsTime()),
-				},
-			}
-
-			items = append(items, item)
-		}
+		combinedList.Items = append(combinedList.Items, resp.GetItems()...)
 	}
 
-	return &model.LogMetadataList{Items: items}, nil
+	return combinedList, nil
 }
 
 // PodLogHead is the resolver for the podLogHead field.
@@ -504,67 +492,70 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
 func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string, options *metav1.ListOptions) (<-chan *model.LogMetadataWatchEvent, error) {
-	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
-	if err != nil {
-		return nil, err
-	}
+	/*
+		// init namespaces
+		namespaces, err := r.ToNamespaces(namespace)
+		if err != nil {
+			return nil, err
+		}
 
-	// get gprc connections
-	outCh := make(chan *model.LogMetadataWatchEvent)
-	conns := r.gcm.GetAll()
+		// get gprc connections
+		outCh := make(chan *model.LogMetadataWatchEvent)
+		conns := r.gcm.GetAll()
 
-	for _, conn := range conns {
-		go func(conn *grpc.ClientConn) {
-			// init client
-			c := agentpb.NewLogMetadataClient(conn)
+		for _, conn := range conns {
+			go func(conn *grpc.ClientConn) {
+				// init client
+				c := agentpb.NewLogMetadataClient(conn)
 
-			// init request
-			req := &agentpb.FileInfoWatchRequest{Namespaces: namespaces}
+				// init request
+				req := &agentpb.FileInfoWatchRequest{Namespaces: namespaces}
 
-			// execute
-			stream, err := c.FileInfoWatch(ctx, req)
-			if err != nil {
-				return
-			}
-
-			for {
-				inEv, err := stream.Recv()
-				if err == io.EOF {
-					fmt.Println(err)
-					break
-				}
+				// execute
+				stream, err := c.FileInfoWatch(ctx, req)
 				if err != nil {
-					fmt.Println(err)
 					return
 				}
 
-				metadata := inEv.Object.GetMetadata()
-				obj := inEv.GetObject()
+				for {
+					inEv, err := stream.Recv()
+					if err == io.EOF {
+						fmt.Println(err)
+						break
+					}
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
 
-				outEv := &model.LogMetadataWatchEvent{
-					Type: "ADDED",
-					Object: &model.LogMetadata{
-						Spec: model.LogMetadataSpec{
-							NodeName:      metadata.NodeName,
-							Namespace:     metadata.Namespace,
-							PodName:       metadata.PodName,
-							ContainerName: metadata.ContainerName,
-							ContainerID:   metadata.ContainerId,
+					metadata := inEv.Object.GetMetadata()
+					obj := inEv.GetObject()
+
+					outEv := &model.LogMetadataWatchEvent{
+						Type: "ADDED",
+						Object: &model.LogMetadata{
+							Spec: model.LogMetadataSpec{
+								NodeName:      metadata.NodeName,
+								Namespace:     metadata.Namespace,
+								PodName:       metadata.PodName,
+								ContainerName: metadata.ContainerName,
+								ContainerID:   metadata.ContainerId,
+							},
+							FileInfo: model.LogMetadataFileInfo{
+								Size:           obj.GetSize(),
+								LastModifiedAt: ptr.To(obj.GetLastModifiedAt().AsTime()),
+							},
 						},
-						FileInfo: model.LogMetadataFileInfo{
-							Size:           obj.GetSize(),
-							LastModifiedAt: ptr.To(obj.GetLastModifiedAt().AsTime()),
-						},
-					},
+					}
+
+					outCh <- outEv
 				}
+			}(conn)
+		}
 
-				outCh <- outEv
-			}
-		}(conn)
-	}
-
-	return outCh, nil
+		return outCh, nil
+	*/
+	panic("not implemented")
 }
 
 // PodLogFollow is the resolver for the podLogFollow field.

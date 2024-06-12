@@ -494,7 +494,7 @@ type LogMetadata {
 
 type LogMetadataFileInfo {
   size: Int64!
-  lastModifiedAt: Time
+  lastModifiedAt: TimestampPBTimestamp
 }
 
 type LogMetadataList {
@@ -801,3 +801,8 @@ scalar StringMap
 An ISO-8601 encoded UTC date string.
 """
 scalar Time
+
+"""
+An ISO-8601 encoded UTC date string.
+"""
+scalar TimestampPBTimestamp
