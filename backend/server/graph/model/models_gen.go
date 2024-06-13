@@ -7,20 +7,12 @@ import (
 	"io"
 	"strconv"
 	"time"
-
-	"github.com/kubetail-org/kubetail/backend/common/agentpb"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 type HealthCheckResponse struct {
 	Status    HealthCheckStatus `json:"status"`
 	Message   *string           `json:"message,omitempty"`
 	Timestamp time.Time         `json:"timestamp"`
-}
-
-type LogMetadataWatchEvent struct {
-	Type   watch.EventType      `json:"type"`
-	Object *agentpb.LogMetadata `json:"object,omitempty"`
 }
 
 type LogRecord struct {

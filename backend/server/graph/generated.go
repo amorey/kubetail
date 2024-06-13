@@ -606,7 +606,7 @@ type SubscriptionResolver interface {
 	CoreV1NodesWatch(ctx context.Context, options *v1.ListOptions) (<-chan *watch.Event, error)
 	CoreV1PodsWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *watch.Event, error)
 	CoreV1PodLogTail(ctx context.Context, namespace *string, name string, options *v11.PodLogOptions) (<-chan *model.LogRecord, error)
-	LogMetadataWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *model.LogMetadataWatchEvent, error)
+	LogMetadataWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *agentpb.LogMetadataWatchEvent, error)
 	PodLogFollow(ctx context.Context, namespace *string, name string, container *string, after *string, since *string) (<-chan *model.LogRecord, error)
 	LivezWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
 	ReadyzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
@@ -13772,7 +13772,7 @@ func (ec *executionContext) fieldContext_LogMetadataSpec_containerId(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _LogMetadataWatchEvent_type(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataWatchEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _LogMetadataWatchEvent_type(ctx context.Context, field graphql.CollectedField, obj *agentpb.LogMetadataWatchEvent) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogMetadataWatchEvent_type(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -13798,9 +13798,9 @@ func (ec *executionContext) _LogMetadataWatchEvent_type(ctx context.Context, fie
 		}
 		return graphql.Null
 	}
-	res := resTmp.(watch.EventType)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNWatchEventType2k8sᚗioᚋapimachineryᚋpkgᚋwatchᚐEventType(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LogMetadataWatchEvent_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -13810,13 +13810,13 @@ func (ec *executionContext) fieldContext_LogMetadataWatchEvent_type(_ context.Co
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type WatchEventType does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _LogMetadataWatchEvent_object(ctx context.Context, field graphql.CollectedField, obj *model.LogMetadataWatchEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _LogMetadataWatchEvent_object(ctx context.Context, field graphql.CollectedField, obj *agentpb.LogMetadataWatchEvent) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_LogMetadataWatchEvent_object(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -17461,7 +17461,7 @@ func (ec *executionContext) _Subscription_logMetadataWatch(ctx context.Context, 
 	}
 	return func(ctx context.Context) graphql.Marshaler {
 		select {
-		case res, ok := <-resTmp.(<-chan *model.LogMetadataWatchEvent):
+		case res, ok := <-resTmp.(<-chan *agentpb.LogMetadataWatchEvent):
 			if !ok {
 				return nil
 			}
@@ -17469,7 +17469,7 @@ func (ec *executionContext) _Subscription_logMetadataWatch(ctx context.Context, 
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋserverᚋgraphᚋmodelᚐLogMetadataWatchEvent(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋcommonᚋagentpbᚐLogMetadataWatchEvent(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -22904,7 +22904,7 @@ func (ec *executionContext) _LogMetadataSpec(ctx context.Context, sel ast.Select
 
 var logMetadataWatchEventImplementors = []string{"LogMetadataWatchEvent"}
 
-func (ec *executionContext) _LogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, obj *model.LogMetadataWatchEvent) graphql.Marshaler {
+func (ec *executionContext) _LogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, obj *agentpb.LogMetadataWatchEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, logMetadataWatchEventImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -25997,7 +25997,7 @@ func (ec *executionContext) marshalOLogMetadataList2ᚖgithubᚗcomᚋkubetail�
 	return ec._LogMetadataList(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋserverᚋgraphᚋmodelᚐLogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, v *model.LogMetadataWatchEvent) graphql.Marshaler {
+func (ec *executionContext) marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋbackendᚋcommonᚋagentpbᚐLogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataWatchEvent) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
