@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"slices"
 	"strings"
@@ -278,8 +278,9 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 	conns := r.gcm.GetAll()
 	resps := []*agentpb.LogMetadataList{}
 	errs := gqlerror.List{}
+	resourceVersions := make(map[string]string)
 
-	for _, conn := range conns {
+	for nodeName, conn := range conns {
 		wg.Add(1)
 		go func(conn *grpc.ClientConn) {
 			defer wg.Done()
@@ -292,7 +293,7 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 			if err != nil {
 				errs = append(errs, NewGrpcError(conn, err))
 			} else {
-				fmt.Println(resp.ResourceVersion)
+				resourceVersions[nodeName] = resp.ResourceVersion
 				resps = append(resps, resp)
 			}
 		}(conn)
@@ -305,8 +306,17 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 		return nil, errs
 	}
 
-	// concat items
+	// init combined
 	combinedList := &agentpb.LogMetadataList{Items: []*agentpb.LogMetadata{}}
+
+	// add resourceVersion
+	resourceVersion, err := json.Marshal(resourceVersions)
+	if err != nil {
+		return nil, err
+	}
+	combinedList.ResourceVersion = string(resourceVersion)
+
+	// add items
 	for _, resp := range resps {
 		combinedList.Items = append(combinedList.Items, resp.GetItems()...)
 	}
