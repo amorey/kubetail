@@ -510,7 +510,7 @@ type LogMetadataSpec {
 }
 
 type LogMetadataWatchEvent {
-  type: WatchEventType!
+  type: String!
   object: LogMetadata
 }
 

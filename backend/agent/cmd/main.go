@@ -3,22 +3,86 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
-	"time"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/kubetail-org/kubetail/backend/common/agentpb"
 )
 
 // Define a regex pattern to match the filename format
 var logfileRegex = regexp.MustCompile(`^(?P<PodName>[^_]+)_(?P<Namespace>[^_]+)_(?P<ContainerName>.+)-(?P<ContainerID>[^-]+)\.log$`)
+
+func newLogMetadataFileInfo(pathname string) (*agentpb.LogMetadataFileInfo, error) {
+	// do stat
+	fileInfo, err := os.Stat(pathname)
+	if err != nil {
+		return nil, err
+	}
+
+	// init output
+	out := &agentpb.LogMetadataFileInfo{
+		Size:           fileInfo.Size(),
+		LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
+	}
+
+	return out, nil
+}
+
+// generate new LogMetadataWatchEvent from an fsnotify event
+func newLogMetadataWatchEvent(event fsnotify.Event, nodeName string) (*agentpb.LogMetadataWatchEvent, error) {
+	// parse file name
+	matches := logfileRegex.FindStringSubmatch(strings.TrimPrefix(event.Name, "/var/log/containers/"))
+	if matches == nil {
+		return nil, fmt.Errorf("filename format incorrect: %s", event.Name)
+	}
+
+	// init watch event
+	watchEv := &agentpb.LogMetadataWatchEvent{
+		Object: &agentpb.LogMetadata{
+			Spec: &agentpb.LogMetadataSpec{
+				NodeName:      nodeName,
+				PodName:       matches[1],
+				Namespace:     matches[2],
+				ContainerName: matches[3],
+				ContainerId:   matches[4],
+			},
+			FileInfo: &agentpb.LogMetadataFileInfo{},
+		},
+	}
+
+	switch {
+	case event.Op&fsnotify.Create == fsnotify.Create:
+		watchEv.Type = "ADDED"
+		if fileInfo, err := newLogMetadataFileInfo(event.Name); err != nil {
+			return nil, err
+		} else {
+			watchEv.Object.FileInfo = fileInfo
+		}
+	case event.Op&fsnotify.Write == fsnotify.Write:
+		watchEv.Type = "MODIFIED"
+		if fileInfo, err := newLogMetadataFileInfo(event.Name); err != nil {
+			return nil, err
+		} else {
+			watchEv.Object.FileInfo = fileInfo
+		}
+	case event.Op&fsnotify.Remove == fsnotify.Remove:
+		watchEv.Type = "DELETED"
+		watchEv.Object.FileInfo = &agentpb.LogMetadataFileInfo{}
+	default:
+		return nil, nil
+	}
+
+	return watchEv, nil
+}
 
 // server implements the agentpb.PodLogMetadataServer interface.
 type server struct {
@@ -38,15 +102,15 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 	}
 
 	items := []*agentpb.LogMetadata{}
-	maxTime := time.Time{}
 
 	for _, file := range files {
 		// get info
-		fileInfo, err := os.Stat(path.Join("/var/log/containers", file.Name()))
+		fileInfo, err := newLogMetadataFileInfo(path.Join("/var/log/containers", file.Name()))
 		if err != nil {
 			return nil, err
 		}
 
+		// parse file name
 		matches := logfileRegex.FindStringSubmatch(file.Name())
 		if matches == nil {
 			return nil, fmt.Errorf("filename format incorrect: %s", file.Name())
@@ -63,8 +127,6 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 			continue
 		}
 
-		lastModifiedAt := fileInfo.ModTime()
-
 		// init item
 		item := &agentpb.LogMetadata{
 			Spec: &agentpb.LogMetadataSpec{
@@ -74,19 +136,11 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 				ContainerName: containerName,
 				ContainerId:   containerID,
 			},
-			FileInfo: &agentpb.LogMetadataFileInfo{
-				Size:           fileInfo.Size(),
-				LastModifiedAt: timestamppb.New(fileInfo.ModTime()),
-			},
+			FileInfo: fileInfo,
 		}
 
 		// append to list
 		items = append(items, item)
-
-		// update maxTime
-		if lastModifiedAt.After(maxTime) {
-			maxTime = lastModifiedAt
-		}
 	}
 
 	return &agentpb.LogMetadataList{Items: items}, nil
@@ -94,27 +148,62 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 
 // implementation of FileInfoWatch in PodLogMetadata service
 func (s *server) Watch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogMetadataService_WatchServer) error {
+	// create new watcher
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+
+	// add files to watcher
+	// TODO: handle new files to directory
+	err = filepath.Walk("/var/log/containers", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := filepath.EvalSymlinks(path)
+			if err != nil {
+				return err
+			}
+
+			err = watcher.Add(target)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Watching symlink target:", target)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	ctx := stream.Context()
-	ticker := time.NewTicker(500 * time.Millisecond)
 
 	for {
 		select {
 		case <-ctx.Done():
 			fmt.Printf("[%s] client disconnected\n", s.nodeName)
 			return nil
-		case <-ticker.C:
-			ev := agentpb.LogMetadataWatchEvent{
-				Type: "ADDED",
-				Object: &agentpb.LogMetadata{
-					Spec: &agentpb.LogMetadataSpec{
-						NodeName: s.nodeName,
-					},
-					FileInfo: &agentpb.LogMetadataFileInfo{
-						Size: int64(rand.Int()),
-					},
-				},
+		case inEv, ok := <-watcher.Events:
+			fmt.Println(inEv)
+			if !ok {
+				return nil
 			}
-			stream.Send(&ev)
+
+			// initialize output event
+			if outEv, err := newLogMetadataWatchEvent(inEv, s.nodeName); err != nil {
+				fmt.Println(err)
+			} else if outEv != nil {
+				stream.Send(outEv)
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			return err
 		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -488,71 +489,49 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 }
 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
-func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string, options *metav1.ListOptions) (<-chan *model.LogMetadataWatchEvent, error) {
-	/*
-		// init namespaces
-		namespaces, err := r.ToNamespaces(namespace)
-		if err != nil {
-			return nil, err
-		}
+func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string, options *metav1.ListOptions) (<-chan *agentpb.LogMetadataWatchEvent, error) {
+	// init namespaces
+	namespaces, err := r.ToNamespaces(namespace)
+	if err != nil {
+		return nil, err
+	}
 
-		// get gprc connections
-		outCh := make(chan *model.LogMetadataWatchEvent)
-		conns := r.gcm.GetAll()
+	// get gprc connections
+	outCh := make(chan *agentpb.LogMetadataWatchEvent)
+	conns := r.gcm.GetAll()
 
-		for _, conn := range conns {
-			go func(conn *grpc.ClientConn) {
-				// init client
-				c := agentpb.NewLogMetadataClient(conn)
+	for _, conn := range conns {
+		go func(conn *grpc.ClientConn) {
+			// init client
+			c := agentpb.NewLogMetadataServiceClient(conn)
 
-				// init request
-				req := &agentpb.FileInfoWatchRequest{Namespaces: namespaces}
+			// init request
+			req := &agentpb.LogMetadataWatchRequest{Namespaces: namespaces}
 
-				// execute
-				stream, err := c.FileInfoWatch(ctx, req)
+			// execute
+			stream, err := c.Watch(ctx, req)
+			if err != nil {
+				return
+			}
+
+			for {
+				ev, err := stream.Recv()
+				if err == io.EOF {
+					fmt.Println(err)
+					break
+				}
 				if err != nil {
+					fmt.Println(err)
 					return
 				}
 
-				for {
-					inEv, err := stream.Recv()
-					if err == io.EOF {
-						fmt.Println(err)
-						break
-					}
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
+				// forward event
+				outCh <- ev
+			}
+		}(conn)
+	}
 
-					metadata := inEv.Object.GetMetadata()
-					obj := inEv.GetObject()
-
-					outEv := &model.LogMetadataWatchEvent{
-						Type: "ADDED",
-						Object: &model.LogMetadata{
-							Spec: model.LogMetadataSpec{
-								NodeName:      metadata.NodeName,
-								Namespace:     metadata.Namespace,
-								PodName:       metadata.PodName,
-								ContainerName: metadata.ContainerName,
-								ContainerID:   metadata.ContainerId,
-							},
-							FileInfo: model.LogMetadataFileInfo{
-								Size:           obj.GetSize(),
-								LastModifiedAt: ptr.To(obj.GetLastModifiedAt().AsTime()),
-							},
-						},
-					}
-
-					outCh <- outEv
-				}
-			}(conn)
-		}
-
-		return outCh, nil
-	*/
-	panic("not implemented")
+	return outCh, nil
 }
 
 // PodLogFollow is the resolver for the podLogFollow field.
