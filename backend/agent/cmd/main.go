@@ -89,12 +89,7 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 		}
 	}
 
-	list := &agentpb.LogMetadataList{
-		ResourceVersion: maxTime.Format(time.RFC3339Nano),
-		Items:           items,
-	}
-
-	return list, nil
+	return &agentpb.LogMetadataList{Items: items}, nil
 }
 
 // implementation of FileInfoWatch in PodLogMetadata service

@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"slices"
 	"strings"
@@ -270,19 +269,20 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 		return nil, err
 	}
 
+	// init response
+	outList := &agentpb.LogMetadataList{}
+
 	// init request
 	req := &agentpb.LogMetadataListRequest{Namespaces: namespaces}
 
 	// get gprc connections
 	var wg sync.WaitGroup
-	conns := r.gcm.GetAll()
-	resps := []*agentpb.LogMetadataList{}
+	var mu sync.Mutex
 	errs := gqlerror.List{}
-	resourceVersions := make(map[string]string)
 
-	for nodeName, conn := range conns {
+	for nodeName, conn := range r.gcm.GetAll() {
 		wg.Add(1)
-		go func(conn *grpc.ClientConn) {
+		go func(nodeName string, conn *grpc.ClientConn) {
 			defer wg.Done()
 
 			// init client
@@ -290,13 +290,19 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 
 			// execute
 			resp, err := c.List(ctx, req)
+
+			// aquire lock
+			mu.Lock()
+			defer mu.Unlock()
+
+			// update vars
 			if err != nil {
 				errs = append(errs, NewGrpcError(conn, err))
 			} else {
-				resourceVersions[nodeName] = resp.ResourceVersion
-				resps = append(resps, resp)
+				// update items
+				outList.Items = append(outList.Items, resp.GetItems()...)
 			}
-		}(conn)
+		}(nodeName, conn)
 	}
 
 	wg.Wait()
@@ -306,22 +312,7 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 		return nil, errs
 	}
 
-	// init combined
-	combinedList := &agentpb.LogMetadataList{Items: []*agentpb.LogMetadata{}}
-
-	// add resourceVersion
-	resourceVersion, err := json.Marshal(resourceVersions)
-	if err != nil {
-		return nil, err
-	}
-	combinedList.ResourceVersion = string(resourceVersion)
-
-	// add items
-	for _, resp := range resps {
-		combinedList.Items = append(combinedList.Items, resp.GetItems()...)
-	}
-
-	return combinedList, nil
+	return outList, nil
 }
 
 // PodLogHead is the resolver for the podLogHead field.
