@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	zlog "github.com/rs/zerolog/log"
-	"golang.org/x/exp/maps"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +31,7 @@ import (
 
 type ConnectionManagerInterface interface {
 	Get(nodeName string) *grpc.ClientConn
-	GetAll() []*grpc.ClientConn
+	GetAll() map[string]*grpc.ClientConn
 }
 
 type ConnectionManager struct {
@@ -62,8 +61,8 @@ func (cm *ConnectionManager) Get(nodeName string) *grpc.ClientConn {
 }
 
 // GetAll
-func (cm *ConnectionManager) GetAll() []*grpc.ClientConn {
-	return maps.Values(cm.conns)
+func (cm *ConnectionManager) GetAll() map[string]*grpc.ClientConn {
+	return cm.conns
 }
 
 // Teardown
