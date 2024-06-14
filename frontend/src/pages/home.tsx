@@ -357,9 +357,6 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
-  const logMetadata = useLogMetadata();
-  console.log(logMetadata);
-  
   return (
     <>
       {loading && <LoadingModal />}
