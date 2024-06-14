@@ -580,7 +580,17 @@ export const POD_LOG_QUERY_RESPONSE_FRAGMENT = gql(`
  * LogMetadata fragments
  */
 export const LOGMETADATA_LIST_ITEM_FRAGMENT = gql(`
-  fragment HomeLogMetadataListItemFragment on LogMetadata {
-    ...HomeGenericListItemFragment
+  fragment LogMetadataListItemFragment on LogMetadata {
+    spec {
+      nodeName
+      namespace
+      podName
+      containerName
+      containerID
+    }
+    fileInfo {
+      size
+      lastModifiedAt
+    }
   }
 `);

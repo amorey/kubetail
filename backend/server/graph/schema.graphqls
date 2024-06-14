@@ -506,7 +506,7 @@ type LogMetadataSpec {
   namespace: String!
   podName: String!
   containerName: String!
-  containerId: ID!
+  containerID: ID!
 }
 
 type LogMetadataWatchEvent {
@@ -752,7 +752,7 @@ type Subscription {
   """
   Logs Metadata watch
   """
-  logMetadataWatch(namespace: String, options: MetaV1ListOptions): LogMetadataWatchEvent
+  logMetadataWatch(namespace: String): LogMetadataWatchEvent
 
   """
   Logs API
