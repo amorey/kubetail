@@ -489,7 +489,7 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 }
 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
-func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string, options *metav1.ListOptions) (<-chan *agentpb.LogMetadataWatchEvent, error) {
+func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *agentpb.LogMetadataWatchEvent, error) {
 	// init namespaces
 	namespaces, err := r.ToNamespaces(namespace)
 	if err != nil {

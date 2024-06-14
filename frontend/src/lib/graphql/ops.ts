@@ -1096,26 +1096,23 @@ export const FOLLOW_CONTAINER_LOG = gql(`
 export const LOGMETADATA_LIST_FETCH = gql(`
   query LogMetadataListFetch($namespace: String = "") {
     logMetadataList(namespace: $namespace) {
-      ...HomeGenericListFragment
       items {
-        ...HomeLogMetadataListItemFragment
+        ...LogMetadataListItemFragment
       }
     }
   }
 `);
 
-/*
 export const LOGMETADATA_LIST_WATCH = gql(`
-  subscription LogMetadataListWatch($namespace: String = "", $resourceVersion: String = "") {
-    logMetadataWatch(namespace: $namespace, options: { resourceVersion: $resourceVersion }) {
+  subscription LogMetadataListWatch($namespace: String = "") {
+    logMetadataWatch(namespace: $namespace) {
       type
       object {
-        ...HomeLogMetadataListItemFragment
+        ...LogMetadataListItemFragment
       }
     }
   }
-`);*/
-
+`);
 
 /**
  * Health checks

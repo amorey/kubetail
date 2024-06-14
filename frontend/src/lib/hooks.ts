@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useQuery } from '@apollo/client';
+import { useQuery, useSubscription } from '@apollo/client';
 import type { TypedDocumentNode, OperationVariables } from '@apollo/client';
 import distinctColors from 'distinct-colors';
 import { useEffect, useRef, useState } from 'react';
@@ -355,18 +355,16 @@ export function useCounterQueryWithSubscription<
  */
 
 export function useLogMetadata() {
-  /*
   const retryOnError = useRetryOnError();
 
   // initial query
-  const { loading, error, data, subscribeToMore, refetch } = useQuery(ops.HOME_LOGMETADATA_LIST_FETCH, {
-    skip: args.skip,
-    variables: args.variables,
+  const { loading, error, data, refetch } = useQuery(ops.LOGMETADATA_LIST_FETCH, {
     onError: () => {
       retryOnError(refetch);
     },
   });
-  */
+
+  return { loading, error, data };
 }
 
 /**

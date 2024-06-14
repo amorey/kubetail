@@ -21,6 +21,24 @@ import (
 // Define a regex pattern to match the filename format
 var logfileRegex = regexp.MustCompile(`^(?P<PodName>[^_]+)_(?P<Namespace>[^_]+)_(?P<ContainerName>.+)-(?P<ContainerID>[^-]+)\.log$`)
 
+func newLogMetadataSpec(nodeName string, pathname string) (*agentpb.LogMetadataSpec, error) {
+	// parse file name
+	matches := logfileRegex.FindStringSubmatch(strings.TrimPrefix(pathname, "/var/log/containers/"))
+	if matches == nil {
+		return nil, fmt.Errorf("filename format incorrect: %s", pathname)
+	}
+
+	spec := &agentpb.LogMetadataSpec{
+		NodeName:      nodeName,
+		PodName:       matches[1],
+		Namespace:     matches[2],
+		ContainerName: matches[3],
+		ContainerId:   matches[4],
+	}
+
+	return spec, nil
+}
+
 func newLogMetadataFileInfo(pathname string) (*agentpb.LogMetadataFileInfo, error) {
 	// do stat
 	fileInfo, err := os.Stat(pathname)
@@ -38,23 +56,11 @@ func newLogMetadataFileInfo(pathname string) (*agentpb.LogMetadataFileInfo, erro
 }
 
 // generate new LogMetadataWatchEvent from an fsnotify event
-func newLogMetadataWatchEvent(event fsnotify.Event, nodeName string) (*agentpb.LogMetadataWatchEvent, error) {
-	// parse file name
-	matches := logfileRegex.FindStringSubmatch(strings.TrimPrefix(event.Name, "/var/log/containers/"))
-	if matches == nil {
-		return nil, fmt.Errorf("filename format incorrect: %s", event.Name)
-	}
-
+func newLogMetadataWatchEvent(event fsnotify.Event, specMap map[string]*agentpb.LogMetadataSpec) (*agentpb.LogMetadataWatchEvent, error) {
 	// init watch event
 	watchEv := &agentpb.LogMetadataWatchEvent{
 		Object: &agentpb.LogMetadata{
-			Spec: &agentpb.LogMetadataSpec{
-				NodeName:      nodeName,
-				PodName:       matches[1],
-				Namespace:     matches[2],
-				ContainerName: matches[3],
-				ContainerId:   matches[4],
-			},
+			Spec:     specMap[event.Name],
 			FileInfo: &agentpb.LogMetadataFileInfo{},
 		},
 	}
@@ -148,6 +154,12 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 
 // implementation of FileInfoWatch in PodLogMetadata service
 func (s *server) Watch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogMetadataService_WatchServer) error {
+	if len(req.Namespaces) == 0 {
+		return fmt.Errorf("non-empty `namespaces` required")
+	}
+
+	specMap := make(map[string]*agentpb.LogMetadataSpec)
+
 	// create new watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -155,28 +167,45 @@ func (s *server) Watch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogM
 	}
 	defer watcher.Close()
 
-	// add files to watcher
-	// TODO: handle new files to directory
+	// add current files to watcher
 	err = filepath.Walk("/var/log/containers", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if info.Mode()&os.ModeSymlink != 0 {
 			target, err := filepath.EvalSymlinks(path)
 			if err != nil {
 				return err
 			}
 
-			err = watcher.Add(target)
+			// init spec
+			spec, err := newLogMetadataSpec(s.nodeName, path)
 			if err != nil {
 				return err
 			}
-			fmt.Println("Watching symlink target:", target)
+
+			// skip if namespace not in request args
+			if req.Namespaces[0] != "" && !slices.Contains(req.Namespaces, spec.Namespace) {
+				return nil
+			}
+
+			// cache spec
+			specMap[target] = spec
+
+			if err := watcher.Add(target); err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 	if err != nil {
+		return err
+	}
+
+	// listen for new files
+	if err := watcher.Add("/var/log/containers"); err != nil {
 		return err
 	}
 
@@ -188,13 +217,18 @@ func (s *server) Watch(req *agentpb.LogMetadataWatchRequest, stream agentpb.LogM
 			fmt.Printf("[%s] client disconnected\n", s.nodeName)
 			return nil
 		case inEv, ok := <-watcher.Events:
-			fmt.Println(inEv)
 			if !ok {
 				return nil
 			}
 
+			// handle new files
+			if inEv.Op&fsnotify.Create == fsnotify.Create {
+				fmt.Println(inEv)
+				continue
+			}
+
 			// initialize output event
-			if outEv, err := newLogMetadataWatchEvent(inEv, s.nodeName); err != nil {
+			if outEv, err := newLogMetadataWatchEvent(inEv, specMap); err != nil {
 				fmt.Println(err)
 			} else if outEv != nil {
 				stream.Send(outEv)
