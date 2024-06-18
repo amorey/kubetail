@@ -32,6 +32,18 @@ import { getBasename, joinPaths } from '@/lib/helpers';
 import { useListQueryWithSubscription } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
 
+const getPodIds = (workloadID: string, relationshipMap: Map<string, string[]>): string[] => {
+  if (relationshipMap.has(workloadID)) {
+    const allIDs = new Array<string>();
+    (relationshipMap.get(workloadID) || []).forEach((id) => {
+      allIDs.push(...getPodIds(id, relationshipMap));
+    });
+    return allIDs;
+  } else {
+    return [workloadID];
+  }
+};
+
 const Namespaces = ({
   value,
   setValue,
@@ -73,10 +85,11 @@ type DisplayItemsProps = {
       deletionTimestamp?: Date;
     };
   }[] | undefined | null;
+  relationshipMap: Map<string, string[]>;
 };
 
 const DisplayItems = ({
-  workload, namespace, fetching, items,
+  workload, namespace, fetching, items, relationshipMap
 }: DisplayItemsProps) => {
   // filter items
   const filteredItems = items?.filter((item) => {
@@ -249,7 +262,7 @@ const DisplayItems = ({
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
                   <DataTable.DataCell>
-                    2
+                    {getPodIds(item.metadata.uid, relationshipMap).length}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
                     xxx
@@ -357,6 +370,8 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
+  // inverse child/parent relationship
+  const m = new Map<string, string[]>();
   if (!loading) {
     // concat items
     const items = new Array<any>()
@@ -367,12 +382,16 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
       .concat(pods.data?.coreV1PodsList?.items)
       .concat(replicasets.data?.appsV1ReplicaSetsList?.items)
       .concat(statefulsets.data?.appsV1StatefulSetsList?.items);
-    
-    const m = new Map<string, any>();
+
+    // inverse child/parent relationship
     items.forEach((v) => {
-      m.set(v.metadata.uid, v);
-    })
-    console.log(m);
+      const childID = v.metadata.uid;
+      v.metadata.ownerReferences.forEach((owner: any) => {
+        const childIDs = m.get(owner.uid) || [];
+        childIDs.push(childID);
+        m.set(owner.uid, childIDs);
+      });
+    });
   }
 
   return (
@@ -384,42 +403,49 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
           namespace={namespace}
           fetching={cronjobs.fetching}
           items={cronjobs.data?.batchV1CronJobsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.DAEMONSETS}
           namespace={namespace}
           fetching={daemonsets.fetching}
           items={daemonsets.data?.appsV1DaemonSetsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.DEPLOYMENTS}
           namespace={namespace}
           fetching={deployments.fetching}
           items={deployments.data?.appsV1DeploymentsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.JOBS}
           namespace={namespace}
           fetching={jobs.fetching}
           items={jobs.data?.batchV1JobsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.PODS}
           namespace={namespace}
           fetching={pods.fetching}
           items={pods.data?.coreV1PodsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.REPLICASETS}
           namespace={namespace}
           fetching={replicasets.fetching}
           items={replicasets.data?.appsV1ReplicaSetsList?.items}
+          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.STATEFULSETS}
           namespace={namespace}
           fetching={statefulsets.fetching}
           items={statefulsets.data?.appsV1StatefulSetsList?.items}
+          relationshipMap={m}
         />
       </DataTable>
     </>
