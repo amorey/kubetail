@@ -29,7 +29,7 @@ import Footer from '@/components/widgets/Footer';
 import ProfilePicDropdown from '@/components/widgets/ProfilePicDropdown';
 import * as ops from '@/lib/graphql/ops';
 import { getBasename, joinPaths } from '@/lib/helpers';
-import { useListQueryWithSubscription, useLogMetadata } from '@/lib/hooks';
+import { useListQueryWithSubscription } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
 
 const Namespaces = ({
@@ -356,6 +356,24 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
   });
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
+
+  if (!loading) {
+    // concat items
+    const items = new Array<any>()
+      .concat(cronjobs.data?.batchV1CronJobsList?.items)
+      .concat(daemonsets.data?.appsV1DaemonSetsList?.items)
+      .concat(deployments.data?.appsV1DeploymentsList?.items)
+      .concat(jobs.data?.batchV1JobsList?.items)
+      .concat(pods.data?.coreV1PodsList?.items)
+      .concat(replicasets.data?.appsV1ReplicaSetsList?.items)
+      .concat(statefulsets.data?.appsV1StatefulSetsList?.items);
+    
+    const m = new Map<string, any>();
+    items.forEach((v) => {
+      m.set(v.metadata.uid, v);
+    })
+    console.log(m);
+  }
 
   return (
     <>
