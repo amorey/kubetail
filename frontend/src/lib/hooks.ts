@@ -358,11 +358,49 @@ export function useLogMetadata() {
   const retryOnError = useRetryOnError();
 
   // initial query
-  const { loading, error, data, refetch } = useQuery(ops.LOGMETADATA_LIST_FETCH, {
+  const { loading, error, data, subscribeToMore, refetch } = useQuery(ops.LOGMETADATA_LIST_FETCH, {
     onError: () => {
       retryOnError(refetch);
     },
   });
+
+  // subscribe to changes
+  useEffect(() => {
+    // wait for all data to get fetched
+    if (loading || error) return;
+
+    return subscribeToMore({
+      document: ops.LOGMETADATA_LIST_WATCH,
+      updateQuery: (prev, { subscriptionData }) => {
+        const ev = subscriptionData.data.logMetadataWatch;
+
+        if (!ev?.type || !ev?.object) return prev;
+
+        if (!prev.logMetadataList) return prev;
+
+        // let apollo handle update
+        if (ev.type === 'MODIFIED') return prev;
+
+        const merged = { ...prev.logMetadataList};
+        let items = Array.from(merged.items);
+
+        // merge
+        switch (ev.type) {
+          case 'ADDED':
+            items.push(ev.object);
+            break;
+          case 'DELETED':
+            items = items.filter((item) => item.id !== ev.object?.id);
+            break;
+          default:
+            throw new Error('not implemented');
+        }
+
+        merged.items = items;
+        return { logMetadataList: merged };
+      },
+    });
+  }, [subscribeToMore, loading, error]);
 
   return { loading, error, data };
 }

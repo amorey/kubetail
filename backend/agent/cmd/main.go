@@ -60,6 +60,7 @@ func newLogMetadataWatchEvent(event fsnotify.Event, specMap map[string]*agentpb.
 	// init watch event
 	watchEv := &agentpb.LogMetadataWatchEvent{
 		Object: &agentpb.LogMetadata{
+			Id:       specMap[event.Name].ContainerId,
 			Spec:     specMap[event.Name],
 			FileInfo: &agentpb.LogMetadataFileInfo{},
 		},
@@ -135,6 +136,7 @@ func (s *server) List(ctx context.Context, req *agentpb.LogMetadataListRequest) 
 
 		// init item
 		item := &agentpb.LogMetadata{
+			Id: containerID,
 			Spec: &agentpb.LogMetadataSpec{
 				NodeName:      s.nodeName,
 				Namespace:     namespace,

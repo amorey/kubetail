@@ -29,7 +29,7 @@ import Footer from '@/components/widgets/Footer';
 import ProfilePicDropdown from '@/components/widgets/ProfilePicDropdown';
 import * as ops from '@/lib/graphql/ops';
 import { getBasename, joinPaths } from '@/lib/helpers';
-import { useListQueryWithSubscription } from '@/lib/hooks';
+import { useListQueryWithSubscription, useLogMetadata } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
 
 const getPodIds = (workloadID: string, relationshipMap: Map<string, string[]>): string[] => {
@@ -85,11 +85,11 @@ type DisplayItemsProps = {
       deletionTimestamp?: Date;
     };
   }[] | undefined | null;
-  relationshipMap: Map<string, string[]>;
+  logInfoMap?: Map<string, { size: number, lastModifiedAt: Date }>;
 };
 
 const DisplayItems = ({
-  workload, namespace, fetching, items, relationshipMap
+  workload, namespace, fetching, items, logInfoMap
 }: DisplayItemsProps) => {
   // filter items
   const filteredItems = items?.filter((item) => {
@@ -169,6 +169,9 @@ const DisplayItems = ({
   const Icon = iconMap[workload];
   const label = labelsPMap[workload];
 
+  // for number formatting
+  let formatter = new Intl.NumberFormat();
+
   return (
     <>
       <thead>
@@ -229,6 +232,7 @@ const DisplayItems = ({
               <DataTable.HeaderCell
                 sortField="size"
                 initialSortDirection="DESC"
+                className="text-right"
               >
                 Size
               </DataTable.HeaderCell>
@@ -244,6 +248,7 @@ const DisplayItems = ({
           <DataTable.Body className="rounded-tbody">
             {visibleItems?.map((item) => {
               const sourceString = `${item.metadata.namespace}/${workload}/${item.metadata.name}`;
+              const logInfo = logInfoMap?.get(item.id);
               return (
                 <DataTable.Row key={item.metadata.uid} className="text-chrome-700">
                   <DataTable.DataCell>
@@ -261,11 +266,13 @@ const DisplayItems = ({
                   <DataTable.DataCell>
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
-                  <DataTable.DataCell>
-                    {getPodIds(item.metadata.uid, relationshipMap).length}
+                  <DataTable.DataCell className="text-right">
+                    {logInfo?.size && formatter.format(logInfo.size/1000)} kb
                   </DataTable.DataCell>
                   <DataTable.DataCell>
-                    xxx
+                    {logInfo?.lastModifiedAt && (
+                      <TimeAgo date={logInfo.lastModifiedAt} title={logInfo.lastModifiedAt.toUTCString()} />
+                    )}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
                     <a
@@ -370,27 +377,25 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
-  // inverse child/parent relationship
-  const m = new Map<string, string[]>();
-  if (!loading) {
-    // concat items
-    const items = new Array<any>()
-      .concat(cronjobs.data?.batchV1CronJobsList?.items)
-      .concat(daemonsets.data?.appsV1DaemonSetsList?.items)
-      .concat(deployments.data?.appsV1DeploymentsList?.items)
-      .concat(jobs.data?.batchV1JobsList?.items)
-      .concat(pods.data?.coreV1PodsList?.items)
-      .concat(replicasets.data?.appsV1ReplicaSetsList?.items)
-      .concat(statefulsets.data?.appsV1StatefulSetsList?.items);
+  const logMetadata = useLogMetadata();
+  const logInfoMap = new Map<string, { size: number, lastModifiedAt: Date }>();
 
-    // inverse child/parent relationship
-    items.forEach((v) => {
-      const childID = v.metadata.uid;
-      v.metadata.ownerReferences.forEach((owner: any) => {
-        const childIDs = m.get(owner.uid) || [];
-        childIDs.push(childID);
-        m.set(owner.uid, childIDs);
-      });
+  if (!loading) {
+    // group log info by pod namespace/name
+    const m = new Map<string, { size: number, lastModifiedAt: Date }>();
+    logMetadata.data?.logMetadataList?.items.forEach((item) => {
+      const k = `${item.spec.namespace}/${item.spec.podName}`;
+      const data = m.get(k) || { size: 0, lastModifiedAt: new Date(0) };
+      data.size += parseInt(item.fileInfo.size);
+      data.lastModifiedAt = new Date(Math.max(data.lastModifiedAt.getTime(), item.fileInfo.lastModifiedAt.getTime()))
+      m.set(k, data);
+    });
+
+    // iterate through pods
+    pods.data?.coreV1PodsList?.items.forEach((pod) => {
+      const k = `${pod.metadata.namespace}/${pod.metadata.name}`;
+      const v = m.get(k);
+      if (v) logInfoMap.set(pod.id, v);
     });
   }
 
@@ -403,49 +408,43 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
           namespace={namespace}
           fetching={cronjobs.fetching}
           items={cronjobs.data?.batchV1CronJobsList?.items}
-          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.DAEMONSETS}
           namespace={namespace}
           fetching={daemonsets.fetching}
           items={daemonsets.data?.appsV1DaemonSetsList?.items}
-          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.DEPLOYMENTS}
           namespace={namespace}
           fetching={deployments.fetching}
           items={deployments.data?.appsV1DeploymentsList?.items}
-          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.JOBS}
           namespace={namespace}
           fetching={jobs.fetching}
           items={jobs.data?.batchV1JobsList?.items}
-          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.PODS}
           namespace={namespace}
           fetching={pods.fetching}
           items={pods.data?.coreV1PodsList?.items}
-          relationshipMap={m}
+          logInfoMap={logInfoMap}
         />
         <DisplayItems
           workload={Workload.REPLICASETS}
           namespace={namespace}
           fetching={replicasets.fetching}
           items={replicasets.data?.appsV1ReplicaSetsList?.items}
-          relationshipMap={m}
         />
         <DisplayItems
           workload={Workload.STATEFULSETS}
           namespace={namespace}
           fetching={statefulsets.fetching}
           items={statefulsets.data?.appsV1StatefulSetsList?.items}
-          relationshipMap={m}
         />
       </DataTable>
     </>
