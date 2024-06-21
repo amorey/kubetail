@@ -26,8 +26,9 @@ service LogMetadataService {
 }
 
 message LogMetadata {
-  LogMetadataSpec spec = 1;
-  LogMetadataFileInfo fileInfo = 2;
+  string id = 1;
+  LogMetadataSpec spec = 2;
+  LogMetadataFileInfo fileInfo = 3;
 }
 
 message LogMetadataFileInfo {

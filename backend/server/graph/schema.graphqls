@@ -488,6 +488,7 @@ enum HealthCheckStatus {
 # --- Log Metadata ---
 
 type LogMetadata {
+  id: ID!
   spec: LogMetadataSpec!
   fileInfo: LogMetadataFileInfo!
 }

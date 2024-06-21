@@ -581,6 +581,7 @@ export const POD_LOG_QUERY_RESPONSE_FRAGMENT = gql(`
  */
 export const LOGMETADATA_LIST_ITEM_FRAGMENT = gql(`
   fragment LogMetadataListItemFragment on LogMetadata {
+    id
     spec {
       nodeName
       namespace
