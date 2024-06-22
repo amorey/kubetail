@@ -20,7 +20,7 @@ const documents = {
     "\n  fragment HomeDeploymentsListItemFragment on AppsV1Deployment {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeDeploymentsListItemFragmentFragmentDoc,
     "\n  fragment HomeJobsListItemFragment on BatchV1Job {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeJobsListItemFragmentFragmentDoc,
     "\n  fragment HomeNamespacesListItemFragment on CoreV1Namespace {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeNamespacesListItemFragmentFragmentDoc,
-    "\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n  }\n": types.HomePodsListItemFragmentFragmentDoc,
+    "\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n    status {\n      containerStatuses {\n        containerID\n        started\n      }\n    }\n  }\n": types.HomePodsListItemFragmentFragmentDoc,
     "\n  fragment HomeReplicaSetsListItemFragment on AppsV1ReplicaSet {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeReplicaSetsListItemFragmentFragmentDoc,
     "\n  fragment HomeStatefulSetsListItemFragment on AppsV1StatefulSet {\n    ...HomeGenericListItemFragment\n  }\n": types.HomeStatefulSetsListItemFragmentFragmentDoc,
     "\n  fragment ConsoleLoggingResourcesGenericObjectFragment on Object {\n    id\n    metadata {\n      namespace\n      name\n      uid\n      creationTimestamp\n      deletionTimestamp\n      resourceVersion\n      ownerReferences {\n        name\n        uid\n        controller\n      }\n    }\n  }\n": types.ConsoleLoggingResourcesGenericObjectFragmentFragmentDoc,
@@ -206,7 +206,7 @@ export function gql(source: "\n  fragment HomeNamespacesListItemFragment on Core
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n  }\n"): (typeof documents)["\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n  }\n"];
+export function gql(source: "\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n    status {\n      containerStatuses {\n        containerID\n        started\n      }\n    }\n  }\n"): (typeof documents)["\n  fragment HomePodsListItemFragment on CoreV1Pod {\n    ...HomeGenericListItemFragment\n    status {\n      containerStatuses {\n        containerID\n        started\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

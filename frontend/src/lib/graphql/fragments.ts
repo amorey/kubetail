@@ -79,6 +79,12 @@ export const HOME_NAMESPACES_LIST_ITEM_FRAGMENT = gql(`
 export const HOME_PODS_LIST_ITEM_FRAGMENT = gql(`
   fragment HomePodsListItemFragment on CoreV1Pod {
     ...HomeGenericListItemFragment
+    status {
+      containerStatuses {
+        containerID
+        started
+      }
+    }
   }
 `);
 
