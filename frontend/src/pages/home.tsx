@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import TimeAgo from 'react-timeago';
 
@@ -32,67 +32,13 @@ import { getBasename, joinPaths } from '@/lib/helpers';
 import { useListQueryWithSubscription, useLogMetadata } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
 
-function useCronJobs() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_CRONJOBS_LIST_FETCH,
-    subscription: ops.HOME_CRONJOBS_LIST_WATCH,
-    queryDataKey: 'batchV1CronJobsList',
-    subscriptionDataKey: 'batchV1CronJobsWatch',
+function getContainerIDs(parentID: string, ownershipMap: Map<string, string[]>, containerIDs?: string[]): string[] {
+  if (!containerIDs) containerIDs = new Array<string>();
+  ownershipMap.get(parentID)?.forEach((childID) => {
+    if (ownershipMap.has(childID)) getContainerIDs(childID, ownershipMap, containerIDs);
+    else containerIDs.push(childID);
   });
-}
-
-function useDaemonSets() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_DAEMONSETS_LIST_FETCH,
-    subscription: ops.HOME_DAEMONSETS_LIST_WATCH,
-    queryDataKey: 'appsV1DaemonSetsList',
-    subscriptionDataKey: 'appsV1DaemonSetsWatch',
-  });
-}
-
-function useDeployments() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_DEPLOYMENTS_LIST_FETCH,
-    subscription: ops.HOME_DEPLOYMENTS_LIST_WATCH,
-    queryDataKey: 'appsV1DeploymentsList',
-    subscriptionDataKey: 'appsV1DeploymentsWatch',
-  });
-}
-
-function useJobs() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_JOBS_LIST_FETCH,
-    subscription: ops.HOME_JOBS_LIST_WATCH,
-    queryDataKey: 'batchV1JobsList',
-    subscriptionDataKey: 'batchV1JobsWatch',
-  });
-}
-
-function usePods() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_PODS_LIST_FETCH,
-    subscription: ops.HOME_PODS_LIST_WATCH,
-    queryDataKey: 'coreV1PodsList',
-    subscriptionDataKey: 'coreV1PodsWatch',
-  });
-}
-
-function useReplicaSets() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_REPLICASETS_LIST_FETCH,
-    subscription: ops.HOME_REPLICASETS_LIST_WATCH,
-    queryDataKey: 'appsV1ReplicaSetsList',
-    subscriptionDataKey: 'appsV1ReplicaSetsWatch',
-  });
-}
-
-function useStatefulSets() {
-  return useListQueryWithSubscription({
-    query: ops.HOME_STATEFULSETS_LIST_FETCH,
-    subscription: ops.HOME_STATEFULSETS_LIST_WATCH,
-    queryDataKey: 'appsV1StatefulSetsList',
-    subscriptionDataKey: 'appsV1StatefulSetsWatch',
-  });
+  return containerIDs;
 }
 
 const Namespaces = ({
@@ -136,12 +82,14 @@ type DisplayItemsProps = {
       deletionTimestamp?: Date;
     };
   }[] | undefined | null;
-  logInfoMap?: Map<string, { size: number, lastModifiedAt: Date }>;
+  ownershipMap: Map<string, string[]>;
 };
 
 const DisplayItems = ({
-  workload, namespace, fetching, items, logInfoMap
+  workload, namespace, fetching, items, ownershipMap
 }: DisplayItemsProps) => {
+  const logMetadata = useLogMetadata();
+
   // filter items
   const filteredItems = items?.filter((item) => {
     // remove deleted items
@@ -149,6 +97,24 @@ const DisplayItems = ({
 
     // remove items not in filtered namespace
     return (namespace === '' || item.metadata.namespace === namespace);
+  });
+
+  // roll-up log metadata
+  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
+  filteredItems?.forEach((item) => {
+    const containerIDs = getContainerIDs(item.metadata.uid, ownershipMap);
+
+    // combine fileInfo
+    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
+    logMetadata.data?.logMetadataList?.items.forEach((item) => {
+      if (containerIDs.includes(item.spec.containerID)) {
+        fileInfo.size += parseInt(item.fileInfo.size);
+        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
+      }
+    });
+
+    // update map
+    if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(item.metadata.uid, fileInfo);
   });
 
   // handle sorting
@@ -219,9 +185,6 @@ const DisplayItems = ({
   // for label
   const Icon = iconMap[workload];
   const label = labelsPMap[workload];
-
-  // for number formatting
-  let formatter = new Intl.NumberFormat();
 
   return (
     <>
@@ -299,7 +262,6 @@ const DisplayItems = ({
           <DataTable.Body className="rounded-tbody">
             {visibleItems?.map((item) => {
               const sourceString = `${item.metadata.namespace}/${workload}/${item.metadata.name}`;
-              const logInfo = logInfoMap?.get(item.id);
               return (
                 <DataTable.Row key={item.metadata.uid} className="text-chrome-700">
                   <DataTable.DataCell>
@@ -318,12 +280,10 @@ const DisplayItems = ({
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
                   <DataTable.DataCell className="text-right">
-                    {logInfo?.size && formatter.format(logInfo.size / 1000)} kb
+                    {logFileInfo.get(item.metadata.uid)?.size}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
-                    {logInfo?.lastModifiedAt && (
-                      <TimeAgo date={logInfo.lastModifiedAt} title={logInfo.lastModifiedAt.toUTCString()} />
-                    )}
+                    xxx
                   </DataTable.DataCell>
                   <DataTable.DataCell>
                     <a
@@ -360,64 +320,6 @@ const DisplayItems = ({
   );
 };
 
-const DisplayDeployments = ({ namespace }: { namespace: string }) => {
-  const deployments = useDeployments(),
-    pods = usePods(),
-    replicasets = useReplicaSets();
-
-  const doneFetching = [deployments.fetching, pods.fetching, replicasets.fetching].every((v) => !v);
-
-  if (doneFetching) {
-    // 
-    const deploymentUIDs = new Set(deployments.data?.appsV1DeploymentsList?.items
-      .map((obj) => obj.metadata.uid)
-    );
-
-    // replicasets owned by deployments
-    const replicasetUIDs = new Set(replicasets.data?.appsV1ReplicaSetsList?.items
-      .filter((obj) => {
-        for (const ref of obj.metadata.ownerReferences) {
-          if (deploymentUIDs.has(ref.uid)) return true;
-        }
-        return false;
-      })
-      .map((obj) => obj.metadata.uid)
-    );
-
-    // iterate over pods
-    pods.data?.coreV1PodsList?.items.forEach((pod) => {
-      for (const ref of pod.metadata.ownerReferences) {
-        if (deploymentUIDs.has(ref.uid)) return true;
-      }
-      pod.status.containerStatuses.forEach((status) => {
-        console.logstatus.containerID
-      });
-    });
-  }
-
-  return (
-    <DisplayItems
-      workload={Workload.DEPLOYMENTS}
-      namespace={namespace}
-      fetching={deployments.fetching}
-      items={deployments.data?.appsV1DeploymentsList?.items}
-    />
-  );
-}
-
-const DisplayPods = ({ namespace }: { namespace: string }) => {
-  const pods = usePods();
-
-  return (
-    <DisplayItems
-      workload={Workload.PODS}
-      namespace={namespace}
-      fetching={pods.fetching}
-      items={pods.data?.coreV1PodsList?.items}
-    />
-  )
-};
-
 const LoadingModal = () => (
   <div className="relative z-10" role="dialog">
     <div className="fixed inset-0 bg-chrome-500 bg-opacity-75" />
@@ -435,15 +337,6 @@ const LoadingModal = () => (
 );
 
 const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
-  const cronjobs = useCronJobs(),
-    daemonsets = useDaemonSets(),
-    deployments = useDeployments(),
-    jobs = useJobs(),
-    pods = usePods(),
-    replicasets = useReplicaSets(),
-    statefulsets = useStatefulSets();
-
-  /*
   const cronjobs = useListQueryWithSubscription({
     query: ops.HOME_CRONJOBS_LIST_FETCH,
     subscription: ops.HOME_CRONJOBS_LIST_WATCH,
@@ -491,86 +384,100 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     subscription: ops.HOME_STATEFULSETS_LIST_WATCH,
     queryDataKey: 'appsV1StatefulSetsList',
     subscriptionDataKey: 'appsV1StatefulSetsWatch',
-  });*/
+  });
+
+  // calculate ownership map
+  const ownershipMap = useMemo(() => {
+    const m = new Map<string, string[]>();
+
+    // add workload ids
+    [
+      ...(daemonsets.data?.appsV1DaemonSetsList?.items || []),
+      ...(jobs.data?.batchV1JobsList?.items || []),
+      ...(pods.data?.coreV1PodsList?.items || []),
+      ...(replicasets.data?.appsV1ReplicaSetsList?.items || []),
+      ...(statefulsets.data?.appsV1StatefulSetsList?.items || []),
+    ].forEach((item) => {
+      item.metadata.ownerReferences.forEach((ref) => {
+        const childUIDs = m.get(ref.uid) || [];
+        childUIDs.push(item.metadata.uid);
+        m.set(ref.uid, childUIDs);
+      });
+    });
+
+    // add container ids
+    pods.data?.coreV1PodsList?.items.forEach((pod) => {
+      const containerIDs = pod.status.containerStatuses.map((status) => {
+        // strip out prefix (e.g. "containerd://")
+        return status.containerID.replace(/^[^:]+:\/\/(.*)/, '$1');
+      });
+      m.set(pod.metadata.uid, containerIDs);
+    });
+
+    return m;
+  }, [
+    daemonsets.data?.appsV1DaemonSetsList?.metadata.resourceVersion,
+    jobs.data?.batchV1JobsList?.metadata.resourceVersion,
+    pods.data?.coreV1PodsList?.metadata.resourceVersion,
+    replicasets.data?.appsV1ReplicaSetsList?.metadata.resourceVersion,
+    statefulsets.data?.appsV1StatefulSetsList?.metadata.resourceVersion,
+  ]);
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
-
-  //const logInfoMap = new Map<string, { size: number, lastModifiedAt: Date }>();
-  /*
-  const logMetadata = useLogMetadata();
-  
-
-  if (!loading) {
-    // group log info by pod namespace/name
-    const m = new Map<string, { size: number, lastModifiedAt: Date }>();
-    logMetadata.data?.logMetadataList?.items.forEach((item) => {
-      const k = `${item.spec.namespace}/${item.spec.podName}`;
-      const data = m.get(k) || { size: 0, lastModifiedAt: new Date(0) };
-      data.size += parseInt(item.fileInfo.size);
-      data.lastModifiedAt = new Date(Math.max(data.lastModifiedAt.getTime(), item.fileInfo.lastModifiedAt.getTime()))
-      m.set(k, data);
-    });
-
-    // iterate through pods
-    pods.data?.coreV1PodsList?.items.forEach((pod) => {
-      const k = `${pod.metadata.namespace}/${pod.metadata.name}`;
-      const v = m.get(k);
-      if (v) logInfoMap.set(pod.id, v);
-    });
-  }
-  */
 
   return (
     <>
       {loading && <LoadingModal />}
       <DataTable className="rounded-table-wrapper min-w-[600px]" size="sm">
-        <DisplayDeployments namespace={namespace} />
-        <DisplayPods namespace={namespace} />
-        {/*
         <DisplayItems
           workload={Workload.CRONJOBS}
           namespace={namespace}
           fetching={cronjobs.fetching}
           items={cronjobs.data?.batchV1CronJobsList?.items}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.DAEMONSETS}
           namespace={namespace}
           fetching={daemonsets.fetching}
           items={daemonsets.data?.appsV1DaemonSetsList?.items}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.DEPLOYMENTS}
           namespace={namespace}
           fetching={deployments.fetching}
           items={deployments.data?.appsV1DeploymentsList?.items}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.JOBS}
           namespace={namespace}
           fetching={jobs.fetching}
           items={jobs.data?.batchV1JobsList?.items}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.PODS}
           namespace={namespace}
           fetching={pods.fetching}
           items={pods.data?.coreV1PodsList?.items}
-          logInfoMap={logInfoMap}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.REPLICASETS}
           namespace={namespace}
           fetching={replicasets.fetching}
           items={replicasets.data?.appsV1ReplicaSetsList?.items}
+          ownershipMap={ownershipMap}
         />
         <DisplayItems
           workload={Workload.STATEFULSETS}
           namespace={namespace}
           fetching={statefulsets.fetching}
           items={statefulsets.data?.appsV1StatefulSetsList?.items}
+          ownershipMap={ownershipMap}
         />
-        */}
       </DataTable>
     </>
   );
