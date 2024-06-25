@@ -104,6 +104,29 @@ function useStatefulSets() {
   });
 }
 
+function useLogFileInfo(uids: string[], ownershipMap: Map<string, string[]>) {
+  const logMetadata = useLogMetadata();
+
+  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
+  uids.forEach((uid) => {
+    const containerIDs = getContainerIDs(uid, ownershipMap);
+
+    // combine fileInfo
+    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
+    logMetadata.data?.logMetadataList?.items.forEach((item) => {
+      if (containerIDs.includes(item.spec.containerID)) {
+        fileInfo.size += parseInt(item.fileInfo.size);
+        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
+      }
+    });
+  
+    // update map
+    if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(uid, fileInfo);
+  });
+  
+  return logFileInfo;
+}
+
 const Namespaces = ({
   value,
   setValue,
@@ -131,45 +154,6 @@ const Namespaces = ({
   );
 };
 
-type DisplayWorkloadProps = {
-  namespace: string;
-  ownershipMap: Map<string, string[]>;
-}
-
-const DisplayDeployments = ({ namespace, ownershipMap }: DisplayWorkloadProps) => {
-  const deployments = useDeployments();
-
-  const logMetadata = useLogMetadata();
-
-  // roll-up log metadata
-  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
-  deployments.data?.appsV1DeploymentsList?.items.forEach((item) => {
-    const containerIDs = getContainerIDs(item.metadata.uid, ownershipMap);
-
-    // combine fileInfo
-    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
-    logMetadata.data?.logMetadataList?.items.forEach((item) => {
-      if (containerIDs.includes(item.spec.containerID)) {
-        fileInfo.size += parseInt(item.fileInfo.size);
-        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
-      }
-    });
-
-    // update map
-    if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(item.metadata.uid, fileInfo);
-  });
-
-  return (
-    <DisplayItems
-      workload={Workload.DEPLOYMENTS}
-      namespace={namespace}
-      fetching={deployments.fetching}
-      items={deployments.data?.appsV1DeploymentsList?.items}
-      logFileInfo={logFileInfo}
-    />
-  );
-}
-
 type DisplayItemsProps = {
   workload: Workload;
   namespace: string;
@@ -184,11 +168,11 @@ type DisplayItemsProps = {
       deletionTimestamp?: Date;
     };
   }[] | undefined | null;
-  logFileInfo: Map<string, { size: number, lastModifiedAt: Date }>;
+  ownershipMap: Map<string, string[]>;
 };
 
 const DisplayItems = ({
-  workload, namespace, fetching, items, logFileInfo
+  workload, namespace, fetching, items, ownershipMap
 }: DisplayItemsProps) => {
   // filter items
   const filteredItems = items?.filter((item) => {
@@ -198,6 +182,9 @@ const DisplayItems = ({
     // remove items not in filtered namespace
     return (namespace === '' || item.metadata.namespace === namespace);
   });
+
+  const ids = filteredItems?.map((item) => item.metadata.uid) || [];
+  const logFileInfo = useLogFileInfo(ids, ownershipMap);
 
   // handle sorting
   const [sortBy, setSortBy] = useState<SortBy>({ field: 'name', direction: 'ASC' });
@@ -354,7 +341,7 @@ const DisplayItems = ({
                       onChange={() => handleSingleCheckboxChange(item.id)}
                     />
                   </DataTable.DataCell>
-                  <DataTable.DataCell>{item.metadata.name}</DataTable.DataCell>
+                  <DataTable.DataCell>{item.metadata.name} {item.metadata.uid}</DataTable.DataCell>
                   {namespace === '' && (
                     <DataTable.DataCell>{item.metadata.namespace}</DataTable.DataCell>
                   )}
@@ -470,8 +457,6 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     <>
       {loading && <LoadingModal />}
       <DataTable className="rounded-table-wrapper min-w-[600px]" size="sm">
-        <DisplayDeployments namespace={namespace} ownershipMap={ownershipMap}/>
-        {/*
         <DisplayItems
           workload={Workload.CRONJOBS}
           namespace={namespace}
@@ -521,7 +506,6 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
           items={statefulsets.data?.appsV1StatefulSetsList?.items}
           ownershipMap={ownershipMap}
         />
-        */}
       </DataTable>
     </>
   );
