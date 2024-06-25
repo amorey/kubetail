@@ -41,6 +41,69 @@ function getContainerIDs(parentID: string, ownershipMap: Map<string, string[]>, 
   return containerIDs;
 }
 
+function useCronJobs() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_CRONJOBS_LIST_FETCH,
+    subscription: ops.HOME_CRONJOBS_LIST_WATCH,
+    queryDataKey: 'batchV1CronJobsList',
+    subscriptionDataKey: 'batchV1CronJobsWatch',
+  });
+}
+
+function useDaemonSets() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_DAEMONSETS_LIST_FETCH,
+    subscription: ops.HOME_DAEMONSETS_LIST_WATCH,
+    queryDataKey: 'appsV1DaemonSetsList',
+    subscriptionDataKey: 'appsV1DaemonSetsWatch',
+  });
+}
+
+function useDeployments() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_DEPLOYMENTS_LIST_FETCH,
+    subscription: ops.HOME_DEPLOYMENTS_LIST_WATCH,
+    queryDataKey: 'appsV1DeploymentsList',
+    subscriptionDataKey: 'appsV1DeploymentsWatch',
+  });
+}
+
+function useJobs() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_JOBS_LIST_FETCH,
+    subscription: ops.HOME_JOBS_LIST_WATCH,
+    queryDataKey: 'batchV1JobsList',
+    subscriptionDataKey: 'batchV1JobsWatch',
+  });
+}
+
+function usePods() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_PODS_LIST_FETCH,
+    subscription: ops.HOME_PODS_LIST_WATCH,
+    queryDataKey: 'coreV1PodsList',
+    subscriptionDataKey: 'coreV1PodsWatch',
+  });
+}
+
+function useReplicaSets() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_REPLICASETS_LIST_FETCH,
+    subscription: ops.HOME_REPLICASETS_LIST_WATCH,
+    queryDataKey: 'appsV1ReplicaSetsList',
+    subscriptionDataKey: 'appsV1ReplicaSetsWatch',
+  });
+}
+
+function useStatefulSets() {
+  return useListQueryWithSubscription({
+    query: ops.HOME_STATEFULSETS_LIST_FETCH,
+    subscription: ops.HOME_STATEFULSETS_LIST_WATCH,
+    queryDataKey: 'appsV1StatefulSetsList',
+    subscriptionDataKey: 'appsV1StatefulSetsWatch',
+  });
+}
+
 const Namespaces = ({
   value,
   setValue,
@@ -68,6 +131,45 @@ const Namespaces = ({
   );
 };
 
+type DisplayWorkloadProps = {
+  namespace: string;
+  ownershipMap: Map<string, string[]>;
+}
+
+const DisplayDeployments = ({ namespace, ownershipMap }: DisplayWorkloadProps) => {
+  const deployments = useDeployments();
+
+  const logMetadata = useLogMetadata();
+
+  // roll-up log metadata
+  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
+  deployments.data?.appsV1DeploymentsList?.items.forEach((item) => {
+    const containerIDs = getContainerIDs(item.metadata.uid, ownershipMap);
+
+    // combine fileInfo
+    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
+    logMetadata.data?.logMetadataList?.items.forEach((item) => {
+      if (containerIDs.includes(item.spec.containerID)) {
+        fileInfo.size += parseInt(item.fileInfo.size);
+        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
+      }
+    });
+
+    // update map
+    if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(item.metadata.uid, fileInfo);
+  });
+
+  return (
+    <DisplayItems
+      workload={Workload.DEPLOYMENTS}
+      namespace={namespace}
+      fetching={deployments.fetching}
+      items={deployments.data?.appsV1DeploymentsList?.items}
+      logFileInfo={logFileInfo}
+    />
+  );
+}
+
 type DisplayItemsProps = {
   workload: Workload;
   namespace: string;
@@ -82,14 +184,12 @@ type DisplayItemsProps = {
       deletionTimestamp?: Date;
     };
   }[] | undefined | null;
-  ownershipMap: Map<string, string[]>;
+  logFileInfo: Map<string, { size: number, lastModifiedAt: Date }>;
 };
 
 const DisplayItems = ({
-  workload, namespace, fetching, items, ownershipMap
+  workload, namespace, fetching, items, logFileInfo
 }: DisplayItemsProps) => {
-  const logMetadata = useLogMetadata();
-
   // filter items
   const filteredItems = items?.filter((item) => {
     // remove deleted items
@@ -97,24 +197,6 @@ const DisplayItems = ({
 
     // remove items not in filtered namespace
     return (namespace === '' || item.metadata.namespace === namespace);
-  });
-
-  // roll-up log metadata
-  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
-  filteredItems?.forEach((item) => {
-    const containerIDs = getContainerIDs(item.metadata.uid, ownershipMap);
-
-    // combine fileInfo
-    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
-    logMetadata.data?.logMetadataList?.items.forEach((item) => {
-      if (containerIDs.includes(item.spec.containerID)) {
-        fileInfo.size += parseInt(item.fileInfo.size);
-        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
-      }
-    });
-
-    // update map
-    if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(item.metadata.uid, fileInfo);
   });
 
   // handle sorting
@@ -337,54 +419,13 @@ const LoadingModal = () => (
 );
 
 const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
-  const cronjobs = useListQueryWithSubscription({
-    query: ops.HOME_CRONJOBS_LIST_FETCH,
-    subscription: ops.HOME_CRONJOBS_LIST_WATCH,
-    queryDataKey: 'batchV1CronJobsList',
-    subscriptionDataKey: 'batchV1CronJobsWatch',
-  });
-
-  const daemonsets = useListQueryWithSubscription({
-    query: ops.HOME_DAEMONSETS_LIST_FETCH,
-    subscription: ops.HOME_DAEMONSETS_LIST_WATCH,
-    queryDataKey: 'appsV1DaemonSetsList',
-    subscriptionDataKey: 'appsV1DaemonSetsWatch',
-  });
-
-  const deployments = useListQueryWithSubscription({
-    query: ops.HOME_DEPLOYMENTS_LIST_FETCH,
-    subscription: ops.HOME_DEPLOYMENTS_LIST_WATCH,
-    queryDataKey: 'appsV1DeploymentsList',
-    subscriptionDataKey: 'appsV1DeploymentsWatch',
-  });
-
-  const jobs = useListQueryWithSubscription({
-    query: ops.HOME_JOBS_LIST_FETCH,
-    subscription: ops.HOME_JOBS_LIST_WATCH,
-    queryDataKey: 'batchV1JobsList',
-    subscriptionDataKey: 'batchV1JobsWatch',
-  });
-
-  const pods = useListQueryWithSubscription({
-    query: ops.HOME_PODS_LIST_FETCH,
-    subscription: ops.HOME_PODS_LIST_WATCH,
-    queryDataKey: 'coreV1PodsList',
-    subscriptionDataKey: 'coreV1PodsWatch',
-  });
-
-  const replicasets = useListQueryWithSubscription({
-    query: ops.HOME_REPLICASETS_LIST_FETCH,
-    subscription: ops.HOME_REPLICASETS_LIST_WATCH,
-    queryDataKey: 'appsV1ReplicaSetsList',
-    subscriptionDataKey: 'appsV1ReplicaSetsWatch',
-  });
-
-  const statefulsets = useListQueryWithSubscription({
-    query: ops.HOME_STATEFULSETS_LIST_FETCH,
-    subscription: ops.HOME_STATEFULSETS_LIST_WATCH,
-    queryDataKey: 'appsV1StatefulSetsList',
-    subscriptionDataKey: 'appsV1StatefulSetsWatch',
-  });
+  const cronjobs = useCronJobs(),
+    daemonsets = useDaemonSets(),
+    deployments = useDeployments(),
+    jobs = useJobs(),
+    pods = usePods(),
+    replicasets = useReplicaSets(),
+    statefulsets = useStatefulSets();
 
   // calculate ownership map
   const ownershipMap = useMemo(() => {
@@ -429,6 +470,8 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     <>
       {loading && <LoadingModal />}
       <DataTable className="rounded-table-wrapper min-w-[600px]" size="sm">
+        <DisplayDeployments namespace={namespace} ownershipMap={ownershipMap}/>
+        {/*
         <DisplayItems
           workload={Workload.CRONJOBS}
           namespace={namespace}
@@ -478,6 +521,7 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
           items={statefulsets.data?.appsV1StatefulSetsList?.items}
           ownershipMap={ownershipMap}
         />
+        */}
       </DataTable>
     </>
   );
