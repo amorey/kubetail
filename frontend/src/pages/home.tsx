@@ -272,9 +272,6 @@ const DisplayItems = ({
   const Icon = iconMap[workload];
   const label = labelsPMap[workload];
 
-  // current ts
-  //const nowTime = (new Date()).getTime();
-
   return (
     <>
       <thead>
@@ -374,9 +371,7 @@ const DisplayItems = ({
                       numeral(fileInfo.size).format('0.0 b')
                     )}
                   </DataTable.DataCell>
-                  <DataTable.DataCell
-                    className="animate-pulse"
-                  >
+                  <DataTable.DataCell>
                     {fileInfo?.lastModifiedAt !== undefined && (
                       <TimeAgo
                         date={fileInfo.lastModifiedAt}
