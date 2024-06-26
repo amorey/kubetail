@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import numeral from 'numeral';
 import { useMemo, useState } from 'react';
-
 import TimeAgo from 'react-timeago';
 
 import Button from '@kubetail/ui/elements/Button';
@@ -119,11 +119,11 @@ function useLogFileInfo(uids: string[], ownershipMap: Map<string, string[]>) {
         fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
       }
     });
-  
+
     // update map
     if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(uid, fileInfo);
   });
-  
+
   return logFileInfo;
 }
 
@@ -341,7 +341,7 @@ const DisplayItems = ({
                       onChange={() => handleSingleCheckboxChange(item.id)}
                     />
                   </DataTable.DataCell>
-                  <DataTable.DataCell>{item.metadata.name} {item.metadata.uid}</DataTable.DataCell>
+                  <DataTable.DataCell>{item.metadata.name}</DataTable.DataCell>
                   {namespace === '' && (
                     <DataTable.DataCell>{item.metadata.namespace}</DataTable.DataCell>
                   )}
@@ -349,7 +349,7 @@ const DisplayItems = ({
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
                   <DataTable.DataCell className="text-right">
-                    {logFileInfo.get(item.metadata.uid)?.size}
+                    {numeral(logFileInfo.get(item.metadata.uid)?.size).format('0.0 b')}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
                     xxx
