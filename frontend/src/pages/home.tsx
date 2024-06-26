@@ -374,7 +374,9 @@ const DisplayItems = ({
                       numeral(fileInfo.size).format('0.0 b')
                     )}
                   </DataTable.DataCell>
-                  <DataTable.DataCell>
+                  <DataTable.DataCell
+                    className="animate-pulse"
+                  >
                     {fileInfo?.lastModifiedAt !== undefined && (
                       <TimeAgo
                         date={fileInfo.lastModifiedAt}
