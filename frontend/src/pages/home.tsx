@@ -14,7 +14,7 @@
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import numeral from 'numeral';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import TimeAgo from 'react-timeago';
 import type { Formatter, Suffix, Unit } from 'react-timeago';
 
@@ -32,6 +32,19 @@ import * as ops from '@/lib/graphql/ops';
 import { getBasename, joinPaths } from '@/lib/helpers';
 import { useListQueryWithSubscription, useLogMetadata } from '@/lib/hooks';
 import { Workload, iconMap, labelsPMap } from '@/lib/workload';
+
+type FileInfo = {
+  size: string;
+  lastModifiedAt?: Date;
+};
+
+type ContextType = {
+  logMetadataMap: Map<string, FileInfo>;
+};
+
+const Context = createContext<ContextType>({
+  logMetadataMap: new Map(),
+});
 
 function getContainerIDs(parentID: string, ownershipMap: Map<string, string[]>, containerIDs?: string[]): string[] {
   if (!containerIDs) containerIDs = new Array<string>();
@@ -106,7 +119,7 @@ function useStatefulSets() {
 }
 
 function useLogFileInfo(uids: string[], ownershipMap: Map<string, string[]>) {
-  const logMetadata = useLogMetadata();
+  const { logMetadataMap } = useContext(Context);
 
   const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
   uids.forEach((uid) => {
@@ -114,12 +127,17 @@ function useLogFileInfo(uids: string[], ownershipMap: Map<string, string[]>) {
 
     // combine fileInfo
     const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
-    logMetadata.data?.logMetadataList?.items.forEach((item) => {
-      if (containerIDs.includes(item.spec.containerID)) {
-        fileInfo.size += parseInt(item.fileInfo.size);
-        fileInfo.lastModifiedAt = new Date(Math.max(item.fileInfo.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
+    containerIDs.forEach((containerID) => {
+      const val = logMetadataMap.get(containerID);
+
+      if (val?.size) {
+        fileInfo.size += parseInt(val.size);
       }
-    });
+
+      if (val?.lastModifiedAt) {
+        fileInfo.lastModifiedAt = new Date(Math.max(val.lastModifiedAt.getTime(), fileInfo.lastModifiedAt.getTime()));
+      }
+    })
 
     // update map
     if (fileInfo.lastModifiedAt.getTime() > 0) logFileInfo.set(uid, fileInfo);
@@ -440,6 +458,8 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     replicasets = useReplicaSets(),
     statefulsets = useStatefulSets();
 
+  const logMetadata = useLogMetadata();
+
   // calculate ownership map
   const ownershipMap = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -479,8 +499,13 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
 
   const loading = cronjobs.loading || daemonsets.loading || deployments.loading || jobs.loading || pods.loading || replicasets.loading || statefulsets.loading;
 
+  const logMetadataMap = new Map<string, FileInfo>();
+  logMetadata.data?.logMetadataList?.items.forEach((item) => {
+    logMetadataMap.set(item.spec.containerID, item.fileInfo);
+  });
+
   return (
-    <>
+    <Context.Provider value={{ logMetadataMap }}>
       {loading && <LoadingModal />}
       <DataTable className="rounded-table-wrapper min-w-[600px]" size="sm">
         <DisplayItems
@@ -533,7 +558,7 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
           ownershipMap={ownershipMap}
         />
       </DataTable>
-    </>
+    </Context.Provider>
   );
 };
 
