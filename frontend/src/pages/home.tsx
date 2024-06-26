@@ -204,6 +204,16 @@ const DisplayItems = ({
         case 'created':
           cmp = a.metadata.creationTimestamp - b.metadata.creationTimestamp;
           break;
+        case 'size':
+          const sizeA = logFileInfo.get(a.metadata.uid)?.size || 0;
+          const sizeB = logFileInfo.get(b.metadata.uid)?.size || 0;
+          cmp = sizeA - sizeB;
+          break;
+        case 'lastEvent':
+          const tsA = logFileInfo.get(a.metadata.uid)?.lastModifiedAt || new Date(0);
+          const tsB = logFileInfo.get(b.metadata.uid)?.lastModifiedAt || new Date(0);
+          cmp = tsA.getTime() - tsB.getTime();
+          break;
         default:
           throw new Error('sort field not implemented');
       }
@@ -320,7 +330,7 @@ const DisplayItems = ({
                 Size
               </DataTable.HeaderCell>
               <DataTable.HeaderCell
-                sortField="lastModifiedAt"
+                sortField="lastEvent"
                 initialSortDirection="DESC"
               >
                 Last Event
