@@ -16,6 +16,7 @@ import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import numeral from 'numeral';
 import { useMemo, useState } from 'react';
 import TimeAgo from 'react-timeago';
+import type { Formatter, Suffix, Unit } from 'react-timeago';
 
 import Button from '@kubetail/ui/elements/Button';
 import DataTable from '@kubetail/ui/elements/DataTable';
@@ -154,6 +155,12 @@ const Namespaces = ({
   );
 };
 
+const lastModifiedAtFormatter: Formatter = (value: number, unit: Unit, suffix: Suffix, epochMilliseconds: number, nextFormatter?: Formatter) => {
+  if (suffix === 'from now' || value === 0) return 'just now';
+  if (nextFormatter) return nextFormatter(value, unit, suffix, epochMilliseconds);
+  return '';
+}
+
 type DisplayItemsProps = {
   workload: Workload;
   namespace: string;
@@ -265,6 +272,9 @@ const DisplayItems = ({
   const Icon = iconMap[workload];
   const label = labelsPMap[workload];
 
+  // current ts
+  //const nowTime = (new Date()).getTime();
+
   return (
     <>
       <thead>
@@ -341,6 +351,7 @@ const DisplayItems = ({
           <DataTable.Body className="rounded-tbody">
             {visibleItems?.map((item) => {
               const sourceString = `${item.metadata.namespace}/${workload}/${item.metadata.name}`;
+              const fileInfo = logFileInfo.get(item.metadata.uid);
               return (
                 <DataTable.Row key={item.metadata.uid} className="text-chrome-700">
                   <DataTable.DataCell>
@@ -358,11 +369,19 @@ const DisplayItems = ({
                   <DataTable.DataCell>
                     <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
-                  <DataTable.DataCell className="text-right">
-                    {numeral(logFileInfo.get(item.metadata.uid)?.size).format('0.0 b')}
+                  <DataTable.DataCell className="text-right pr-[35px]">
+                    {fileInfo?.size !== undefined && (
+                      numeral(fileInfo.size).format('0.0 b')
+                    )}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
-                    xxx
+                    {fileInfo?.lastModifiedAt !== undefined && (
+                      <TimeAgo
+                        date={fileInfo.lastModifiedAt}
+                        formatter={lastModifiedAtFormatter}
+                        title={fileInfo.lastModifiedAt.toUTCString()}
+                      />
+                    )}
                   </DataTable.DataCell>
                   <DataTable.DataCell>
                     <a
