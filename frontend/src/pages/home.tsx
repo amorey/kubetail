@@ -174,7 +174,7 @@ const Namespaces = ({
 };
 
 const lastModifiedAtFormatter: Formatter = (value: number, unit: Unit, suffix: Suffix, epochMilliseconds: number, nextFormatter?: Formatter) => {
-  if (suffix === 'from now' || value === 0) return 'just now';
+  if (suffix === 'from now' || unit === 'second') return 'just now';
   if (nextFormatter) return nextFormatter(value, unit, suffix, epochMilliseconds);
   return '';
 }
@@ -382,7 +382,7 @@ const DisplayItems = ({
                     <DataTable.DataCell>{item.metadata.namespace}</DataTable.DataCell>
                   )}
                   <DataTable.DataCell>
-                    <TimeAgo date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
+                    <TimeAgo key={Math.random()} date={item.metadata.creationTimestamp} title={item.metadata.creationTimestamp.toUTCString()} />
                   </DataTable.DataCell>
                   <DataTable.DataCell className="text-right pr-[35px]">
                     {fileInfo?.size !== undefined && (
@@ -392,8 +392,10 @@ const DisplayItems = ({
                   <DataTable.DataCell>
                     {fileInfo?.lastModifiedAt !== undefined && (
                       <TimeAgo
+                        key={Math.random()} 
                         date={fileInfo.lastModifiedAt}
                         formatter={lastModifiedAtFormatter}
+                        minPeriod={60}
                         title={fileInfo.lastModifiedAt.toUTCString()}
                       />
                     )}
