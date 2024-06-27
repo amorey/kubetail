@@ -504,8 +504,11 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     logMetadataMap.set(item.spec.containerID, item.fileInfo);
   });
 
+  const value = { logMetadataMap };
+  const context = useMemo(() => value, [value]);
+
   return (
-    <Context.Provider value={{ logMetadataMap }}>
+    <Context.Provider value={context}>
       {loading && <LoadingModal />}
       <DataTable className="rounded-table-wrapper min-w-[600px]" size="sm">
         <DisplayItems
