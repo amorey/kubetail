@@ -21,8 +21,6 @@ spec:
     spec:
       containers:
       - name: echoserver
-        #image: registry.k8s.io/echoserver:1.10
-        #image: gcr.io/google-containers/echoserver:1.10
         image: kubetail/echoserver:0.0.1-rc1
         ports:
         - containerPort: 8080
