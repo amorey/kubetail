@@ -354,7 +354,11 @@ export function useCounterQueryWithSubscription<
  * LogMetadata hook
  */
 
-export function useLogMetadata() {
+type LogMetadataHookOptions = {
+  onUpdate?: (containerID: string) => void;
+}
+
+export function useLogMetadata(options?: LogMetadataHookOptions) {
   const retryOnError = useRetryOnError();
 
   // initial query
@@ -363,6 +367,8 @@ export function useLogMetadata() {
       retryOnError(refetch);
     },
   });
+
+  const { onUpdate } = options || {};
 
   // subscribe to changes
   useEffect(() => {
@@ -378,8 +384,15 @@ export function useLogMetadata() {
 
         if (!prev.logMetadataList) return prev;
 
+        // execute callback
+        if (ev.type === 'MODIFIED' || ev.type === 'ADDED') {
+          onUpdate && onUpdate(ev.object.spec.containerID);
+        }
+
         // let apollo handle update
-        if (ev.type === 'MODIFIED') return prev;
+        if (ev.type === 'MODIFIED') {
+          return prev;
+        }
 
         const merged = { ...prev.logMetadataList};
         let items = Array.from(merged.items);

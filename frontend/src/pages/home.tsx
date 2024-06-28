@@ -121,12 +121,17 @@ function useStatefulSets() {
 function useLogFileInfo(uids: string[], ownershipMap: Map<string, string[]>) {
   const { logMetadataMap } = useContext(Context);
 
-  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date }>();
+  const logFileInfo = new Map<string, { size: number, lastModifiedAt: Date, containerIDs: string[] }>();
   uids.forEach((uid) => {
     const containerIDs = getContainerIDs(uid, ownershipMap);
 
     // combine fileInfo
-    const fileInfo = { size: 0, lastModifiedAt: new Date(0) };
+    const fileInfo = {
+      size: 0,
+      lastModifiedAt: new Date(0),
+      containerIDs,
+    };
+
     containerIDs.forEach((containerID) => {
       const val = logMetadataMap.get(containerID);
 
@@ -367,6 +372,10 @@ const DisplayItems = ({
             {visibleItems?.map((item) => {
               const sourceString = `${item.metadata.namespace}/${workload}/${item.metadata.name}`;
               const fileInfo = logFileInfo.get(item.metadata.uid);
+
+              // for last event
+              const lastEventCls = fileInfo?.containerIDs.map((id) => `last_event_${id}`).join(' ');
+
               return (
                 <DataTable.Row key={item.metadata.uid} className="text-chrome-700">
                   <DataTable.DataCell>
@@ -389,7 +398,7 @@ const DisplayItems = ({
                       numeral(fileInfo.size).format('0.0 b')
                     )}
                   </DataTable.DataCell>
-                  <DataTable.DataCell>
+                  <DataTable.DataCell className={lastEventCls}>
                     {fileInfo?.lastModifiedAt !== undefined && (
                       <TimeAgo
                         key={Math.random()} 
@@ -460,7 +469,16 @@ const DisplayWorkloads = ({ namespace }: { namespace: string; }) => {
     replicasets = useReplicaSets(),
     statefulsets = useStatefulSets();
 
-  const logMetadata = useLogMetadata();
+  const logMetadata = useLogMetadata({
+    onUpdate: (containerID) => {
+      document.querySelectorAll(`.last_event_${containerID}`).forEach((el) => {
+        const k = 'animate-flash-bg-green';
+        el.classList.remove(k)
+        el.classList.add(k);
+        setTimeout(() => el.classList.remove(k), 1000);
+      })
+    },
+  });
 
   // calculate ownership map
   const ownershipMap = useMemo(() => {
