@@ -1,4 +1,4 @@
-# Kubetail > Backend > Server
+# Backend Server
 
 Kubetail backend server
 
