@@ -180,6 +180,35 @@ func (r *Resolver) WarmUp() {
 	}()
 }
 
+func (r *Resolver) WaitUntilReady(ctx context.Context) error {
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+
+		select {
+		case <-r.clientsetReadyCh:
+			// continue
+		case <-ctx.Done():
+			return
+		}
+
+		select {
+		case <-r.dynamicClientReadyCh:
+			// continue
+		case <-ctx.Done():
+			return
+		}
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func NewResolver(cfg *rest.Config, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string) (*Resolver, error) {
 	// init resolver
 	r := &Resolver{

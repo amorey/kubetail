@@ -381,32 +381,49 @@ func (r *queryResolver) ReadyWait(ctx context.Context, timeout *int) (bool, erro
 	ctx, cancel := context.WithTimeout(ctx, t)
 	defer cancel()
 
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-
-		select {
-		case <-r.clientsetReadyCh:
-			// continue
-		case <-ctx.Done():
-			return
-		}
-
-		select {
-		case <-r.dynamicClientReadyCh:
-			// continue
-		case <-ctx.Done():
-			return
-		}
-	}()
-
-	select {
-	case <-done:
-		return true, nil
-	case <-ctx.Done():
-		return false, nil
+	if err := r.WaitUntilReady(ctx); err != nil {
+		return false, err
 	}
+	return true, nil
+}
+
+// ClusterInfoGet is the resolver for the clusterInfoGet field.
+func (r *queryResolver) ClusterInfoGet(ctx context.Context) (model.ClusterInfoResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	if err := r.WaitUntilReady(ctx); err != nil {
+		return model.ClusterInfoResponse{}, err
+	}
+
+	// Get clientset
+	clientset := r.K8SClientset(ctx)
+
+	// Define the label selector
+	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=server"
+
+	// List services with the specified labels
+	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return model.ClusterInfoResponse{}, err
+	}
+
+	// None found
+	if len(services.Items) == 0 {
+		return model.ClusterInfoResponse{}, nil
+	}
+
+	svc := services.Items[0]
+
+	return model.ClusterInfoResponse{
+		KubetailAPI: &model.ClusterInfoKubetailAPI{
+			Version:     svc.Labels["app.kubernetes.io/version"],
+			Namespace:   svc.Namespace,
+			ServiceName: svc.Name,
+		},
+	}, nil
 }
 
 // AppsV1DaemonSetsWatch is the resolver for the appsV1DaemonSetsWatch field.

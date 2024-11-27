@@ -1,0 +1,12 @@
+auth-mode: local
+allowed-namespaces: []
+server:
+  addr: :7500
+  base-path: /
+  gin-mode: debug
+  csrf:
+    secret: replaceme
+  logging:
+    format: pretty
+  session:
+    secret: replaceme

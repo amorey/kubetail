@@ -303,6 +303,18 @@ type BatchV1JobsWatchEvent {
   object: BatchV1Job
 }
 
+# --- Cluster ---
+
+type ClusterInfoResponse {
+  kubetailAPI: ClusterInfoKubetailAPI
+}
+
+type ClusterInfoKubetailAPI {
+  version: String!
+  namespace: String!
+  serviceName: String!
+}
+
 # --- CoreV1 ---
 
 # https://pkg.go.dev/k8s.io/api@v0.28.1/core/v1#ConditionStatus
@@ -725,6 +737,11 @@ type Query {
   readyWait(
     timeout: Int = 20,
   ): Boolean!
+
+  """
+  Miscellaneous
+  """
+  clusterInfoGet: ClusterInfoResponse!
 }
 
 type Subscription {
