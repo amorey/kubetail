@@ -115,10 +115,7 @@ function OutletWrapper() {
   const { data } = useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
   });
-
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
+  console.log(data);
 
   return <Outlet />;
 }

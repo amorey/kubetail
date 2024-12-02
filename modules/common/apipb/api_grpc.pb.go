@@ -16,9 +16,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.28.3
-// source: agent.proto
+// source: api.proto
 
-package agentpb
+package apipb
 
 import (
 	context "context"
@@ -33,8 +33,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LogMetadataService_List_FullMethodName  = "/agentpb.LogMetadataService/List"
-	LogMetadataService_Watch_FullMethodName = "/agentpb.LogMetadataService/Watch"
+	LogMetadataService_List_FullMethodName  = "/apipb.LogMetadataService/List"
+	LogMetadataService_Watch_FullMethodName = "/apipb.LogMetadataService/Watch"
 )
 
 // LogMetadataServiceClient is the client API for LogMetadataService service.
@@ -158,7 +158,7 @@ type LogMetadataService_WatchServer = grpc.ServerStreamingServer[LogMetadataWatc
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var LogMetadataService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "agentpb.LogMetadataService",
+	ServiceName: "apipb.LogMetadataService",
 	HandlerType: (*LogMetadataServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -173,5 +173,5 @@ var LogMetadataService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "agent.proto",
+	Metadata: "api.proto",
 }
