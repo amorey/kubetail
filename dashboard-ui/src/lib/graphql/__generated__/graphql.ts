@@ -465,6 +465,18 @@ export enum HealthCheckStatus {
   Success = 'SUCCESS'
 }
 
+export type InitKubetailApiDetails = {
+  __typename?: 'InitKubetailAPIDetails';
+  namespace: Scalars['String']['output'];
+  serviceName: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export type InitResponse = {
+  __typename?: 'InitResponse';
+  kubetailAPI?: Maybe<InitKubetailApiDetails>;
+};
+
 export type List = {
   apiVersion: Scalars['String']['output'];
   items: Array<Object>;
@@ -627,6 +639,8 @@ export type Query = {
   coreV1PodsGet?: Maybe<CoreV1Pod>;
   coreV1PodsGetLogs?: Maybe<Array<LogRecord>>;
   coreV1PodsList?: Maybe<CoreV1PodList>;
+  /** Miscellaneous */
+  init: InitResponse;
   /** Health endpoints */
   livezGet: HealthCheckResponse;
   /** Logs Metadata API */
@@ -1967,6 +1981,11 @@ export type ReadyWaitQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ReadyWaitQuery = { __typename?: 'Query', readyWait: boolean };
 
+export type InitQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type InitQuery = { __typename?: 'Query', init: { __typename?: 'InitResponse', kubetailAPI?: { __typename?: 'InitKubetailAPIDetails', version: string, namespace: string, serviceName: string } | null } };
+
 export const HomeGenericListFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeGenericListFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"List"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"continue"}},{"kind":"Field","name":{"kind":"Name","value":"resourceVersion"}}]}}]}}]} as unknown as DocumentNode<HomeGenericListFragmentFragment, unknown>;
 export const HomeGenericListItemFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeGenericListItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Object"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"uid"}},{"kind":"Field","name":{"kind":"Name","value":"creationTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"deletionTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"resourceVersion"}},{"kind":"Field","name":{"kind":"Name","value":"ownerReferences"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"uid"}},{"kind":"Field","name":{"kind":"Name","value":"controller"}}]}}]}}]}}]} as unknown as DocumentNode<HomeGenericListItemFragmentFragment, unknown>;
 export const HomeCronJobsListItemFragmentFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeCronJobsListItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BatchV1CronJob"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"HomeGenericListItemFragment"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"HomeGenericListItemFragment"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Object"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"uid"}},{"kind":"Field","name":{"kind":"Name","value":"creationTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"deletionTimestamp"}},{"kind":"Field","name":{"kind":"Name","value":"resourceVersion"}},{"kind":"Field","name":{"kind":"Name","value":"ownerReferences"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"uid"}},{"kind":"Field","name":{"kind":"Name","value":"controller"}}]}}]}}]}}]} as unknown as DocumentNode<HomeCronJobsListItemFragmentFragment, unknown>;
@@ -2114,3 +2133,4 @@ export const LogMetadataListWatchDocument = {"kind":"Document","definitions":[{"
 export const LivezWatchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"LivezWatch"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"livezWatch"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}}]}}]}}]} as unknown as DocumentNode<LivezWatchSubscription, LivezWatchSubscriptionVariables>;
 export const ReadyzWatchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"ReadyzWatch"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"readyzWatch"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}}]}}]}}]} as unknown as DocumentNode<ReadyzWatchSubscription, ReadyzWatchSubscriptionVariables>;
 export const ReadyWaitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ReadyWait"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"readyWait"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"timeout"},"value":{"kind":"IntValue","value":"20"}}]}]}}]} as unknown as DocumentNode<ReadyWaitQuery, ReadyWaitQueryVariables>;
+export const InitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Init"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"init"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"kubetailAPI"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"version"}},{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"serviceName"}}]}}]}}]}}]} as unknown as DocumentNode<InitQuery, InitQueryVariables>;

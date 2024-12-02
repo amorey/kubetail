@@ -291,16 +291,6 @@ type ComplexityRoot struct {
 		Type   func(childComplexity int) int
 	}
 
-	ClusterInfoKubetailAPI struct {
-		Namespace   func(childComplexity int) int
-		ServiceName func(childComplexity int) int
-		Version     func(childComplexity int) int
-	}
-
-	ClusterInfoResponse struct {
-		KubetailAPI func(childComplexity int) int
-	}
-
 	CoreV1Container struct {
 		Image func(childComplexity int) int
 		Name  func(childComplexity int) int
@@ -430,6 +420,16 @@ type ComplexityRoot struct {
 		Timestamp func(childComplexity int) int
 	}
 
+	InitKubetailAPIDetails struct {
+		Namespace   func(childComplexity int) int
+		ServiceName func(childComplexity int) int
+		Version     func(childComplexity int) int
+	}
+
+	InitResponse struct {
+		KubetailAPI func(childComplexity int) int
+	}
+
 	LogMetadata struct {
 		FileInfo func(childComplexity int) int
 		Id       func(childComplexity int) int
@@ -525,12 +525,12 @@ type ComplexityRoot struct {
 		BatchV1CronJobsList    func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		BatchV1JobsGet         func(childComplexity int, name string, namespace *string, options *v1.GetOptions) int
 		BatchV1JobsList        func(childComplexity int, namespace *string, options *v1.ListOptions) int
-		ClusterInfoGet         func(childComplexity int) int
 		CoreV1NamespacesList   func(childComplexity int, options *v1.ListOptions) int
 		CoreV1NodesList        func(childComplexity int, options *v1.ListOptions) int
 		CoreV1PodsGet          func(childComplexity int, namespace *string, name string, options *v1.GetOptions) int
 		CoreV1PodsGetLogs      func(childComplexity int, namespace *string, name string, options *v11.PodLogOptions) int
 		CoreV1PodsList         func(childComplexity int, namespace *string, options *v1.ListOptions) int
+		Init                   func(childComplexity int) int
 		LivezGet               func(childComplexity int) int
 		LogMetadataList        func(childComplexity int, namespace *string) int
 		PodLogHead             func(childComplexity int, namespace *string, name string, container *string, after *string, since *string, first *int) int
@@ -608,7 +608,7 @@ type QueryResolver interface {
 	LivezGet(ctx context.Context) (model.HealthCheckResponse, error)
 	ReadyzGet(ctx context.Context) (model.HealthCheckResponse, error)
 	ReadyWait(ctx context.Context, timeout *int) (bool, error)
-	ClusterInfoGet(ctx context.Context) (model.ClusterInfoResponse, error)
+	Init(ctx context.Context) (model.InitResponse, error)
 }
 type SubscriptionResolver interface {
 	AppsV1DaemonSetsWatch(ctx context.Context, namespace *string, options *v1.ListOptions) (<-chan *watch.Event, error)
@@ -1535,34 +1535,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.BatchV1JobsWatchEvent.Type(childComplexity), true
 
-	case "ClusterInfoKubetailAPI.namespace":
-		if e.complexity.ClusterInfoKubetailAPI.Namespace == nil {
-			break
-		}
-
-		return e.complexity.ClusterInfoKubetailAPI.Namespace(childComplexity), true
-
-	case "ClusterInfoKubetailAPI.serviceName":
-		if e.complexity.ClusterInfoKubetailAPI.ServiceName == nil {
-			break
-		}
-
-		return e.complexity.ClusterInfoKubetailAPI.ServiceName(childComplexity), true
-
-	case "ClusterInfoKubetailAPI.version":
-		if e.complexity.ClusterInfoKubetailAPI.Version == nil {
-			break
-		}
-
-		return e.complexity.ClusterInfoKubetailAPI.Version(childComplexity), true
-
-	case "ClusterInfoResponse.kubetailAPI":
-		if e.complexity.ClusterInfoResponse.KubetailAPI == nil {
-			break
-		}
-
-		return e.complexity.ClusterInfoResponse.KubetailAPI(childComplexity), true
-
 	case "CoreV1Container.image":
 		if e.complexity.CoreV1Container.Image == nil {
 			break
@@ -2067,6 +2039,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.HealthCheckResponse.Timestamp(childComplexity), true
 
+	case "InitKubetailAPIDetails.namespace":
+		if e.complexity.InitKubetailAPIDetails.Namespace == nil {
+			break
+		}
+
+		return e.complexity.InitKubetailAPIDetails.Namespace(childComplexity), true
+
+	case "InitKubetailAPIDetails.serviceName":
+		if e.complexity.InitKubetailAPIDetails.ServiceName == nil {
+			break
+		}
+
+		return e.complexity.InitKubetailAPIDetails.ServiceName(childComplexity), true
+
+	case "InitKubetailAPIDetails.version":
+		if e.complexity.InitKubetailAPIDetails.Version == nil {
+			break
+		}
+
+		return e.complexity.InitKubetailAPIDetails.Version(childComplexity), true
+
+	case "InitResponse.kubetailAPI":
+		if e.complexity.InitResponse.KubetailAPI == nil {
+			break
+		}
+
+		return e.complexity.InitResponse.KubetailAPI(childComplexity), true
+
 	case "LogMetadata.fileInfo":
 		if e.complexity.LogMetadata.FileInfo == nil {
 			break
@@ -2512,13 +2512,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.BatchV1JobsList(childComplexity, args["namespace"].(*string), args["options"].(*v1.ListOptions)), true
 
-	case "Query.clusterInfoGet":
-		if e.complexity.Query.ClusterInfoGet == nil {
-			break
-		}
-
-		return e.complexity.Query.ClusterInfoGet(childComplexity), true
-
 	case "Query.coreV1NamespacesList":
 		if e.complexity.Query.CoreV1NamespacesList == nil {
 			break
@@ -2578,6 +2571,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.CoreV1PodsList(childComplexity, args["namespace"].(*string), args["options"].(*v1.ListOptions)), true
+
+	case "Query.init":
+		if e.complexity.Query.Init == nil {
+			break
+		}
+
+		return e.complexity.Query.Init(childComplexity), true
 
 	case "Query.livezGet":
 		if e.complexity.Query.LivezGet == nil {
@@ -11487,187 +11487,6 @@ func (ec *executionContext) fieldContext_BatchV1JobsWatchEvent_object(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _ClusterInfoKubetailAPI_version(ctx context.Context, field graphql.CollectedField, obj *model.ClusterInfoKubetailAPI) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ClusterInfoKubetailAPI_version(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Version, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ClusterInfoKubetailAPI_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ClusterInfoKubetailAPI",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ClusterInfoKubetailAPI_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ClusterInfoKubetailAPI) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ClusterInfoKubetailAPI_namespace(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Namespace, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ClusterInfoKubetailAPI_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ClusterInfoKubetailAPI",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ClusterInfoKubetailAPI_serviceName(ctx context.Context, field graphql.CollectedField, obj *model.ClusterInfoKubetailAPI) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ClusterInfoKubetailAPI_serviceName(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ServiceName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ClusterInfoKubetailAPI_serviceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ClusterInfoKubetailAPI",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ClusterInfoResponse_kubetailAPI(ctx context.Context, field graphql.CollectedField, obj *model.ClusterInfoResponse) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ClusterInfoResponse_kubetailAPI(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.KubetailAPI, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.ClusterInfoKubetailAPI)
-	fc.Result = res
-	return ec.marshalOClusterInfoKubetailAPI2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐClusterInfoKubetailAPI(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ClusterInfoResponse_kubetailAPI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ClusterInfoResponse",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "version":
-				return ec.fieldContext_ClusterInfoKubetailAPI_version(ctx, field)
-			case "namespace":
-				return ec.fieldContext_ClusterInfoKubetailAPI_namespace(ctx, field)
-			case "serviceName":
-				return ec.fieldContext_ClusterInfoKubetailAPI_serviceName(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ClusterInfoKubetailAPI", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _CoreV1Container_name(ctx context.Context, field graphql.CollectedField, obj *v11.Container) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CoreV1Container_name(ctx, field)
 	if err != nil {
@@ -15043,6 +14862,187 @@ func (ec *executionContext) fieldContext_HealthCheckResponse_timestamp(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InitKubetailAPIDetails_version(ctx context.Context, field graphql.CollectedField, obj *model.InitKubetailAPIDetails) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InitKubetailAPIDetails_version(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Version, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InitKubetailAPIDetails_version(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InitKubetailAPIDetails",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InitKubetailAPIDetails_namespace(ctx context.Context, field graphql.CollectedField, obj *model.InitKubetailAPIDetails) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InitKubetailAPIDetails_namespace(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Namespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InitKubetailAPIDetails_namespace(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InitKubetailAPIDetails",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InitKubetailAPIDetails_serviceName(ctx context.Context, field graphql.CollectedField, obj *model.InitKubetailAPIDetails) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InitKubetailAPIDetails_serviceName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ServiceName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InitKubetailAPIDetails_serviceName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InitKubetailAPIDetails",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InitResponse_kubetailAPI(ctx context.Context, field graphql.CollectedField, obj *model.InitResponse) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InitResponse_kubetailAPI(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.KubetailAPI, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.InitKubetailAPIDetails)
+	fc.Result = res
+	return ec.marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InitResponse_kubetailAPI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InitResponse",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "version":
+				return ec.fieldContext_InitKubetailAPIDetails_version(ctx, field)
+			case "namespace":
+				return ec.fieldContext_InitKubetailAPIDetails_namespace(ctx, field)
+			case "serviceName":
+				return ec.fieldContext_InitKubetailAPIDetails_serviceName(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type InitKubetailAPIDetails", field.Name)
 		},
 	}
 	return fc, nil
@@ -18431,8 +18431,8 @@ func (ec *executionContext) fieldContext_Query_readyWait(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_clusterInfoGet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_clusterInfoGet(ctx, field)
+func (ec *executionContext) _Query_init(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_init(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -18445,7 +18445,7 @@ func (ec *executionContext) _Query_clusterInfoGet(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ClusterInfoGet(rctx)
+		return ec.resolvers.Query().Init(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -18457,12 +18457,12 @@ func (ec *executionContext) _Query_clusterInfoGet(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.ClusterInfoResponse)
+	res := resTmp.(model.InitResponse)
 	fc.Result = res
-	return ec.marshalNClusterInfoResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐClusterInfoResponse(ctx, field.Selections, res)
+	return ec.marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitResponse(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_clusterInfoGet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_init(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -18471,9 +18471,9 @@ func (ec *executionContext) fieldContext_Query_clusterInfoGet(_ context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "kubetailAPI":
-				return ec.fieldContext_ClusterInfoResponse_kubetailAPI(ctx, field)
+				return ec.fieldContext_InitResponse_kubetailAPI(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ClusterInfoResponse", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type InitResponse", field.Name)
 		},
 	}
 	return fc, nil
@@ -23538,91 +23538,6 @@ func (ec *executionContext) _BatchV1JobsWatchEvent(ctx context.Context, sel ast.
 	return out
 }
 
-var clusterInfoKubetailAPIImplementors = []string{"ClusterInfoKubetailAPI"}
-
-func (ec *executionContext) _ClusterInfoKubetailAPI(ctx context.Context, sel ast.SelectionSet, obj *model.ClusterInfoKubetailAPI) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, clusterInfoKubetailAPIImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ClusterInfoKubetailAPI")
-		case "version":
-			out.Values[i] = ec._ClusterInfoKubetailAPI_version(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "namespace":
-			out.Values[i] = ec._ClusterInfoKubetailAPI_namespace(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "serviceName":
-			out.Values[i] = ec._ClusterInfoKubetailAPI_serviceName(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var clusterInfoResponseImplementors = []string{"ClusterInfoResponse"}
-
-func (ec *executionContext) _ClusterInfoResponse(ctx context.Context, sel ast.SelectionSet, obj *model.ClusterInfoResponse) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, clusterInfoResponseImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ClusterInfoResponse")
-		case "kubetailAPI":
-			out.Values[i] = ec._ClusterInfoResponse_kubetailAPI(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var coreV1ContainerImplementors = []string{"CoreV1Container"}
 
 func (ec *executionContext) _CoreV1Container(ctx context.Context, sel ast.SelectionSet, obj *v11.Container) graphql.Marshaler {
@@ -24675,6 +24590,91 @@ func (ec *executionContext) _HealthCheckResponse(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var initKubetailAPIDetailsImplementors = []string{"InitKubetailAPIDetails"}
+
+func (ec *executionContext) _InitKubetailAPIDetails(ctx context.Context, sel ast.SelectionSet, obj *model.InitKubetailAPIDetails) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, initKubetailAPIDetailsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InitKubetailAPIDetails")
+		case "version":
+			out.Values[i] = ec._InitKubetailAPIDetails_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "namespace":
+			out.Values[i] = ec._InitKubetailAPIDetails_namespace(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "serviceName":
+			out.Values[i] = ec._InitKubetailAPIDetails_serviceName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var initResponseImplementors = []string{"InitResponse"}
+
+func (ec *executionContext) _InitResponse(ctx context.Context, sel ast.SelectionSet, obj *model.InitResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, initResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InitResponse")
+		case "kubetailAPI":
+			out.Values[i] = ec._InitResponse_kubetailAPI(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25790,7 +25790,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "clusterInfoGet":
+		case "init":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -25799,7 +25799,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_clusterInfoGet(ctx, field)
+				res = ec._Query_init(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -26694,10 +26694,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNClusterInfoResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐClusterInfoResponse(ctx context.Context, sel ast.SelectionSet, v model.ClusterInfoResponse) graphql.Marshaler {
-	return ec._ClusterInfoResponse(ctx, sel, &v)
-}
-
 func (ec *executionContext) unmarshalNCoreV1ConditionStatus2k8sᚗioᚋapiᚋcoreᚋv1ᚐConditionStatus(ctx context.Context, v interface{}) (v11.ConditionStatus, error) {
 	tmp, err := graphql.UnmarshalString(v)
 	res := v11.ConditionStatus(tmp)
@@ -27073,6 +27069,10 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitResponse(ctx context.Context, sel ast.SelectionSet, v model.InitResponse) graphql.Marshaler {
+	return ec._InitResponse(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v interface{}) (int32, error) {
@@ -27849,13 +27849,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOClusterInfoKubetailAPI2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐClusterInfoKubetailAPI(ctx context.Context, sel ast.SelectionSet, v *model.ClusterInfoKubetailAPI) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ClusterInfoKubetailAPI(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOCoreV1ContainerStateRunning2ᚖk8sᚗioᚋapiᚋcoreᚋv1ᚐContainerStateRunning(ctx context.Context, sel ast.SelectionSet, v *v11.ContainerStateRunning) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -27962,6 +27955,13 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	}
 	res := graphql.MarshalID(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx context.Context, sel ast.SelectionSet, v *model.InitKubetailAPIDetails) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._InitKubetailAPIDetails(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {

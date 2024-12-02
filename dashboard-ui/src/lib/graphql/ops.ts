@@ -1143,3 +1143,15 @@ export const READY_WAIT = gql(`
     readyWait(timeout: 20)
   }
 `);
+
+export const INIT = gql(`
+  query Init {
+    init {
+      kubetailAPI {
+        version
+        namespace
+        serviceName
+      }
+    }
+  }
+`);

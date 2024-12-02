@@ -387,13 +387,13 @@ func (r *queryResolver) ReadyWait(ctx context.Context, timeout *int) (bool, erro
 	return true, nil
 }
 
-// ClusterInfoGet is the resolver for the clusterInfoGet field.
-func (r *queryResolver) ClusterInfoGet(ctx context.Context) (model.ClusterInfoResponse, error) {
+// Init is the resolver for the init field.
+func (r *queryResolver) Init(ctx context.Context) (model.InitResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	if err := r.WaitUntilReady(ctx); err != nil {
-		return model.ClusterInfoResponse{}, err
+		return model.InitResponse{}, err
 	}
 
 	// Get clientset
@@ -407,18 +407,18 @@ func (r *queryResolver) ClusterInfoGet(ctx context.Context) (model.ClusterInfoRe
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return model.ClusterInfoResponse{}, err
+		return model.InitResponse{}, err
 	}
 
 	// None found
 	if len(services.Items) == 0 {
-		return model.ClusterInfoResponse{}, nil
+		return model.InitResponse{}, nil
 	}
 
 	svc := services.Items[0]
 
-	return model.ClusterInfoResponse{
-		KubetailAPI: &model.ClusterInfoKubetailAPI{
+	return model.InitResponse{
+		KubetailAPI: &model.InitKubetailAPIDetails{
 			Version:     svc.Labels["app.kubernetes.io/version"],
 			Namespace:   svc.Namespace,
 			ServiceName: svc.Name,

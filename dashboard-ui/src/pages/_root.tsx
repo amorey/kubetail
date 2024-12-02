@@ -112,9 +112,13 @@ const LoadingModal = () => (
 );
 
 function OutletWrapper() {
-  useSuspenseQuery(ops.READY_WAIT, {
+  const { data } = useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
   });
+
+  useEffect(() => {
+    console.log(data);
+  }, [data]);
 
   return <Outlet />;
 }

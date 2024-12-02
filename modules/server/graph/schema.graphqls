@@ -303,18 +303,6 @@ type BatchV1JobsWatchEvent {
   object: BatchV1Job
 }
 
-# --- Cluster ---
-
-type ClusterInfoResponse {
-  kubetailAPI: ClusterInfoKubetailAPI
-}
-
-type ClusterInfoKubetailAPI {
-  version: String!
-  namespace: String!
-  serviceName: String!
-}
-
 # --- CoreV1 ---
 
 # https://pkg.go.dev/k8s.io/api@v0.28.1/core/v1#ConditionStatus
@@ -495,6 +483,18 @@ type HealthCheckResponse {
 enum HealthCheckStatus {
   SUCCESS
   FAILURE
+}
+
+# --- Init ---
+
+type InitResponse {
+  kubetailAPI: InitKubetailAPIDetails
+}
+
+type InitKubetailAPIDetails {
+  version: String!
+  namespace: String!
+  serviceName: String!
 }
 
 # --- Log Metadata ---
@@ -741,7 +741,7 @@ type Query {
   """
   Miscellaneous
   """
-  clusterInfoGet: ClusterInfoResponse!
+  init: InitResponse!
 }
 
 type Subscription {

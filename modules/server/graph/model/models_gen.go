@@ -9,20 +9,20 @@ import (
 	"time"
 )
 
-type ClusterInfoKubetailAPI struct {
+type HealthCheckResponse struct {
+	Status    HealthCheckStatus `json:"status"`
+	Message   *string           `json:"message,omitempty"`
+	Timestamp time.Time         `json:"timestamp"`
+}
+
+type InitKubetailAPIDetails struct {
 	Version     string `json:"version"`
 	Namespace   string `json:"namespace"`
 	ServiceName string `json:"serviceName"`
 }
 
-type ClusterInfoResponse struct {
-	KubetailAPI *ClusterInfoKubetailAPI `json:"kubetailAPI,omitempty"`
-}
-
-type HealthCheckResponse struct {
-	Status    HealthCheckStatus `json:"status"`
-	Message   *string           `json:"message,omitempty"`
-	Timestamp time.Time         `json:"timestamp"`
+type InitResponse struct {
+	KubetailAPI *InitKubetailAPIDetails `json:"kubetailAPI,omitempty"`
 }
 
 type LogRecord struct {
