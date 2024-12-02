@@ -15,6 +15,9 @@
 package main
 
 import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +35,23 @@ func main() {
 	cmd := cobra.Command{
 		Use:   "kubetail-api",
 		Short: "Kubetail API",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Validate CLI flags
+			return validator.New().Struct(cli)
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("hi")
+			fmt.Println(cli.Config)
+			fmt.Println(cli.Addr)
+		},
 	}
+
+	// Define flags
+	flagset := cmd.Flags()
+	flagset.SortFlags = false
+	flagset.StringVarP(&cli.Config, "config", "c", "", "Path to configuration file (e.g. \"/etc/kubetail/api.yaml\")")
+	flagset.StringP("addr", "a", ":50051", "Host address to bind to")
+	flagset.StringArrayVarP(&params, "param", "p", []string{}, "Config params")
 
 	// Execute command
 	if err := cmd.Execute(); err != nil {
