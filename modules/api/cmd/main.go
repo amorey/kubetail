@@ -16,10 +16,14 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/kubetail-org/kubetail/modules/common/config"
 )
 
 type CLI struct {
@@ -40,9 +44,33 @@ func main() {
 			return validator.New().Struct(cli)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("hi")
-			fmt.Println(cli.Config)
-			fmt.Println(cli.Addr)
+
+			// Init viper
+			v := viper.New()
+			v.BindPFlag("api.addr", cmd.Flags().Lookup("addr"))
+
+			// Init config
+			cfg, err := config.NewConfig(v, cli.Config)
+			if err != nil {
+				zlog.Fatal().Caller().Err(err).Send()
+			}
+
+			// Override params from cli
+			for _, param := range params {
+				split := strings.SplitN(param, ":", 2)
+				if len(split) == 2 {
+					v.Set(split[0], split[1])
+				}
+			}
+
+			// Configure logger
+			config.ConfigureLogger(config.LoggerOptions{
+				Enabled: cfg.API.Logging.Enabled,
+				Level:   cfg.API.Logging.Level,
+				Format:  cfg.API.Logging.Format,
+			})
+
+			fmt.Println(cfg.API.Addr)
 		},
 	}
 

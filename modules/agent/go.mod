@@ -9,7 +9,7 @@ replace github.com/kubetail-org/kubetail/modules/common => ../common
 require (
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/go-playground/validator/v10 v10.22.1
+	github.com/go-playground/validator/v10 v10.23.0
 	github.com/kubetail-org/kubetail/modules/common v0.0.0-00010101000000-000000000000
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1

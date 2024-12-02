@@ -126,6 +126,23 @@ type Config struct {
 		}
 	}
 
+	// API options
+	API struct {
+		Addr string `validate:"omitempty,hostname_port"`
+
+		// logging options
+		Logging struct {
+			// enable logging
+			Enabled bool
+
+			// log level
+			Level string `validate:"oneof=debug info warn error disabled"`
+
+			// log format
+			Format string `validate:"oneof=json pretty"`
+		}
+	}
+
 	// agent options
 	Agent struct {
 		Addr             string `validate:"omitempty,hostname_port"`

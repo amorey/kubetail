@@ -11,7 +11,7 @@ require (
 	github.com/gin-contrib/secure v1.1.0
 	github.com/gin-contrib/sessions v1.0.1
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-playground/validator/v10 v10.22.1
+	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/websocket v1.5.1
 	github.com/gwatts/gin-adapter v1.0.0
