@@ -30,9 +30,11 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/kubetail-org/kubetail/modules/common/apipb"
 	"github.com/kubetail-org/kubetail/modules/common/config"
 
 	"github.com/kubetail-org/kubetail/modules/api/internal/server"
+	"github.com/kubetail-org/kubetail/modules/api/internal/services/logmetadata"
 )
 
 type CLI struct {
@@ -88,18 +90,25 @@ func main() {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
 
+			// Init LogMetadataService
+			svc, err := logmetadata.NewLogMetadataService()
+			if err != nil {
+				zlog.Fatal().Caller().Err(err).Send()
+			}
+			apipb.RegisterLogMetadataServiceServer(grpcServer, svc)
+
 			// Init health service
 			healthServer := health.NewServer()
 			grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
 			healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
-			// init listener
+			// Init listener
 			lis, err := net.Listen("tcp", cfg.API.Addr)
 			if err != nil {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
 
-			// run server in go routine
+			// Run server in go routine
 			go func() {
 				zlog.Info().Msg("Starting kubetail-api on " + cfg.API.Addr)
 				if err := grpcServer.Serve(lis); err != nil {
@@ -117,12 +126,15 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			// start graceful shutdown
+			// Start graceful shutdown
 			done := make(chan struct{})
 			go func() {
 				grpcServer.GracefulStop()
 				close(done)
 			}()
+
+			// Shutdown service
+			svc.Shutdown()
 
 			select {
 			case <-done:

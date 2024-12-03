@@ -23,6 +23,29 @@ docker_build_with_restart(
   ]
 )
 
+# kubetail-api
+local_resource(
+  'kubetail-api-compile',
+  'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/api ./api/cmd/main.go',
+  deps=[
+    './modules/api',
+    './modules/common'
+  ]
+)
+
+docker_build_with_restart(
+  'kubetail-api',
+  dockerfile='hack/tilt/Dockerfile.kubetail-api',
+  context='.',
+  entrypoint="/api/api -c /etc/kubetail/config.yaml",
+  only=[
+    './.tilt/api',
+  ],
+  live_update=[
+    sync('./.tilt/api', '/agent/api'),
+  ]
+)
+
 # kubetail-server
 local_resource(
   'kubetail-server-compile',
@@ -68,14 +91,11 @@ k8s_resource(
 )
 
 k8s_resource(
-  'kubetail-server',
-  port_forwards='7500:4000',
+  'kubetail-api',
   objects=[
-    'kubetail-server:clusterrole',
-    'kubetail-server:clusterrolebinding',
-    'kubetail-server:role',
-    'kubetail-server:rolebinding',
-    'kubetail-server:serviceaccount',
+    'kubetail-api:serviceaccount',
+    'kubetail-api:role',
+    'kubetail-api:rolebinding',
   ],
   resource_deps=['kubetail-shared'],
 )
@@ -87,6 +107,19 @@ k8s_resource(
     'kubetail-agent:clusterrole',
     'kubetail-agent:clusterrolebinding',
     'kubetail-agent:networkpolicy',
+  ],
+  resource_deps=['kubetail-shared'],
+)
+
+k8s_resource(
+  'kubetail-server',
+  port_forwards='7500:4000',
+  objects=[
+    'kubetail-server:clusterrole',
+    'kubetail-server:clusterrolebinding',
+    'kubetail-server:role',
+    'kubetail-server:rolebinding',
+    'kubetail-server:serviceaccount',
   ],
   resource_deps=['kubetail-shared'],
 )

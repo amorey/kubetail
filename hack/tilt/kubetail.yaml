@@ -9,6 +9,26 @@ data:
   config.yaml: |
     auth-mode: cluster
     allowed-namespaces: []
+    api:
+      addr: :50051
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
+    agent:
+      addr: :50051
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
     server:
       addr: :4000
       base-path: /
@@ -45,16 +65,113 @@ data:
         enabled: false
         cert-file:
         key-file:
-    agent:
-      addr: :50051
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-      tls:
-        enabled: false
-        cert-file:
-        key-file:
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kubetail-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: api
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: api
+rules:
+- apiGroups: [discovery.k8s.io]
+  resources: [endpointslices]
+  verbs: [list, watch]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: api
+roleRef:
+  kind: Role
+  name: kubetail-api
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: kubetail-api
+  namespace: default    
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetail-api
+  namespace: default
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/component: api
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubetail
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: kubetail-api
+      containers:
+      - name: kubetail-api
+        image: kubetail-api
+        ports:
+        - name: grpc
+          protocol: TCP
+          containerPort: 50051
+        args:
+        - --config=/etc/kubetail/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        resources: {}
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubetail-api
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: api
 ---
 kind: ServiceAccount
 apiVersion: v1
