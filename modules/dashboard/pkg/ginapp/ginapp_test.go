@@ -86,28 +86,28 @@ func TestGzip(t *testing.T) {
 
 func TestSessionCookieOptions(t *testing.T) {
 	cfg1 := NewTestConfig()
-	cfg1.Server.Session.Cookie.Path = "/xxx"
+	cfg1.Dashboard.Session.Cookie.Path = "/xxx"
 
 	cfg2 := NewTestConfig()
-	cfg2.Server.Session.Cookie.Domain = "x.example.com"
+	cfg2.Dashboard.Session.Cookie.Domain = "x.example.com"
 
 	cfg3 := NewTestConfig()
-	cfg3.Server.Session.Cookie.MaxAge = 1
+	cfg3.Dashboard.Session.Cookie.MaxAge = 1
 
 	cfg4 := NewTestConfig()
-	cfg4.Server.Session.Cookie.Secure = false
+	cfg4.Dashboard.Session.Cookie.Secure = false
 
 	cfg5 := NewTestConfig()
-	cfg5.Server.Session.Cookie.Secure = true
+	cfg5.Dashboard.Session.Cookie.Secure = true
 
 	cfg6 := NewTestConfig()
-	cfg6.Server.Session.Cookie.HttpOnly = false
+	cfg6.Dashboard.Session.Cookie.HttpOnly = false
 
 	cfg7 := NewTestConfig()
-	cfg7.Server.Session.Cookie.HttpOnly = true
+	cfg7.Dashboard.Session.Cookie.HttpOnly = true
 
 	cfg8 := NewTestConfig()
-	cfg8.Server.Session.Cookie.SameSite = http.SameSiteNoneMode
+	cfg8.Dashboard.Session.Cookie.SameSite = http.SameSiteNoneMode
 
 	tests := []struct {
 		name   string
@@ -145,40 +145,40 @@ func TestSessionCookieOptions(t *testing.T) {
 			// check session cookie
 			cookie := GetCookie(w.Result().Cookies(), "session")
 			assert.NotNil(t, cookie)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.Path, cookie.Path)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.Domain, cookie.Domain)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.MaxAge, cookie.MaxAge)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.Secure, cookie.Secure)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.HttpOnly, cookie.HttpOnly)
-			assert.Equal(t, tt.setCfg.Server.Session.Cookie.SameSite, cookie.SameSite)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.Path, cookie.Path)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.Domain, cookie.Domain)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.MaxAge, cookie.MaxAge)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.Secure, cookie.Secure)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.HttpOnly, cookie.HttpOnly)
+			assert.Equal(t, tt.setCfg.Dashboard.Session.Cookie.SameSite, cookie.SameSite)
 		})
 	}
 }
 
 func TestCsrfCookieOptions(t *testing.T) {
 	cfg1 := NewTestConfig()
-	cfg1.Server.CSRF.Cookie.Path = "/xxx"
+	cfg1.Dashboard.CSRF.Cookie.Path = "/xxx"
 
 	cfg2 := NewTestConfig()
-	cfg2.Server.CSRF.Cookie.Domain = "x.example.com"
+	cfg2.Dashboard.CSRF.Cookie.Domain = "x.example.com"
 
 	cfg3 := NewTestConfig()
-	cfg3.Server.CSRF.Cookie.MaxAge = 1
+	cfg3.Dashboard.CSRF.Cookie.MaxAge = 1
 
 	cfg4 := NewTestConfig()
-	cfg4.Server.CSRF.Cookie.Secure = false
+	cfg4.Dashboard.CSRF.Cookie.Secure = false
 
 	cfg5 := NewTestConfig()
-	cfg5.Server.CSRF.Cookie.Secure = true
+	cfg5.Dashboard.CSRF.Cookie.Secure = true
 
 	cfg6 := NewTestConfig()
-	cfg6.Server.CSRF.Cookie.HttpOnly = false
+	cfg6.Dashboard.CSRF.Cookie.HttpOnly = false
 
 	cfg7 := NewTestConfig()
-	cfg7.Server.CSRF.Cookie.HttpOnly = true
+	cfg7.Dashboard.CSRF.Cookie.HttpOnly = true
 
 	cfg8 := NewTestConfig()
-	cfg8.Server.CSRF.Cookie.SameSite = csrf.SameSiteNoneMode
+	cfg8.Dashboard.CSRF.Cookie.SameSite = csrf.SameSiteNoneMode
 
 	tests := []struct {
 		name   string
@@ -196,8 +196,8 @@ func TestCsrfCookieOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.setCfg.Server.CSRF.Enabled = true
-			tt.setCfg.Server.CSRF.Cookie.Name = "customname"
+			tt.setCfg.Dashboard.CSRF.Enabled = true
+			tt.setCfg.Dashboard.CSRF.Cookie.Name = "customname"
 			app := NewTestApp(tt.setCfg)
 
 			// add route for testing
@@ -211,14 +211,14 @@ func TestCsrfCookieOptions(t *testing.T) {
 			app.ServeHTTP(w, r)
 
 			// check session cookie
-			cookie := GetCookie(w.Result().Cookies(), tt.setCfg.Server.CSRF.Cookie.Name)
+			cookie := GetCookie(w.Result().Cookies(), tt.setCfg.Dashboard.CSRF.Cookie.Name)
 			assert.NotNil(t, cookie)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.Path, cookie.Path)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.Domain, cookie.Domain)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.MaxAge, cookie.MaxAge)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.Secure, cookie.Secure)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.HttpOnly, cookie.HttpOnly)
-			assert.Equal(t, tt.setCfg.Server.CSRF.Cookie.SameSite, csrf.SameSiteMode(cookie.SameSite))
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.Path, cookie.Path)
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.Domain, cookie.Domain)
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.MaxAge, cookie.MaxAge)
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.Secure, cookie.Secure)
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.HttpOnly, cookie.HttpOnly)
+			assert.Equal(t, tt.setCfg.Dashboard.CSRF.Cookie.SameSite, csrf.SameSiteMode(cookie.SameSite))
 		})
 	}
 }

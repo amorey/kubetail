@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="{{ pathJoin .config.Server.BasePath "favicon.ico" }}"/>
+    <link rel="icon" href="{{ pathJoin .config.Dashboard.BasePath "favicon.ico" }}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kubetail | Log Viewer</title>
     <script>
@@ -12,13 +12,13 @@
       window.runtimeConfig = {{ .runtimeConfig }};
     </script>
     {{- $index := (index .manifest "index.html") }}    
-    <script type="module" crossorigin src="{{ pathJoin $.config.Server.BasePath $index.file }}"></script>
+    <script type="module" crossorigin src="{{ pathJoin $.config.Dashboard.BasePath $index.file }}"></script>
     {{- range $importRef := $index.imports }}
     {{- $import := index $.manifest $importRef }}
-    <link rel="modulepreload" crossorigin href="{{ pathJoin $.config.Server.BasePath $import.file }}">
+    <link rel="modulepreload" crossorigin href="{{ pathJoin $.config.Dashboard.BasePath $import.file }}">
     {{- end }}
     {{- range $css := $index.css }}
-    <link rel="stylesheet" crossorigin href="{{ pathJoin $.config.Server.BasePath $css }}">
+    <link rel="stylesheet" crossorigin href="{{ pathJoin $.config.Dashboard.BasePath $css }}">
     {{- end }}
   </head>
   <body>

@@ -68,8 +68,8 @@ var serveCmd = &cobra.Command{
 
 		// Init viper
 		v := viper.New()
-		v.BindPFlag("server.logging.level", cmd.Flags().Lookup("log-level"))
-		v.Set("server.addr", fmt.Sprintf("%s:%d", host, port))
+		v.BindPFlag("dashboard.logging.level", cmd.Flags().Lookup("log-level"))
+		v.Set("dashboard.addr", fmt.Sprintf("%s:%d", host, port))
 
 		// init config
 		cfg, err := config.NewConfig(v, "")
@@ -78,13 +78,13 @@ var serveCmd = &cobra.Command{
 		}
 
 		cfg.AuthMode = config.AuthModeLocal
-		cfg.Server.Logging.AccessLog.Enabled = false
+		cfg.Dashboard.Logging.AccessLog.Enabled = false
 
 		secret, err := generateRandomString(32)
 		if err != nil {
 			zlog.Fatal().Caller().Err(err).Send()
 		}
-		cfg.Server.CSRF.Secret = secret
+		cfg.Dashboard.CSRF.Secret = secret
 
 		// set gin mode
 		gin.SetMode("release")
@@ -92,7 +92,7 @@ var serveCmd = &cobra.Command{
 		// configure logger
 		config.ConfigureLogger(config.LoggerOptions{
 			Enabled: true,
-			Level:   cfg.Server.Logging.Level,
+			Level:   cfg.Dashboard.Logging.Level,
 			Format:  "pretty",
 		})
 
@@ -110,7 +110,7 @@ var serveCmd = &cobra.Command{
 
 		// create server
 		server := http.Server{
-			Addr:         cfg.Server.Addr,
+			Addr:         cfg.Dashboard.Addr,
 			Handler:      app,
 			IdleTimeout:  1 * time.Minute,
 			ReadTimeout:  5 * time.Second,
@@ -192,7 +192,7 @@ func serveRemote(localPort int, skipOpen bool) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	defer close(quit)
 
-	tunnel, err := tunnel.NewTunnel("kubetail-system", "kubetail-server", 7500, localPort)
+	tunnel, err := tunnel.NewTunnel("kubetail-system", "kubetail-dashboard", 7500, localPort)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}

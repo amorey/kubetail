@@ -50,8 +50,67 @@ type Config struct {
 	AllowedNamespaces []string `mapstructure:"allowed-namespaces"`
 	KubeConfig        string   `mapstructure:"kube-config"`
 
-	// server options
-	Server struct {
+	// API options
+	API struct {
+		Addr string `validate:"omitempty,hostname_port"`
+
+		// TLS options
+		TLS struct {
+			// enable tls termination
+			Enabled bool
+
+			// TLS certificate file
+			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
+
+			// TLS certificate key file
+			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+		}
+
+		// logging options
+		Logging struct {
+			// enable logging
+			Enabled bool
+
+			// log level
+			Level string `validate:"oneof=debug info warn error disabled"`
+
+			// log format
+			Format string `validate:"oneof=json pretty"`
+		}
+	}
+
+	// agent options
+	Agent struct {
+		Addr             string `validate:"omitempty,hostname_port"`
+		ContainerLogsDir string `mapstructure:"container-logs-dir"`
+
+		// TLS options
+		TLS struct {
+			// enable tls termination
+			Enabled bool
+
+			// TLS certificate file
+			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
+
+			// TLS certificate key file
+			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+		}
+
+		// logging options
+		Logging struct {
+			// enable logging
+			Enabled bool
+
+			// log level
+			Level string `validate:"oneof=debug info warn error disabled"`
+
+			// log format
+			Format string `validate:"oneof=json pretty"`
+		}
+	}
+
+	// dashboard options
+	Dashboard struct {
 		Addr              string `validate:"omitempty,hostname_port"`
 		BasePath          string `mapstructure:"base-path"`
 		GinMode           string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
@@ -125,65 +184,6 @@ type Config struct {
 			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
 		}
 	}
-
-	// API options
-	API struct {
-		Addr string `validate:"omitempty,hostname_port"`
-
-		// TLS options
-		TLS struct {
-			// enable tls termination
-			Enabled bool
-
-			// TLS certificate file
-			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
-
-			// TLS certificate key file
-			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
-		}
-
-		// logging options
-		Logging struct {
-			// enable logging
-			Enabled bool
-
-			// log level
-			Level string `validate:"oneof=debug info warn error disabled"`
-
-			// log format
-			Format string `validate:"oneof=json pretty"`
-		}
-	}
-
-	// agent options
-	Agent struct {
-		Addr             string `validate:"omitempty,hostname_port"`
-		ContainerLogsDir string `mapstructure:"container-logs-dir"`
-
-		// TLS options
-		TLS struct {
-			// enable tls termination
-			Enabled bool
-
-			// TLS certificate file
-			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
-
-			// TLS certificate key file
-			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
-		}
-
-		// logging options
-		Logging struct {
-			// enable logging
-			Enabled bool
-
-			// log level
-			Level string `validate:"oneof=debug info warn error disabled"`
-
-			// log format
-			Format string `validate:"oneof=json pretty"`
-		}
-	}
 }
 
 // Validate config
@@ -200,33 +200,33 @@ func DefaultConfig() *Config {
 	cfg.AllowedNamespaces = []string{}
 	cfg.KubeConfig = filepath.Join(home, ".kube", "config")
 
-	cfg.Server.Addr = ":4000"
-	cfg.Server.BasePath = "/"
-	cfg.Server.GinMode = "release"
-	cfg.Server.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
-	cfg.Server.Session.Secret = ""
-	cfg.Server.Session.Cookie.Name = "session"
-	cfg.Server.Session.Cookie.Path = "/"
-	cfg.Server.Session.Cookie.Domain = ""
-	cfg.Server.Session.Cookie.MaxAge = 86400 * 30 // 30 days
-	cfg.Server.Session.Cookie.Secure = false
-	cfg.Server.Session.Cookie.HttpOnly = true
-	cfg.Server.Session.Cookie.SameSite = http.SameSiteLaxMode
-	cfg.Server.CSRF.Enabled = true
-	cfg.Server.CSRF.Secret = ""
-	cfg.Server.CSRF.FieldName = "csrf_token"
-	cfg.Server.CSRF.Cookie.Name = "csrf"
-	cfg.Server.CSRF.Cookie.Path = "/"
-	cfg.Server.CSRF.Cookie.Domain = ""
-	cfg.Server.CSRF.Cookie.MaxAge = 60 * 60 * 12 // 12 hours
-	cfg.Server.CSRF.Cookie.Secure = false
-	cfg.Server.CSRF.Cookie.HttpOnly = true
-	cfg.Server.CSRF.Cookie.SameSite = csrf.SameSiteStrictMode
-	cfg.Server.Logging.Enabled = true
-	cfg.Server.Logging.Level = "info"
-	cfg.Server.Logging.Format = "json"
-	cfg.Server.Logging.AccessLog.Enabled = true
-	cfg.Server.Logging.AccessLog.HideHealthChecks = false
+	cfg.Dashboard.Addr = ":4000"
+	cfg.Dashboard.BasePath = "/"
+	cfg.Dashboard.GinMode = "release"
+	cfg.Dashboard.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
+	cfg.Dashboard.Session.Secret = ""
+	cfg.Dashboard.Session.Cookie.Name = "session"
+	cfg.Dashboard.Session.Cookie.Path = "/"
+	cfg.Dashboard.Session.Cookie.Domain = ""
+	cfg.Dashboard.Session.Cookie.MaxAge = 86400 * 30 // 30 days
+	cfg.Dashboard.Session.Cookie.Secure = false
+	cfg.Dashboard.Session.Cookie.HttpOnly = true
+	cfg.Dashboard.Session.Cookie.SameSite = http.SameSiteLaxMode
+	cfg.Dashboard.CSRF.Enabled = true
+	cfg.Dashboard.CSRF.Secret = ""
+	cfg.Dashboard.CSRF.FieldName = "csrf_token"
+	cfg.Dashboard.CSRF.Cookie.Name = "csrf"
+	cfg.Dashboard.CSRF.Cookie.Path = "/"
+	cfg.Dashboard.CSRF.Cookie.Domain = ""
+	cfg.Dashboard.CSRF.Cookie.MaxAge = 60 * 60 * 12 // 12 hours
+	cfg.Dashboard.CSRF.Cookie.Secure = false
+	cfg.Dashboard.CSRF.Cookie.HttpOnly = true
+	cfg.Dashboard.CSRF.Cookie.SameSite = csrf.SameSiteStrictMode
+	cfg.Dashboard.Logging.Enabled = true
+	cfg.Dashboard.Logging.Level = "info"
+	cfg.Dashboard.Logging.Format = "json"
+	cfg.Dashboard.Logging.AccessLog.Enabled = true
+	cfg.Dashboard.Logging.AccessLog.HideHealthChecks = false
 
 	cfg.API.Addr = ":50051"
 	cfg.API.Logging.Enabled = true

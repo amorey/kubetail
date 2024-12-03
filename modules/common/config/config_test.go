@@ -11,7 +11,7 @@ import (
 
 var cfg1 = `
 auth-mode: cluster
-server:
+dashboard:
   session:
     cookie:
       same-site: strict
@@ -29,5 +29,5 @@ func TestConfig(t *testing.T) {
 	cfg, err := NewConfig(viper.New(), tmpFile.Name())
 	assert.Nil(t, err)
 	assert.Equal(t, AuthModeCluster, cfg.AuthMode)
-	assert.Equal(t, http.SameSiteStrictMode, cfg.Server.Session.Cookie.SameSite)
+	assert.Equal(t, http.SameSiteStrictMode, cfg.Dashboard.Session.Cookie.SameSite)
 }

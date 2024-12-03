@@ -205,12 +205,12 @@ func (c *WebTestClient) NewRequest(method, target string, body io.Reader) *http.
 // Create new base config for testing
 func NewTestConfig() *config.Config {
 	cfg := config.Config{}
-	cfg.Server.BasePath = "/"
-	cfg.Server.Logging.AccessLog.Enabled = false
-	cfg.Server.Session.Secret = "TESTSESSIONSECRET"
-	cfg.Server.Session.Cookie.Name = "session"
-	cfg.Server.CSRF.Enabled = false
-	cfg.Server.CSRF.Secret = "TESTCSRFSECRET"
+	cfg.Dashboard.BasePath = "/"
+	cfg.Dashboard.Logging.AccessLog.Enabled = false
+	cfg.Dashboard.Session.Secret = "TESTSESSIONSECRET"
+	cfg.Dashboard.Session.Cookie.Name = "session"
+	cfg.Dashboard.CSRF.Enabled = false
+	cfg.Dashboard.CSRF.Secret = "TESTCSRFSECRET"
 	return &cfg
 }
 

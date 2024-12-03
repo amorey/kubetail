@@ -63,13 +63,13 @@ func main() {
 			}
 
 			// set gin mode
-			gin.SetMode(cfg.Server.GinMode)
+			gin.SetMode(cfg.Dashboard.GinMode)
 
 			// configure logger
 			config.ConfigureLogger(config.LoggerOptions{
-				Enabled: cfg.Server.Logging.Enabled,
-				Level:   cfg.Server.Logging.Level,
-				Format:  cfg.Server.Logging.Format,
+				Enabled: cfg.Dashboard.Logging.Enabled,
+				Level:   cfg.Dashboard.Logging.Level,
+				Format:  cfg.Dashboard.Logging.Format,
 			})
 
 			// create app
@@ -80,7 +80,7 @@ func main() {
 
 			// create server
 			server := http.Server{
-				Addr:         cfg.Server.Addr,
+				Addr:         cfg.Dashboard.Addr,
 				Handler:      app,
 				IdleTimeout:  1 * time.Minute,
 				ReadTimeout:  5 * time.Second,
@@ -90,10 +90,10 @@ func main() {
 			// run server in go routine
 			go func() {
 				var serverErr error
-				zlog.Info().Msg("Starting server on " + cfg.Server.Addr)
+				zlog.Info().Msg("Starting server on " + cfg.Dashboard.Addr)
 
-				if cfg.Server.TLS.Enabled {
-					serverErr = server.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+				if cfg.Dashboard.TLS.Enabled {
+					serverErr = server.ListenAndServeTLS(cfg.Dashboard.TLS.CertFile, cfg.Dashboard.TLS.KeyFile)
 				} else {
 					serverErr = server.ListenAndServe()
 				}

@@ -75,7 +75,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		app.k8sHelperService = k8shelpers.NewK8sHelperService(k8sCfg, k8shelpers.Mode(cfg.AuthMode))
 
 		// init grpc dispatcher
-		if cfg.Server.ExtensionsEnabled {
+		if cfg.Dashboard.ExtensionsEnabled {
 			app.grpcDispatcher = mustNewGrpcDispatcher(cfg)
 		}
 
@@ -109,30 +109,30 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	app.Use(requestid.New())
 
 	// add logging middleware
-	if cfg.Server.Logging.AccessLog.Enabled {
-		app.Use(loggingMiddleware(cfg.Server.Logging.AccessLog.HideHealthChecks))
+	if cfg.Dashboard.Logging.AccessLog.Enabled {
+		app.Use(loggingMiddleware(cfg.Dashboard.Logging.AccessLog.HideHealthChecks))
 	}
 
 	// gzip middleware
 	app.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// root route
-	root := app.Group(cfg.Server.BasePath)
+	root := app.Group(cfg.Dashboard.BasePath)
 
 	// dynamic routes
 	dynamicRoutes := root.Group("/")
 	{
 		// session middleware
-		sessionStore := cookie.NewStore([]byte(cfg.Server.Session.Secret))
+		sessionStore := cookie.NewStore([]byte(cfg.Dashboard.Session.Secret))
 		sessionStore.Options(sessions.Options{
-			Path:     cfg.Server.Session.Cookie.Path,
-			Domain:   cfg.Server.Session.Cookie.Domain,
-			MaxAge:   cfg.Server.Session.Cookie.MaxAge,
-			Secure:   cfg.Server.Session.Cookie.Secure,
-			HttpOnly: cfg.Server.Session.Cookie.HttpOnly,
-			SameSite: cfg.Server.Session.Cookie.SameSite,
+			Path:     cfg.Dashboard.Session.Cookie.Path,
+			Domain:   cfg.Dashboard.Session.Cookie.Domain,
+			MaxAge:   cfg.Dashboard.Session.Cookie.MaxAge,
+			Secure:   cfg.Dashboard.Session.Cookie.Secure,
+			HttpOnly: cfg.Dashboard.Session.Cookie.HttpOnly,
+			SameSite: cfg.Dashboard.Session.Cookie.SameSite,
 		})
-		dynamicRoutes.Use(sessions.Sessions(cfg.Server.Session.Cookie.Name, sessionStore))
+		dynamicRoutes.Use(sessions.Sessions(cfg.Dashboard.Session.Cookie.Name, sessionStore))
 
 		// https://security.stackexchange.com/questions/147554/security-headers-for-a-web-api
 		// https://observatory.mozilla.org/faq/
@@ -145,7 +145,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 		// disable csrf protection for graphql endpoint (already rejects simple requests)
 		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == path.Join(cfg.Server.BasePath, "/graphql") {
+			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") {
 				c.Request = csrf.UnsafeSkipCheck(c.Request)
 			}
 			c.Next()
@@ -154,17 +154,17 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		var csrfProtect func(http.Handler) http.Handler
 
 		// csrf middleware
-		if cfg.Server.CSRF.Enabled {
+		if cfg.Dashboard.CSRF.Enabled {
 			csrfProtect = csrf.Protect(
-				[]byte(cfg.Server.CSRF.Secret),
-				csrf.FieldName(cfg.Server.CSRF.FieldName),
-				csrf.CookieName(cfg.Server.CSRF.Cookie.Name),
-				csrf.Path(cfg.Server.CSRF.Cookie.Path),
-				csrf.Domain(cfg.Server.CSRF.Cookie.Domain),
-				csrf.MaxAge(cfg.Server.CSRF.Cookie.MaxAge),
-				csrf.Secure(cfg.Server.CSRF.Cookie.Secure),
-				csrf.HttpOnly(cfg.Server.CSRF.Cookie.HttpOnly),
-				csrf.SameSite(cfg.Server.CSRF.Cookie.SameSite),
+				[]byte(cfg.Dashboard.CSRF.Secret),
+				csrf.FieldName(cfg.Dashboard.CSRF.FieldName),
+				csrf.CookieName(cfg.Dashboard.CSRF.Cookie.Name),
+				csrf.Path(cfg.Dashboard.CSRF.Cookie.Path),
+				csrf.Domain(cfg.Dashboard.CSRF.Cookie.Domain),
+				csrf.MaxAge(cfg.Dashboard.CSRF.Cookie.MaxAge),
+				csrf.Secure(cfg.Dashboard.CSRF.Cookie.Secure),
+				csrf.HttpOnly(cfg.Dashboard.CSRF.Cookie.HttpOnly),
+				csrf.SameSite(cfg.Dashboard.CSRF.Cookie.SameSite),
 			)
 
 			// add to gin middleware

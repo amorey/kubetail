@@ -69,8 +69,8 @@ func (app *WebsiteHandlers) EndpointHandler(cfg *config.Config) gin.HandlerFunc 
 
 	// define runtime config for react app
 	runtimeConfig := map[string]interface{}{
-		"basePath":          cfg.Server.BasePath,
-		"extensionsEnabled": cfg.Server.ExtensionsEnabled,
+		"basePath":          cfg.Dashboard.BasePath,
+		"extensionsEnabled": cfg.Dashboard.ExtensionsEnabled,
 	}
 
 	runtimeConfigBytes, err := json.Marshal(runtimeConfig)

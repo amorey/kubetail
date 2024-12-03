@@ -126,7 +126,7 @@ func (suite *GraphQLTestSuite) TestAccess() {
 		suite.Run("websocket requests require csrf validation when csrf protection is enabled", func() {
 			// init client
 			cfg := NewTestConfig()
-			cfg.Server.CSRF.Enabled = true
+			cfg.Dashboard.CSRF.Enabled = true
 			client := NewWebTestClient(suite.T(), NewTestApp(cfg))
 			defer client.Teardown()
 

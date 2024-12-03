@@ -80,7 +80,7 @@ func mustNewGrpcDispatcher(cfg *config.Config) *grpcdispatcher.Dispatcher {
 
 	// TODO: reuse app clientset
 	d, err := grpcdispatcher.NewDispatcher(
-		cfg.Server.AgentDispatchUrl,
+		cfg.Dashboard.AgentDispatchUrl,
 		grpcdispatcher.WithDialOptions(dialOpts...),
 	)
 	if err != nil {

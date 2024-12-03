@@ -3,29 +3,6 @@ load('ext://namespace', 'namespace_create')
 
 namespace_create('kubetail-system')
 
-# kubetail-agent
-local_resource(
-  'kubetail-agent-compile',
-  'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/agent ./agent/cmd/main.go',
-  deps=[
-    './modules/agent',
-    './modules/common'
-  ]
-)
-
-docker_build_with_restart(
-  'kubetail-agent',
-  dockerfile='hack/tilt/Dockerfile.kubetail-agent',
-  context='.',
-  entrypoint="/agent/agent -c /etc/kubetail/config.yaml",
-  only=[
-    './.tilt/agent',
-  ],
-  live_update=[
-    sync('./.tilt/agent', '/agent/agent'),
-  ]
-)
-
 # kubetail-api
 local_resource(
   'kubetail-api-compile',
@@ -49,26 +26,49 @@ docker_build_with_restart(
   ]
 )
 
-# kubetail-server
+# kubetail-agent
 local_resource(
-  'kubetail-server-compile',
-  'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/server ./server/cmd/main.go',
+  'kubetail-agent-compile',
+  'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/agent ./agent/cmd/main.go',
   deps=[
-    './modules/server',
+    './modules/agent',
     './modules/common'
   ]
 )
 
 docker_build_with_restart(
-  'kubetail-server',
-  dockerfile='hack/tilt/Dockerfile.kubetail-server',
+  'kubetail-agent',
+  dockerfile='hack/tilt/Dockerfile.kubetail-agent',
   context='.',
-  entrypoint="/server/server -c /etc/kubetail/config.yaml",
+  entrypoint="/agent/agent -c /etc/kubetail/config.yaml",
   only=[
-    './.tilt/server',
+    './.tilt/agent',
   ],
   live_update=[
-    sync('./.tilt/server', '/server/server'),
+    sync('./.tilt/agent', '/agent/agent'),
+  ]
+)
+
+# kubetail-dashboard
+local_resource(
+  'kubetail-dashboard-compile',
+  'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/dashboard ./dashboard/cmd/main.go',
+  deps=[
+    './modules/dashboard',
+    './modules/common'
+  ]
+)
+
+docker_build_with_restart(
+  'kubetail-dashboard',
+  dockerfile='hack/tilt/Dockerfile.kubetail-dashboard',
+  context='.',
+  entrypoint="/dashboard/dashboard -c /etc/kubetail/config.yaml",
+  only=[
+    './.tilt/dashboard',
+  ],
+  live_update=[
+    sync('./.tilt/dashboard', '/dashboard/dashboard'),
   ]
 )
 
@@ -116,14 +116,12 @@ k8s_resource(
 )
 
 k8s_resource(
-  'kubetail-server',
-  port_forwards='7500:4000',
+  'kubetail-dashboard',
+  port_forwards='7500:7500',
   objects=[
-    'kubetail-server:clusterrole',
-    'kubetail-server:clusterrolebinding',
-    'kubetail-server:role',
-    'kubetail-server:rolebinding',
-    'kubetail-server:serviceaccount',
+    'kubetail-dashboard:clusterrole',
+    'kubetail-dashboard:clusterrolebinding',
+    'kubetail-dashboard:serviceaccount',
   ],
   resource_deps=['kubetail-shared'],
 )
