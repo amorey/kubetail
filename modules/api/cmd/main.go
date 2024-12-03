@@ -70,6 +70,8 @@ func main() {
 				Format:  cfg.API.Logging.Format,
 			})
 
+			// Init gRPC server
+
 			fmt.Println(cfg.API.Addr)
 		},
 	}
