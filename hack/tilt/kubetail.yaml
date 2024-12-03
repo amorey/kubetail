@@ -2,7 +2,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: kubetail
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
 data:
@@ -70,7 +70,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: kubetail-api
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: api
@@ -79,7 +79,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-api
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: api
@@ -92,7 +92,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-api
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: api
@@ -103,13 +103,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubetail-api
-  namespace: default    
+  namespace: kubetail-system    
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: kubetail-api
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: api
@@ -166,7 +166,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: kubetail-api
-  namespace: default
+  namespace: kubetail-system
 spec:
   clusterIP: None
   selector:
@@ -177,7 +177,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: server
@@ -208,13 +208,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: server
@@ -227,7 +227,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: server
@@ -236,15 +236,15 @@ roleRef:
   name: kubetail-server
   apiGroup: rbac.authorization.k8s.io
 subjects:
-  - kind: ServiceAccount
-    name: kubetail-server
-    namespace: default
+- kind: ServiceAccount
+  name: kubetail-server
+  namespace: kubetail-system
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: server
@@ -305,7 +305,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: kubetail-server
-  namespace: default
+  namespace: kubetail-system
 spec:
   selector:
     app.kubernetes.io/name: kubetail
@@ -321,7 +321,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: kubetail-agent
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: agent
@@ -352,13 +352,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubetail-agent
-  namespace: default
+  namespace: kubetail-system
 ---
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: kubetail-agent
-  namespace: default
+  namespace: kubetail-system
   labels:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: agent
@@ -421,7 +421,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: kubetail-agent
-  namespace: default
+  namespace: kubetail-system
 spec:
   clusterIP: None
   selector:
@@ -432,7 +432,7 @@ kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
   name: kubetail-agent
-  namespace: default
+  namespace: kubetail-system
 spec:
   podSelector:
     matchLabels:

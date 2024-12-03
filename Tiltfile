@@ -1,4 +1,7 @@
 load('ext://restart_process', 'docker_build_with_restart')
+load('ext://namespace', 'namespace_create')
+
+namespace_create('kubetail-system')
 
 # kubetail-agent
 local_resource(
@@ -80,6 +83,7 @@ k8s_yaml('hack/tilt/chaoskube.yaml')
 # define resources
 k8s_resource(
   objects=[
+    'kubetail-system:namespace',
     'kubetail:configmap',
     'kubetail-testuser:serviceaccount',
     'kubetail-testuser:role',
