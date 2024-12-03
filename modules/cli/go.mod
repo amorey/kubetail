@@ -2,14 +2,14 @@ module github.com/kubetail-org/kubetail/modules/cli
 
 go 1.22.7
 
-replace github.com/kubetail-org/kubetail/modules/server => ../server
+replace github.com/kubetail-org/kubetail/modules/dashboard => ../dashboard
 
 replace github.com/kubetail-org/kubetail/modules/common => ../common
 
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/kubetail-org/kubetail/modules/common v0.0.0-00010101000000-000000000000
-	github.com/kubetail-org/kubetail/modules/server v0.0.0-00010101000000-000000000000
+	github.com/kubetail-org/kubetail/modules/dashboard v0.0.0-00010101000000-000000000000
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1

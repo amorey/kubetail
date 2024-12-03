@@ -17,7 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/server/graph/model"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14766,7 +14766,7 @@ func (ec *executionContext) _HealthCheckResponse_status(ctx context.Context, fie
 	}
 	res := resTmp.(model.HealthCheckStatus)
 	fc.Result = res
-	return ec.marshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckStatus(ctx, field.Selections, res)
+	return ec.marshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_HealthCheckResponse_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -15024,7 +15024,7 @@ func (ec *executionContext) _InitResponse_kubetailAPI(ctx context.Context, field
 	}
 	res := resTmp.(*model.InitKubetailAPIDetails)
 	fc.Result = res
-	return ec.marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx, field.Selections, res)
+	return ec.marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_InitResponse_kubetailAPI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -16904,7 +16904,7 @@ func (ec *executionContext) _PodLogQueryResponse_results(ctx context.Context, fi
 	}
 	res := resTmp.([]model.LogRecord)
 	fc.Result = res
-	return ec.marshalNLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecordᚄ(ctx, field.Selections, res)
+	return ec.marshalNLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecordᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PodLogQueryResponse_results(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -16954,7 +16954,7 @@ func (ec *executionContext) _PodLogQueryResponse_pageInfo(ctx context.Context, f
 	}
 	res := resTmp.(model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PodLogQueryResponse_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18023,7 +18023,7 @@ func (ec *executionContext) _Query_coreV1PodsGetLogs(ctx context.Context, field 
 	}
 	res := resTmp.([]model.LogRecord)
 	fc.Result = res
-	return ec.marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecordᚄ(ctx, field.Selections, res)
+	return ec.marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecordᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_coreV1PodsGetLogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18148,7 +18148,7 @@ func (ec *executionContext) _Query_podLogHead(ctx context.Context, field graphql
 		if data, ok := tmp.(*model.PodLogQueryResponse); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/modules/server/graph/model.PodLogQueryResponse`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/modules/dashboard/graph/model.PodLogQueryResponse`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -18159,7 +18159,7 @@ func (ec *executionContext) _Query_podLogHead(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.PodLogQueryResponse)
 	fc.Result = res
-	return ec.marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐPodLogQueryResponse(ctx, field.Selections, res)
+	return ec.marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐPodLogQueryResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_podLogHead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18228,7 +18228,7 @@ func (ec *executionContext) _Query_podLogTail(ctx context.Context, field graphql
 		if data, ok := tmp.(*model.PodLogQueryResponse); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/modules/server/graph/model.PodLogQueryResponse`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/kubetail-org/kubetail/modules/dashboard/graph/model.PodLogQueryResponse`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -18239,7 +18239,7 @@ func (ec *executionContext) _Query_podLogTail(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.PodLogQueryResponse)
 	fc.Result = res
-	return ec.marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐPodLogQueryResponse(ctx, field.Selections, res)
+	return ec.marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐPodLogQueryResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_podLogTail(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18300,7 +18300,7 @@ func (ec *executionContext) _Query_livezGet(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(model.HealthCheckResponse)
 	fc.Result = res
-	return ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res)
+	return ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_livezGet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18352,7 +18352,7 @@ func (ec *executionContext) _Query_readyzGet(ctx context.Context, field graphql.
 	}
 	res := resTmp.(model.HealthCheckResponse)
 	fc.Result = res
-	return ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res)
+	return ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_readyzGet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18459,7 +18459,7 @@ func (ec *executionContext) _Query_init(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.(model.InitResponse)
 	fc.Result = res
-	return ec.marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitResponse(ctx, field.Selections, res)
+	return ec.marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐInitResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_init(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -19289,7 +19289,7 @@ func (ec *executionContext) _Subscription_coreV1PodLogTail(ctx context.Context, 
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -19436,7 +19436,7 @@ func (ec *executionContext) _Subscription_podLogFollow(ctx context.Context, fiel
 		if data, ok := tmp.(<-chan *model.LogRecord); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/kubetail-org/kubetail/modules/server/graph/model.LogRecord`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/kubetail-org/kubetail/modules/dashboard/graph/model.LogRecord`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -19455,7 +19455,7 @@ func (ec *executionContext) _Subscription_podLogFollow(ctx context.Context, fiel
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -19530,7 +19530,7 @@ func (ec *executionContext) _Subscription_livezWatch(ctx context.Context, field 
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -19596,7 +19596,7 @@ func (ec *executionContext) _Subscription_readyzWatch(ctx context.Context, field
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -27026,17 +27026,17 @@ func (ec *executionContext) marshalNCoreV1PodStatus2k8sᚗioᚋapiᚋcoreᚋv1�
 	return ec._CoreV1PodStatus(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckResponse(ctx context.Context, sel ast.SelectionSet, v model.HealthCheckResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx context.Context, sel ast.SelectionSet, v model.HealthCheckResponse) graphql.Marshaler {
 	return ec._HealthCheckResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) unmarshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, v interface{}) (model.HealthCheckStatus, error) {
+func (ec *executionContext) unmarshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, v interface{}) (model.HealthCheckStatus, error) {
 	var res model.HealthCheckStatus
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.HealthCheckStatus) graphql.Marshaler {
+func (ec *executionContext) marshalNHealthCheckStatus2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.HealthCheckStatus) graphql.Marshaler {
 	return v
 }
 
@@ -27071,7 +27071,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitResponse(ctx context.Context, sel ast.SelectionSet, v model.InitResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNInitResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐInitResponse(ctx context.Context, sel ast.SelectionSet, v model.InitResponse) graphql.Marshaler {
 	return ec._InitResponse(ctx, sel, &v)
 }
 
@@ -27179,11 +27179,11 @@ func (ec *executionContext) marshalNLogMetadataSpec2ᚖgithubᚗcomᚋkubetail�
 	return ec._LogMetadataSpec(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx context.Context, sel ast.SelectionSet, v model.LogRecord) graphql.Marshaler {
+func (ec *executionContext) marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx context.Context, sel ast.SelectionSet, v model.LogRecord) graphql.Marshaler {
 	return ec._LogRecord(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecordᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LogRecord) graphql.Marshaler {
+func (ec *executionContext) marshalNLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecordᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LogRecord) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -27207,7 +27207,7 @@ func (ec *executionContext) marshalNLogRecord2ᚕgithubᚗcomᚋkubetailᚑorg�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx, sel, v[i])
+			ret[i] = ec.marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -27362,7 +27362,7 @@ func (ec *executionContext) marshalNMetaV1Time2k8sᚗioᚋapimachineryᚋpkgᚋa
 	return res
 }
 
-func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v model.PageInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v model.PageInfo) graphql.Marshaler {
 	return ec._PageInfo(ctx, sel, &v)
 }
 
@@ -27957,7 +27957,7 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx context.Context, sel ast.SelectionSet, v *model.InitKubetailAPIDetails) graphql.Marshaler {
+func (ec *executionContext) marshalOInitKubetailAPIDetails2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐInitKubetailAPIDetails(ctx context.Context, sel ast.SelectionSet, v *model.InitKubetailAPIDetails) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -28043,7 +28043,7 @@ func (ec *executionContext) marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkube
 	return ec._LogMetadataWatchEvent(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecordᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LogRecord) graphql.Marshaler {
+func (ec *executionContext) marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecordᚄ(ctx context.Context, sel ast.SelectionSet, v []model.LogRecord) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -28070,7 +28070,7 @@ func (ec *executionContext) marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorg�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx, sel, v[i])
+			ret[i] = ec.marshalNLogRecord2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -28090,7 +28090,7 @@ func (ec *executionContext) marshalOLogRecord2ᚕgithubᚗcomᚋkubetailᚑorg�
 	return ret
 }
 
-func (ec *executionContext) marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐLogRecord(ctx context.Context, sel ast.SelectionSet, v *model.LogRecord) graphql.Marshaler {
+func (ec *executionContext) marshalOLogRecord2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐLogRecord(ctx context.Context, sel ast.SelectionSet, v *model.LogRecord) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -28147,7 +28147,7 @@ func (ec *executionContext) marshalOMetaV1Time2ᚖk8sᚗioᚋapimachineryᚋpkg�
 	return res
 }
 
-func (ec *executionContext) marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋserverᚋgraphᚋmodelᚐPodLogQueryResponse(ctx context.Context, sel ast.SelectionSet, v *model.PodLogQueryResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOPodLogQueryResponse2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐPodLogQueryResponse(ctx context.Context, sel ast.SelectionSet, v *model.PodLogQueryResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

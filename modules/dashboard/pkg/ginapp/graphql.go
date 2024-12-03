@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
-	"github.com/kubetail-org/kubetail/modules/server/graph"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph"
 )
 
 type key int

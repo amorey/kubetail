@@ -28,7 +28,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/server/internal/k8shelpers/mock"
+	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers/mock"
 )
 
 type AuthTestSuite struct {

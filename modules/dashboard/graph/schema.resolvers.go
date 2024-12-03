@@ -16,7 +16,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/server/graph/model"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"

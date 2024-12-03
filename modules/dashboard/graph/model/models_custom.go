@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubetail-org/kubetail/modules/server/graph/lib"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph/lib"
 )
 
 type List interface{}

@@ -27,7 +27,7 @@ import (
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
 	"github.com/kubetail-org/kubetail/modules/common/grpchelpers"
-	"github.com/kubetail-org/kubetail/modules/server/internal/k8shelpers"
+	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
 const k8sTokenSessionKey = "k8sToken"

@@ -42,7 +42,7 @@ import (
 	dynamicFake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/kubetail-org/kubetail/modules/server/graph"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph"
 )
 
 func init() {

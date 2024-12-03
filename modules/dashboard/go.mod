@@ -1,4 +1,4 @@
-module github.com/kubetail-org/kubetail/modules/server
+module github.com/kubetail-org/kubetail/modules/dashboard
 
 go 1.22.5
 

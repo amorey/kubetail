@@ -32,8 +32,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/server"
-	"github.com/kubetail-org/kubetail/modules/server/internal/k8shelpers"
+	"github.com/kubetail-org/kubetail/modules/dashboard"
+	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
 type GinApp struct {

@@ -37,56 +37,56 @@ CMD []
 
 # -----------------------------------------------------------
   
-FROM golang:1.22.7 AS server-builder
+FROM golang:1.22.7 AS dashboard-builder
 
 WORKDIR /work
 
 # install dependencies (for cache)
 COPY modules/common/go.mod ./common/go.mod
 COPY modules/common/go.sum ./common/go.sum
-COPY modules/server/go.mod ./server/go.mod
-COPY modules/server/go.sum ./server/go.sum
-RUN cd server && go mod download all
+COPY modules/dashboard/go.mod ./dashboard/go.mod
+COPY modules/dashboard/go.sum ./dashboard/go.sum
+RUN cd dashboard && go mod download all
 
 # copy code
 COPY modules/common ./common
-COPY modules/server ./server
+COPY modules/dashboard ./dashboard
 
 # copy frontend
-COPY --from=frontend-builder /dashboard-ui/dist ./server/website
+COPY --from=frontend-builder /dashboard-ui/dist ./dashboard/website
 
-# build server
-RUN cd server && CGO_ENABLED=0 go build -o ../bin/server ./cmd/main.go
+# build dashboard
+RUN cd dashboard && CGO_ENABLED=0 go build -ldflags="-s -w" -o ../bin/dashboard ./cmd/main.go
 
-ENTRYPOINT ["./server"]
+ENTRYPOINT ["./dashboard"]
 CMD []
 
 # -----------------------------------------------------------
 
 FROM alpine:3.20.0 AS debug
 
-WORKDIR /server
+WORKDIR /dashboard
 
 # copy certs for tls verification
-COPY --from=server-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=dashboard-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# copy server
-COPY --from=server-builder /work/bin/server /server/server
+# copy dashboard
+COPY --from=dashboard-builder /work/bin/dashboard /dashboard/dashboard
 
-ENTRYPOINT ["./server"]
+ENTRYPOINT ["./dashboard"]
 CMD []
 
 # -----------------------------------------------------------
 
 FROM scratch AS final
 
-WORKDIR /server
+WORKDIR /dashboard
 
 # copy certs for tls verification
-COPY --from=server-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=dashboard-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# copy server
-COPY --from=server-builder /work/bin/server /server/server
+# copy dashboard
+COPY --from=dashboard-builder /work/bin/dashboard /dashboard/dashboard
 
-ENTRYPOINT ["./server"]
+ENTRYPOINT ["./dashboard"]
 CMD []
