@@ -1,0 +1,5 @@
+auth-mode: local
+
+api:
+  logging:
+    format: pretty

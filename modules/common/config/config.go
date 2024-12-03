@@ -130,6 +130,18 @@ type Config struct {
 	API struct {
 		Addr string `validate:"omitempty,hostname_port"`
 
+		// TLS options
+		TLS struct {
+			// enable tls termination
+			Enabled bool
+
+			// TLS certificate file
+			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
+
+			// TLS certificate key file
+			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+		}
+
 		// logging options
 		Logging struct {
 			// enable logging
@@ -215,6 +227,11 @@ func DefaultConfig() *Config {
 	cfg.Server.Logging.Format = "json"
 	cfg.Server.Logging.AccessLog.Enabled = true
 	cfg.Server.Logging.AccessLog.HideHealthChecks = false
+
+	cfg.API.Addr = ":50051"
+	cfg.API.Logging.Enabled = true
+	cfg.API.Logging.Level = "info"
+	cfg.API.Logging.Format = "json"
 
 	cfg.Agent.Addr = ":50051"
 	cfg.Agent.ContainerLogsDir = "/var/log/containers"

@@ -15,19 +15,27 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
+
+	"github.com/kubetail-org/kubetail/modules/api/internal/server"
 )
 
 type CLI struct {
-	Addr   string `validate:"omitempty,hostname_port"`
 	Config string `validate:"omitempty,file"`
 }
 
@@ -44,6 +52,10 @@ func main() {
 			return validator.New().Struct(cli)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			// Listen for termination signals as early as possible
+			quit := make(chan os.Signal, 1)
+			signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+			defer close(quit)
 
 			// Init viper
 			v := viper.New()
@@ -71,8 +83,54 @@ func main() {
 			})
 
 			// Init gRPC server
+			grpcServer, err := server.NewServer(cfg)
+			if err != nil {
+				zlog.Fatal().Caller().Err(err).Send()
+			}
 
-			fmt.Println(cfg.API.Addr)
+			// Init health service
+			healthServer := health.NewServer()
+			grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+			healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+
+			// init listener
+			lis, err := net.Listen("tcp", cfg.API.Addr)
+			if err != nil {
+				zlog.Fatal().Caller().Err(err).Send()
+			}
+
+			// run server in go routine
+			go func() {
+				zlog.Info().Msg("Starting kubetail-api on " + cfg.API.Addr)
+				if err := grpcServer.Serve(lis); err != nil {
+					zlog.Fatal().Caller().Err(err).Send()
+				}
+			}()
+
+			// Wait for termination signal
+			<-quit
+
+			zlog.Info().Msg("Starting graceful shutting...")
+
+			// Graceful shutdown with 30 sec deadline
+			// TODO: make timeout configurable
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			// start graceful shutdown
+			done := make(chan struct{})
+			go func() {
+				grpcServer.GracefulStop()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+				zlog.Info().Msg("Completed graceful shutdown")
+			case <-ctx.Done():
+				zlog.Error().Msg("Exceeded deadline, shutting down forcefully")
+				grpcServer.Stop()
+			}
 		},
 	}
 
