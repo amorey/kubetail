@@ -400,7 +400,7 @@ func (r *queryResolver) Init(ctx context.Context) (model.InitResponse, error) {
 	clientset := r.K8SClientset(ctx)
 
 	// Define the label selector
-	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=server"
+	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
 
 	// List services with the specified labels
 	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{

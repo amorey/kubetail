@@ -20,9 +20,7 @@ import (
 )
 
 type CLI struct {
-	Addr    string `validate:"omitempty,hostname_port"`
-	Config  string `validate:"omitempty,file"`
-	GinMode string `validate:"omitempty,oneof=release debug"`
+	Config string `validate:"omitempty,file"`
 }
 
 func main() {

@@ -1,6 +1,6 @@
 auth-mode: local
 allowed-namespaces: []
-server:
+dashboard:
   addr: :7500
   base-path: /
   gin-mode: debug

@@ -117,7 +117,7 @@ k8s_resource(
 
 k8s_resource(
   'kubetail-dashboard',
-  port_forwards='7500:7500',
+  #port_forwards='7500:7500',
   objects=[
     'kubetail-dashboard:clusterrole',
     'kubetail-dashboard:clusterrolebinding',
