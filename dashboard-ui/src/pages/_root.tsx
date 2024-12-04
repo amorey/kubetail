@@ -116,6 +116,9 @@ function OutletWrapper() {
     fetchPolicy: 'no-cache',
   });
   console.log(data);
+  if (data.init.kubetailAPI) {
+    
+  }
 
   return <Outlet />;
 }
