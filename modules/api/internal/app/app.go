@@ -59,7 +59,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 	root := app.Group(cfg.Dashboard.BasePath)
 
 	// Serve GraphQL playground at root
-	root.GET("/", gin.WrapH(playground.Handler("Kubetail API", "/graphql")))
+	root.GET("/", gin.WrapH(playground.Handler("Kubetail API Playground", "/graphql")))
 
 	// Health endpoint
 	root.GET("/healthz", func(c *gin.Context) {

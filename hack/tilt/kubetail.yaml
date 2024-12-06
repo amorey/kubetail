@@ -180,11 +180,11 @@ spec:
     app.kubernetes.io/name: kubetail
     app.kubernetes.io/component: api
   ports:
-  - name: grpc
+  - name: http
     protocol: TCP
-    port: 50051
-    targetPort: grpc
-    appProtocol: grpc
+    port: 7501
+    targetPort: http
+    appProtocol: http
 ---
 kind: ServiceAccount
 apiVersion: v1
