@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/dashboard"
+	server "github.com/kubetail-org/kubetail/modules/dashboard"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
@@ -96,7 +96,6 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	}
 
 	// register templates
-	//app.SetHTMLTemplate(mustLoadTemplatesWithFuncs(path.Join(basepath, "templates/*")))
 	tmpl := template.Must(template.New("").
 		Funcs(template.FuncMap{
 			"pathJoin": path.Join,

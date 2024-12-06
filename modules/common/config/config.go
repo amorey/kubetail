@@ -52,7 +52,8 @@ type Config struct {
 
 	// API options
 	API struct {
-		Addr string `validate:"omitempty,hostname_port"`
+		Addr    string `validate:"omitempty,hostname_port"`
+		GinMode string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
 
 		// TLS options
 		TLS struct {
@@ -76,6 +77,15 @@ type Config struct {
 
 			// log format
 			Format string `validate:"oneof=json pretty"`
+
+			// access-log options
+			AccessLog struct {
+				// enable access-log
+				Enabled bool
+
+				// hide health checks
+				HideHealthChecks bool `mapstructure:"hide-health-checks"`
+			} `mapstructure:"access-log"`
 		}
 	}
 
@@ -200,7 +210,7 @@ func DefaultConfig() *Config {
 	cfg.AllowedNamespaces = []string{}
 	cfg.KubeConfig = filepath.Join(home, ".kube", "config")
 
-	cfg.Dashboard.Addr = ":4000"
+	cfg.Dashboard.Addr = ":7500"
 	cfg.Dashboard.BasePath = "/"
 	cfg.Dashboard.GinMode = "release"
 	cfg.Dashboard.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
@@ -228,10 +238,13 @@ func DefaultConfig() *Config {
 	cfg.Dashboard.Logging.AccessLog.Enabled = true
 	cfg.Dashboard.Logging.AccessLog.HideHealthChecks = false
 
-	cfg.API.Addr = ":50051"
+	cfg.API.Addr = ":7501"
+	cfg.API.GinMode = "release"
 	cfg.API.Logging.Enabled = true
 	cfg.API.Logging.Level = "info"
 	cfg.API.Logging.Format = "json"
+	cfg.API.Logging.AccessLog.Enabled = true
+	cfg.API.Logging.AccessLog.HideHealthChecks = false
 
 	cfg.Agent.Addr = ":50051"
 	cfg.Agent.ContainerLogsDir = "/var/log/containers"

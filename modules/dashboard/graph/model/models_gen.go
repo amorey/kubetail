@@ -55,18 +55,22 @@ type Subscription struct {
 type HealthCheckStatus string
 
 const (
-	HealthCheckStatusSuccess HealthCheckStatus = "SUCCESS"
-	HealthCheckStatusFailure HealthCheckStatus = "FAILURE"
+	HealthCheckStatusSuccess  HealthCheckStatus = "SUCCESS"
+	HealthCheckStatusFailure  HealthCheckStatus = "FAILURE"
+	HealthCheckStatusUnknown  HealthCheckStatus = "UNKNOWN"
+	HealthCheckStatusNotfound HealthCheckStatus = "NOTFOUND"
 )
 
 var AllHealthCheckStatus = []HealthCheckStatus{
 	HealthCheckStatusSuccess,
 	HealthCheckStatusFailure,
+	HealthCheckStatusUnknown,
+	HealthCheckStatusNotfound,
 }
 
 func (e HealthCheckStatus) IsValid() bool {
 	switch e {
-	case HealthCheckStatusSuccess, HealthCheckStatusFailure:
+	case HealthCheckStatusSuccess, HealthCheckStatusFailure, HealthCheckStatusUnknown, HealthCheckStatusNotfound:
 		return true
 	}
 	return false

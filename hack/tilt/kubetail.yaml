@@ -9,26 +9,6 @@ data:
   config.yaml: |
     auth-mode: cluster
     allowed-namespaces: []
-    api:
-      addr: :50051
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-      tls:
-        enabled: false
-        cert-file:
-        key-file:
-    agent:
-      addr: :50051
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-      tls:
-        enabled: false
-        cert-file:
-        key-file:
     dashboard:
       addr: :7500
       base-path: /
@@ -61,6 +41,27 @@ data:
         access-log:
           enabled: true
           hide-health-checks: true
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
+    api:
+      addr: :7501
+      gin-mode: debug
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
+    agent:
+      addr: :50051
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
       tls:
         enabled: false
         cert-file:
@@ -133,9 +134,9 @@ spec:
       - name: kubetail-api
         image: kubetail-api
         ports:
-        - name: grpc
+        - name: http
           protocol: TCP
-          containerPort: 50051
+          containerPort: 7501
         args:
         - --config=/etc/kubetail/config.yaml
         volumeMounts:
@@ -143,15 +144,19 @@ spec:
           mountPath: /etc/kubetail
           readOnly: true
         readinessProbe:
-          grpc:
-            port: 50051
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
           initialDelaySeconds: 10
           timeoutSeconds: 30
           periodSeconds: 5
           failureThreshold: 3
         livenessProbe:
-          grpc:
-            port: 50051
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
           initialDelaySeconds: 10
           timeoutSeconds: 30
           periodSeconds: 5

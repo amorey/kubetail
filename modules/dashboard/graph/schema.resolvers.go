@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -371,6 +372,38 @@ func (r *queryResolver) ReadyzGet(ctx context.Context) (model.HealthCheckRespons
 	return getHealth(ctx, r.K8SClientset(ctx), "readyz"), nil
 }
 
+// APIHealthzGet is the resolver for the apiHealthzGet field.
+func (r *queryResolver) APIHealthzGet(ctx context.Context) (model.HealthCheckResponse, error) {
+	resp := model.HealthCheckResponse{
+		Status:    model.HealthCheckStatusUnknown,
+		Timestamp: time.Now().UTC(),
+	}
+
+	// Get clientset
+	clientset := r.K8SClientset(ctx)
+
+	// Define the label selector
+	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
+
+	// List services with the specified labels
+	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	// None found
+	if len(services.Items) == 0 {
+		resp.Status = model.HealthCheckStatusNotfound
+		return resp, nil
+	}
+
+	// TODO: perform healthcheck
+	resp.Status = model.HealthCheckStatusSuccess
+	return resp, nil
+}
+
 // ReadyWait is the resolver for the readyWait field.
 func (r *queryResolver) ReadyWait(ctx context.Context, timeout *int) (bool, error) {
 	t := 20 * time.Second
@@ -665,6 +698,11 @@ func (r *subscriptionResolver) LivezWatch(ctx context.Context) (<-chan model.Hea
 // ReadyzWatch is the resolver for the readyzWatch field.
 func (r *subscriptionResolver) ReadyzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error) {
 	return watchHealthChannel(ctx, r.K8SClientset(ctx), "readyz"), nil
+}
+
+// APIHealthzWatch is the resolver for the apiHealthzWatch field.
+func (r *subscriptionResolver) APIHealthzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error) {
+	panic(fmt.Errorf("not implemented: APIHealthzWatch - apiHealthzWatch"))
 }
 
 // AppsV1DaemonSetsWatchEvent returns AppsV1DaemonSetsWatchEventResolver implementation.

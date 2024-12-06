@@ -483,6 +483,8 @@ type HealthCheckResponse {
 enum HealthCheckStatus {
   SUCCESS
   FAILURE
+  UNKNOWN
+  NOTFOUND
 }
 
 # --- Init ---
@@ -733,6 +735,7 @@ type Query {
   """
   livezGet: HealthCheckResponse!
   readyzGet: HealthCheckResponse!
+  apiHealthzGet: HealthCheckResponse!
 
   readyWait(
     timeout: Int = 20,
@@ -800,6 +803,7 @@ type Subscription {
   """
   livezWatch: HealthCheckResponse!
   readyzWatch: HealthCheckResponse!
+  apiHealthzWatch: HealthCheckResponse!
 }
 
 # --- helpers ---

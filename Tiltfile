@@ -22,7 +22,7 @@ docker_build_with_restart(
     './.tilt/api',
   ],
   live_update=[
-    sync('./.tilt/api', '/agent/api'),
+    sync('./.tilt/api', '/api/api'),
   ]
 )
 
@@ -96,6 +96,7 @@ k8s_resource(
 
 k8s_resource(
   'kubetail-api',
+  port_forwards='7501:7501',
   objects=[
     'kubetail-api:serviceaccount',
     'kubetail-api:role',

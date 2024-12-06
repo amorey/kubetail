@@ -16,25 +16,22 @@ package main
 
 import (
 	"context"
-	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/kubetail-org/kubetail/modules/common/apipb"
 	"github.com/kubetail-org/kubetail/modules/common/config"
 
-	"github.com/kubetail-org/kubetail/modules/api/internal/server"
-	"github.com/kubetail-org/kubetail/modules/api/internal/services/logmetadata"
+	"github.com/kubetail-org/kubetail/modules/api/internal/app"
 )
 
 type CLI struct {
@@ -62,12 +59,16 @@ func main() {
 			// Init viper
 			v := viper.New()
 			v.BindPFlag("api.addr", cmd.Flags().Lookup("addr"))
+			v.BindPFlag("api.gin-mode", cmd.Flags().Lookup("gin-mode"))
 
 			// Init config
 			cfg, err := config.NewConfig(v, cli.Config)
 			if err != nil {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
+
+			// set gin mode
+			gin.SetMode(cfg.API.GinMode)
 
 			// Override params from cli
 			for _, param := range params {
@@ -84,64 +85,66 @@ func main() {
 				Format:  cfg.API.Logging.Format,
 			})
 
-			// Init gRPC server
-			grpcServer, err := server.NewServer(cfg)
+			// Create app
+			app, err := app.NewApp(cfg)
 			if err != nil {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
 
-			// Init LogMetadataService
-			svc, err := logmetadata.NewLogMetadataService()
-			if err != nil {
-				zlog.Fatal().Caller().Err(err).Send()
-			}
-			apipb.RegisterLogMetadataServiceServer(grpcServer, svc)
-
-			// Init health service
-			healthServer := health.NewServer()
-			grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
-			healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
-
-			// Init listener
-			lis, err := net.Listen("tcp", cfg.API.Addr)
-			if err != nil {
-				zlog.Fatal().Caller().Err(err).Send()
+			// create server
+			server := http.Server{
+				Addr:         cfg.API.Addr,
+				Handler:      app,
+				IdleTimeout:  1 * time.Minute,
+				ReadTimeout:  5 * time.Second,
+				WriteTimeout: 10 * time.Second,
 			}
 
-			// Run server in go routine
+			// run server in go routine
 			go func() {
-				zlog.Info().Msg("Starting kubetail-api on " + cfg.API.Addr)
-				if err := grpcServer.Serve(lis); err != nil {
+				var serverErr error
+				zlog.Info().Msg("Starting server on " + cfg.API.Addr)
+
+				if cfg.API.TLS.Enabled {
+					serverErr = server.ListenAndServeTLS(cfg.API.TLS.CertFile, cfg.API.TLS.KeyFile)
+				} else {
+					serverErr = server.ListenAndServe()
+				}
+
+				// log non-normal errors
+				if serverErr != nil && serverErr != http.ErrServerClosed {
 					zlog.Fatal().Caller().Err(err).Send()
 				}
 			}()
 
-			// Wait for termination signal
+			// wait for termination signal
 			<-quit
 
-			zlog.Info().Msg("Starting graceful shutting...")
+			zlog.Info().Msg("Starting graceful shutdown...")
 
-			// Graceful shutdown with 30 sec deadline
+			// graceful shutdown with 30 second deadline
 			// TODO: make timeout configurable
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 
-			// Start graceful shutdown
+			// attempt graceful shutdown
 			done := make(chan struct{})
 			go func() {
-				grpcServer.GracefulStop()
+				if err := server.Shutdown(ctx); err != nil {
+					zlog.Error().Err(err).Send()
+				}
 				close(done)
 			}()
 
-			// Shutdown service
-			svc.Shutdown()
+			// shutdown app
+			// TODO: handle long-lived requests shutdown (e.g. websockets)
+			app.Shutdown()
 
 			select {
 			case <-done:
 				zlog.Info().Msg("Completed graceful shutdown")
 			case <-ctx.Done():
-				zlog.Error().Msg("Exceeded deadline, shutting down forcefully")
-				grpcServer.Stop()
+				zlog.Info().Msg("Exceeded deadline, exiting now")
 			}
 		},
 	}
@@ -150,7 +153,8 @@ func main() {
 	flagset := cmd.Flags()
 	flagset.SortFlags = false
 	flagset.StringVarP(&cli.Config, "config", "c", "", "Path to configuration file (e.g. \"/etc/kubetail/api.yaml\")")
-	flagset.StringP("addr", "a", ":50051", "Host address to bind to")
+	flagset.StringP("addr", "a", ":7501", "Host address to bind to")
+	flagset.String("gin-mode", "release", "Gin mode (release, debug)")
 	flagset.StringArrayVarP(&params, "param", "p", []string{}, "Config params")
 
 	// Execute command

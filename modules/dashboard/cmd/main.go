@@ -29,8 +29,8 @@ func main() {
 
 	// init cobra command
 	cmd := cobra.Command{
-		Use:   "kubetail-server",
-		Short: "Kubetail Backend Server",
+		Use:   "kubetail-dashboard",
+		Short: "Kubetail Dashboard Server",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// validate cli flags
 			return validator.New().Struct(cli)
@@ -43,8 +43,8 @@ func main() {
 
 			// init viper
 			v := viper.New()
-			v.BindPFlag("server.addr", cmd.Flags().Lookup("addr"))
-			v.BindPFlag("server.gin-mode", cmd.Flags().Lookup("gin-mode"))
+			v.BindPFlag("dashboard.addr", cmd.Flags().Lookup("addr"))
+			v.BindPFlag("dashboard.gin-mode", cmd.Flags().Lookup("gin-mode"))
 
 			// override params from cli
 			for _, param := range params {
@@ -138,7 +138,7 @@ func main() {
 	flagset := cmd.Flags()
 	flagset.SortFlags = false
 	flagset.StringVarP(&cli.Config, "config", "c", "", "Path to configuration file (e.g. \"/etc/kubetail/config.yaml\")")
-	flagset.StringP("addr", "a", ":4000", "Host address to bind to")
+	flagset.StringP("addr", "a", ":7500", "Host address to bind to")
 	flagset.String("gin-mode", "release", "Gin mode (release, debug)")
 	flagset.StringArrayVarP(&params, "param", "p", []string{}, "Config params")
 

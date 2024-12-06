@@ -513,6 +513,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		APIHealthzGet          func(childComplexity int) int
 		AppsV1DaemonSetsGet    func(childComplexity int, name string, namespace *string, options *v1.GetOptions) int
 		AppsV1DaemonSetsList   func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		AppsV1DeploymentsGet   func(childComplexity int, name string, namespace *string, options *v1.GetOptions) int
@@ -540,6 +541,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
+		APIHealthzWatch         func(childComplexity int) int
 		AppsV1DaemonSetsWatch   func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		AppsV1DeploymentsWatch  func(childComplexity int, namespace *string, options *v1.ListOptions) int
 		AppsV1ReplicaSetsWatch  func(childComplexity int, namespace *string, options *v1.ListOptions) int
@@ -607,6 +609,7 @@ type QueryResolver interface {
 	PodLogTail(ctx context.Context, namespace *string, name string, container *string, before *string, last *int) (*model.PodLogQueryResponse, error)
 	LivezGet(ctx context.Context) (model.HealthCheckResponse, error)
 	ReadyzGet(ctx context.Context) (model.HealthCheckResponse, error)
+	APIHealthzGet(ctx context.Context) (model.HealthCheckResponse, error)
 	ReadyWait(ctx context.Context, timeout *int) (bool, error)
 	Init(ctx context.Context) (model.InitResponse, error)
 }
@@ -625,6 +628,7 @@ type SubscriptionResolver interface {
 	PodLogFollow(ctx context.Context, namespace *string, name string, container *string, after *string, since *string) (<-chan *model.LogRecord, error)
 	LivezWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
 	ReadyzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
+	APIHealthzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error)
 }
 
 type executableSchema struct {
@@ -2368,6 +2372,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PodLogQueryResponse.Results(childComplexity), true
 
+	case "Query.apiHealthzGet":
+		if e.complexity.Query.APIHealthzGet == nil {
+			break
+		}
+
+		return e.complexity.Query.APIHealthzGet(childComplexity), true
+
 	case "Query.appsV1DaemonSetsGet":
 		if e.complexity.Query.AppsV1DaemonSetsGet == nil {
 			break
@@ -2640,6 +2651,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ReadyzGet(childComplexity), true
+
+	case "Subscription.apiHealthzWatch":
+		if e.complexity.Subscription.APIHealthzWatch == nil {
+			break
+		}
+
+		return e.complexity.Subscription.APIHealthzWatch(childComplexity), true
 
 	case "Subscription.appsV1DaemonSetsWatch":
 		if e.complexity.Subscription.AppsV1DaemonSetsWatch == nil {
@@ -18376,6 +18394,58 @@ func (ec *executionContext) fieldContext_Query_readyzGet(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_apiHealthzGet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_apiHealthzGet(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().APIHealthzGet(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.HealthCheckResponse)
+	fc.Result = res
+	return ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_apiHealthzGet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "status":
+				return ec.fieldContext_HealthCheckResponse_status(ctx, field)
+			case "message":
+				return ec.fieldContext_HealthCheckResponse_message(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_HealthCheckResponse_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HealthCheckResponse", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_readyWait(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_readyWait(ctx, field)
 	if err != nil {
@@ -19606,6 +19676,72 @@ func (ec *executionContext) _Subscription_readyzWatch(ctx context.Context, field
 }
 
 func (ec *executionContext) fieldContext_Subscription_readyzWatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "status":
+				return ec.fieldContext_HealthCheckResponse_status(ctx, field)
+			case "message":
+				return ec.fieldContext_HealthCheckResponse_message(ctx, field)
+			case "timestamp":
+				return ec.fieldContext_HealthCheckResponse_timestamp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HealthCheckResponse", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_apiHealthzWatch(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_apiHealthzWatch(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().APIHealthzWatch(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan model.HealthCheckResponse):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNHealthCheckResponse2githubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋdashboardᚋgraphᚋmodelᚐHealthCheckResponse(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_apiHealthzWatch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Subscription",
 		Field:      field,
@@ -25768,6 +25904,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "apiHealthzGet":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_apiHealthzGet(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "readyWait":
 			field := field
 
@@ -25884,6 +26042,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_livezWatch(ctx, fields[0])
 	case "readyzWatch":
 		return ec._Subscription_readyzWatch(ctx, fields[0])
+	case "apiHealthzWatch":
+		return ec._Subscription_apiHealthzWatch(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}

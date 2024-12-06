@@ -18,13 +18,11 @@ import { Suspense, useEffect, useState } from 'react';
 import toastlib, { useToaster, resolveValue } from 'react-hot-toast';
 import type { Toast } from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
-import { RecoilRoot, useRecoilValue, useSetRecoilState } from 'recoil';
 
 import Button from '@kubetail/ui/elements/Button';
 import Spinner from '@kubetail/ui/elements/Spinner';
 
 import Modal from '@/components/elements/Modal';
-import { apiStatusState } from '@/lib/api-status';
 import * as ops from '@/lib/graphql/ops';
 import { joinPaths, getBasename } from '@/lib/helpers';
 
@@ -49,16 +47,6 @@ const CustomToaster = () => {
   const { toasts } = useToaster();
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
-  const apiStatus = useRecoilValue(apiStatusState);
-
-  if (apiStatus === true) {
-    return (
-      <div className="fixed bottom-[28px] right-[5px] p-2 bg-red-100 border-2 border-red-200 z-10">
-        <div>hi</div>
-      </div>
-    );
-  }
-  
   if (!toasts.length) return null;
 
   const handleRemoveAllClick = () => {
@@ -127,16 +115,7 @@ function OutletWrapper() {
   const { data } = useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
   });
-
-  const setAPIStatus = useSetRecoilState(apiStatusState);
-
-  useEffect(() => {
-    console.log('xxx');
-    console.log(data);
-    setAPIStatus(() => true);
-    toastlib('xxx');
-  }, []);
-  
+  console.log(data);  
   return <Outlet />;
 }
 
@@ -149,11 +128,11 @@ export default function Root() {
   }, []);
 
   return (
-    <RecoilRoot>
+    <>
       <Suspense fallback={<LoadingModal />}>
         <OutletWrapper />
       </Suspense>
       <CustomToaster />
-    </RecoilRoot>
+    </>
   );
 }

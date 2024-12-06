@@ -12,16 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useState } from 'react';
-import { atom } from 'recoil';
+package app
 
-export const apiStatusState = atom<Boolean | undefined>({
-  key: 'apiStatusState',
-  default: undefined,
-});
+import (
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/gin-gonic/gin"
 
-export function useAPIStatus() {
-  const [ok, setOk] = useState<Boolean>();
+	"github.com/kubetail-org/kubetail/modules/api/graph"
+)
 
-  return { ok, setOk: setOk };
+type GraphQLHandlers struct {
+	*app
+}
+
+func (a *GraphQLHandlers) EndpointHandler() gin.HandlerFunc {
+	// Init resolver
+	r := &graph.Resolver{}
+
+	// Init config
+	cfg := graph.Config{Resolvers: r}
+
+	// Init schema
+	schema := graph.NewExecutableSchema(cfg)
+
+	// Init handler
+	h := handler.NewDefaultServer(schema)
+
+	return gin.WrapH(h)
 }
