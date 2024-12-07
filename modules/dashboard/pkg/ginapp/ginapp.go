@@ -201,6 +201,14 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}
+
+		// kubetail api proxy routes
+		kubetailAPI := dynamicRoutes.Group("/kubetail-api")
+		{
+			endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
+			kubetailAPI.GET("", endpointHandler)
+			kubetailAPI.POST("", endpointHandler)
+		}
 	}
 	app.dynamicroutes = dynamicRoutes // for unit tests
 
