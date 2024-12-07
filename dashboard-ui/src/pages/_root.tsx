@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useSuspenseQuery } from '@apollo/client';
+import { useSuspenseQuery, useQuery } from '@apollo/client';
 import { XCircleIcon } from '@heroicons/react/24/outline';
 import { Suspense, useEffect, useState } from 'react';
 import toastlib, { useToaster, resolveValue } from 'react-hot-toast';
@@ -112,10 +112,15 @@ const LoadingModal = () => (
 );
 
 function OutletWrapper() {
-  const { data } = useSuspenseQuery(ops.INIT, {
+  useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
   });
-  console.log(data);  
+
+  const { loading, data } = useQuery(ops.KUBETAIL_API_WHO_ARE_YOU);
+
+  console.log(loading);
+  console.log(data?.whoAreYou);
+
   return <Outlet />;
 }
 

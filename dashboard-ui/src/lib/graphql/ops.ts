@@ -1155,3 +1155,13 @@ export const INIT = gql(`
     }
   }
 `);
+
+/** 
+ * Kubetail API Queries
+*/
+
+export const KUBETAIL_API_WHO_ARE_YOU = gql(`
+  query KubetailAPIWhoAreYou {
+    whoAreYou
+  }
+`);

@@ -15,7 +15,10 @@
 import { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
-  schema: '../modules/server/graph/schema.graphqls',
+  schema: [
+    '../modules/dashboard/graph/schema.graphqls',
+    '../modules/api/graph/schema.graphqls',
+  ],
   documents: ['./src/**/*.{ts,tsx}'],
   generates: {
     './src/lib/graphql/__generated__/': {

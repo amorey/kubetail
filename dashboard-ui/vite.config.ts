@@ -32,6 +32,10 @@ export default defineConfig({
         target: 'http://localhost:7500',
         ws: true,
       },
+      '^/kubetail-api': {
+        target: 'http://localhost:7500',
+        ws: true,
+      },
     }
   },
   build: {

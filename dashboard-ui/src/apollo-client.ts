@@ -19,7 +19,6 @@ import {
   split,
   from,
 } from '@apollo/client';
-import type { HttpOptions } from '@apollo/client';
 import type { Operation } from '@apollo/client/link/core';
 import { onError } from '@apollo/client/link/error';
 import { RetryLink } from '@apollo/client/link/retry';
@@ -31,16 +30,12 @@ import toast from 'react-hot-toast';
 import generatedIntrospection from '@/lib/graphql/__generated__/introspection-result.json';
 import { getBasename, getCSRFToken, joinPaths } from './lib/helpers';
 
-const graphqlEndpoint = (new URL(joinPaths(getBasename(), '/graphql'), window.location.origin)).toString();
+const graphqlEndpoint1 = (new URL(joinPaths(getBasename(), '/graphql'), window.location.origin)).toString();
+const graphqlEndpoint2 = (new URL(joinPaths(getBasename(), '/kubetail-api'), window.location.origin)).toString();
 
-// http client options
-const httpClientOptions: HttpOptions = {
-  uri: graphqlEndpoint,
-};
-
-// init websocket client
+// websocket clients
 const wsClientOptions: ClientOptions = {
-  url: graphqlEndpoint.replace(/^(http)/, 'ws'),
+  url: '',
   connectionAckWaitTimeout: 3000,
   connectionParams: async () => ({
     authorization: `${await getCSRFToken()}`,
@@ -53,13 +48,30 @@ const wsClientOptions: ClientOptions = {
   }),
 };
 
-export const wsClient = createClient(wsClientOptions);
+export const wsClient1 = createClient({ ...wsClientOptions, url: graphqlEndpoint1.replace(/^(http)/, 'ws') });
+export const wsClient2 = createClient({ ...wsClientOptions, url: graphqlEndpoint2.replace(/^(http)/, 'ws') });
 
-// init links
-const httpLink = createHttpLink(httpClientOptions);
+// HTTP Link
+const httpLink1 = createHttpLink({ uri: graphqlEndpoint1 });
+const httpLink2 = createHttpLink({ uri: graphqlEndpoint2 });
 
-const wsLink = new GraphQLWsLink(wsClient);
+const httpLink = split(
+  ({ operationName }) => operationName.startsWith('KubetailAPI'),
+  httpLink2,
+  httpLink1,
+);
 
+// WebSocket link
+const wsLink1 = new GraphQLWsLink(wsClient1);
+const wsLink2 = new GraphQLWsLink(wsClient2);
+
+const wsLink = split(
+  ({ operationName }) => operationName.startsWith('KubetailAPI'),
+  wsLink2,
+  wsLink1,
+);
+
+// Error link
 const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (networkError) {
     const msg = `[Network Error] ${networkError.message}`;
@@ -75,6 +87,7 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   }
 });
 
+// Retry link
 const retryLink = new RetryLink({
   delay: {
     initial: 1000,

@@ -15,7 +15,7 @@
 import { useSubscription } from '@apollo/client';
 import { useEffect, useState } from 'react';
 
-import { wsClient } from '@/apollo-client';
+import { wsClient1 } from '@/apollo-client';
 import * as ops from '@/lib/graphql/ops';
 import { HealthCheckStatus, type HealthCheckResponse } from '@/lib/graphql/__generated__/graphql';
 
@@ -60,20 +60,20 @@ export function useServerStatus() {
 
   useEffect(() => {
     const fns = [
-      wsClient.on('connected', () => {
+      wsClient1.on('connected', () => {
         setBackendStatus(new ServerStatus({ status: Status.Healthy, lastUpdatedAt: new Date() }));
       }),
-      wsClient.on('pong', () => {
+      wsClient1.on('pong', () => {
         setBackendStatus(new ServerStatus({ status: Status.Healthy, lastUpdatedAt: new Date() }));
       }),
-      wsClient.on('closed', () => {
+      wsClient1.on('closed', () => {
         const status = new ServerStatus({ status: Status.Unhealthy, lastUpdatedAt: new Date() });
         status.message = 'Unable to connect';
         setBackendStatus(status);
         setK8sLivezStatus(new ServerStatus());
         setK8sReadyzStatus(new ServerStatus());
       }),
-      wsClient.on('error', () => {
+      wsClient1.on('error', () => {
         const status = new ServerStatus({ status: Status.Unhealthy, lastUpdatedAt: new Date() });
         status.message = 'Error while establishing connection';
         setBackendStatus(status);

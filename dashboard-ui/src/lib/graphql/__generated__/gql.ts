@@ -162,6 +162,7 @@ const documents = {
     "\n  subscription ReadyzWatch {\n    readyzWatch {\n      status\n      message\n      timestamp\n    }\n  }\n": types.ReadyzWatchDocument,
     "\n  query ReadyWait {\n    readyWait(timeout: 20)\n  }\n": types.ReadyWaitDocument,
     "\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n": types.InitDocument,
+    "\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n": types.KubetailApiWhoAreYouDocument,
 };
 
 /**
@@ -770,6 +771,10 @@ export function gql(source: "\n  query ReadyWait {\n    readyWait(timeout: 20)\n
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n"): (typeof documents)["\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n"): (typeof documents)["\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

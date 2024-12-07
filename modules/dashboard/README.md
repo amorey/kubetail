@@ -1,6 +1,6 @@
 # Kubetail Dashboard Server
 
-Go-based HTTP server that serves up the Kubetail dashboard frontend and handles its backend web requests
+Go-based HTTP server that serves up the Kubetail dashboard frontend and handles the dashboard's backend requests
 
 ## Overview
 

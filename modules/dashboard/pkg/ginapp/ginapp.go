@@ -144,7 +144,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 		// disable csrf protection for graphql endpoint (already rejects simple requests)
 		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") {
+			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") || c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/kubetail-api") {
 				c.Request = csrf.UnsafeSkipCheck(c.Request)
 			}
 			c.Next()
