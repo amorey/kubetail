@@ -17,6 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/kubetail-org/kubetail/modules/common/agentpb"
+	model1 "github.com/kubetail-org/kubetail/modules/common/graph/model"
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -27251,12 +27252,12 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 }
 
 func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v interface{}) (int64, error) {
-	res, err := model.UnmarshalInt64(v)
+	res, err := model1.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
-	res := model.MarshalInt64(v)
+	res := model1.MarshalInt64(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -28157,12 +28158,12 @@ func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.Se
 }
 
 func (ec *executionContext) unmarshalOInt642int64(ctx context.Context, v interface{}) (int64, error) {
-	res, err := model.UnmarshalInt64(v)
+	res, err := model1.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
-	res := model.MarshalInt64(v)
+	res := model1.MarshalInt64(v)
 	return res
 }
 
@@ -28170,7 +28171,7 @@ func (ec *executionContext) unmarshalOInt642ᚖint64(ctx context.Context, v inte
 	if v == nil {
 		return nil, nil
 	}
-	res, err := model.UnmarshalInt64(v)
+	res, err := model1.UnmarshalInt64(v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -28178,7 +28179,7 @@ func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.
 	if v == nil {
 		return graphql.Null
 	}
-	res := model.MarshalInt64(*v)
+	res := model1.MarshalInt64(*v)
 	return res
 }
 
@@ -28360,7 +28361,7 @@ func (ec *executionContext) unmarshalOTimestampPBTimestamp2ᚖgoogleᚗgolangᚗ
 	if v == nil {
 		return nil, nil
 	}
-	res, err := model.UnmarshalTimestampPBTimestamp(v)
+	res, err := model1.UnmarshalTimestampPBTimestamp(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -28368,7 +28369,7 @@ func (ec *executionContext) marshalOTimestampPBTimestamp2ᚖgoogleᚗgolangᚗor
 	if v == nil {
 		return graphql.Null
 	}
-	res := model.TimestampPBTimestamp(v)
+	res := model1.TimestampPBTimestamp(v)
 	return res
 }
 

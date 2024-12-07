@@ -86,6 +86,31 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  # --- LogMetadata ---
+  LogMetadata:
+    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadata
+
+  LogMetadataFileInfo:
+    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataFileInfo
+
+  LogMetadataList:
+    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataList
+
+  LogMetadataSpec:
+    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataSpec
+
+  LogMetadataWatchEvent:
+    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataWatchEvent  
+
+  # --- custom scalars ---
+  Int64:
+    model: github.com/kubetail-org/kubetail/modules/common/graph/model.Int64
+
+  TimestampPBTimestamp:
+    model:
+      - github.com/kubetail-org/kubetail/modules/common/graph/model.TimestampPBTimestamp
+
+  # --- gqlgen ---
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

@@ -416,7 +416,7 @@ models:
 
   # --- custom scalars ---
   Int64:
-    model: github.com/kubetail-org/kubetail/modules/dashboard/graph/model.Int64
+    model: github.com/kubetail-org/kubetail/modules/common/graph/model.Int64
 
   MetaV1Time:
     model:
@@ -427,7 +427,7 @@ models:
 
   TimestampPBTimestamp:
     model:
-      - github.com/kubetail-org/kubetail/modules/dashboard/graph/model.TimestampPBTimestamp
+      - github.com/kubetail-org/kubetail/modules/common/graph/model.TimestampPBTimestamp
 
   # --- gqlgen ---
   ID:

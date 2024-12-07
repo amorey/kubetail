@@ -116,11 +116,6 @@ function OutletWrapper() {
     fetchPolicy: 'no-cache',
   });
 
-  const { loading, data } = useQuery(ops.KUBETAIL_API_WHO_ARE_YOU);
-
-  console.log(loading);
-  console.log(data?.whoAreYou);
-
   return <Outlet />;
 }
 

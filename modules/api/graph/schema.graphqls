@@ -12,6 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-type Query {
-  whoAreYou: String!
+# --- Log Metadata ---
+
+type LogMetadata {
+  id: ID!
+  spec: LogMetadataSpec!
+  fileInfo: LogMetadataFileInfo!
 }
+
+type LogMetadataFileInfo {
+  size: Int64!
+  lastModifiedAt: TimestampPBTimestamp
+}
+
+type LogMetadataList {
+  items: [LogMetadata!]!
+}
+
+type LogMetadataSpec {
+  nodeName: String!
+  namespace: String!
+  podName: String!
+  containerName: String!
+  containerID: ID!
+}
+
+type LogMetadataWatchEvent {
+  type: String!
+  object: LogMetadata
+}
+
+# -- root operations ---
+
+type Query {
+  logMetadataList(namespace: String): LogMetadataList
+}
+
+type Subscription {
+  logMetadataWatch(namespace: String): LogMetadataWatchEvent
+}
+
+# --- helpers ---
+
+"""
+A 64-bit integer.
+"""
+scalar Int64
+
+"""
+An ISO-8601 encoded UTC date string.
+"""
+scalar TimestampPBTimestamp

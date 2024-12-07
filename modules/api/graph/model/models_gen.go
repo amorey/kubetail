@@ -4,3 +4,6 @@ package model
 
 type Query struct {
 }
+
+type Subscription struct {
+}

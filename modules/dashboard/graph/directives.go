@@ -7,7 +7,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/kubetail-org/kubetail/modules/dashboard/graph/lib"
+	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
 )
 
 var validate *validator.Validate
@@ -35,7 +35,7 @@ func ValidateDirective(ctx context.Context, obj interface{}, next graphql.Resolv
 		if message != nil {
 			msg = *message
 		}
-		gqlerr := lib.NewValidationError(rule, msg)
+		gqlerr := errors.NewValidationError(rule, msg)
 
 		// add to context
 		graphql.AddError(ctx, gqlerr)

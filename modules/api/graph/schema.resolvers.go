@@ -6,14 +6,70 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"sync"
+
+	"github.com/kubetail-org/kubetail/modules/common/agentpb"
+	"github.com/vektah/gqlparser/v2/gqlerror"
+	"google.golang.org/grpc"
 )
 
-// WhoAreYou is the resolver for the whoAreYou field.
-func (r *queryResolver) WhoAreYou(ctx context.Context) (string, error) {
-	return "Kubetail API", nil
+// LogMetadataList is the resolver for the logMetadataList field.
+func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*agentpb.LogMetadataList, error) {
+	// init namespaces
+	namespaces, err := r.ToNamespaces(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// init response
+	outList := &agentpb.LogMetadataList{}
+
+	// init request
+	req := &agentpb.LogMetadataListRequest{Namespaces: namespaces}
+
+	// execute fanout query
+	var mu sync.Mutex
+	errs := gqlerror.List{}
+
+	r.grpcDispatcher.Fanout(ctx, func(ctx context.Context, conn *grpc.ClientConn) {
+		// init client
+		c := agentpb.NewLogMetadataServiceClient(conn)
+
+		// execute
+		resp, err := c.List(ctx, req)
+
+		// aquire lock
+		mu.Lock()
+		defer mu.Unlock()
+
+		// update vars
+		if err != nil {
+			errs = append(errs, NewGrpcError(conn, err))
+		} else {
+			// update items
+			outList.Items = append(outList.Items, resp.GetItems()...)
+		}
+	})
+
+	// throw error if response is missing
+	if len(errs) != 0 {
+		return nil, errs
+	}
+
+	return outList, nil
+}
+
+// LogMetadataWatch is the resolver for the logMetadataWatch field.
+func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *agentpb.LogMetadataWatchEvent, error) {
+	panic(fmt.Errorf("not implemented: LogMetadataWatch - logMetadataWatch"))
 }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
