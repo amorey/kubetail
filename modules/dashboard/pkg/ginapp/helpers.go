@@ -15,18 +15,9 @@
 package ginapp
 
 import (
-	"html/template"
-	"path"
-
-	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
-	zlog "github.com/rs/zerolog/log"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/common/grpchelpers"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
@@ -44,51 +35,4 @@ func mustConfigureK8S(cfg *config.Config) *rest.Config {
 		opts.Mode = k8shelpers.ModeToken
 	}
 	return k8shelpers.MustConfigure(opts)
-}
-
-func mustLoadTemplatesWithFuncs(glob string) *template.Template {
-	funcMap := template.FuncMap{
-		"pathJoin": path.Join,
-	}
-
-	tmpl := template.New("").Funcs(funcMap)
-
-	// parse templates from a specified directory or pattern
-	parsedTemplates, err := tmpl.ParseGlob(glob)
-	if err != nil {
-		zlog.Fatal().Err(err).Send()
-	}
-
-	return parsedTemplates
-}
-
-func mustNewGrpcDispatcher(cfg *config.Config) *grpcdispatcher.Dispatcher {
-	dialOpts := []grpc.DialOption{
-		grpc.WithUnaryInterceptor(grpchelpers.NewUnaryAuthClientInterceptor(cfg)),
-	}
-
-	// configure tls
-	if cfg.Agent.TLS.Enabled {
-		creds, err := credentials.NewServerTLSFromFile(cfg.Agent.TLS.CertFile, cfg.Agent.TLS.KeyFile)
-		if err != nil {
-			zlog.Fatal().Err(err).Send()
-		}
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
-	} else {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	}
-
-	// TODO: reuse app clientset
-	d, err := grpcdispatcher.NewDispatcher(
-		cfg.Dashboard.AgentDispatchUrl,
-		grpcdispatcher.WithDialOptions(dialOpts...),
-	)
-	if err != nil {
-		zlog.Fatal().Err(err).Send()
-	}
-
-	// start background processes
-	d.Start()
-
-	return d
 }

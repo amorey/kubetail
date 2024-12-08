@@ -499,36 +499,6 @@ type InitKubetailAPIDetails {
   serviceName: String!
 }
 
-# --- Log Metadata ---
-
-type LogMetadata {
-  id: ID!
-  spec: LogMetadataSpec!
-  fileInfo: LogMetadataFileInfo!
-}
-
-type LogMetadataFileInfo {
-  size: Int64!
-  lastModifiedAt: TimestampPBTimestamp
-}
-
-type LogMetadataList {
-  items: [LogMetadata!]!
-}
-
-type LogMetadataSpec {
-  nodeName: String!
-  namespace: String!
-  podName: String!
-  containerName: String!
-  containerID: ID!
-}
-
-type LogMetadataWatchEvent {
-  type: String!
-  object: LogMetadata
-}
-
 # --- Log Record ---
 
 type LogRecord {
@@ -686,11 +656,6 @@ type Query {
   coreV1PodsGetLogs(namespace: String, name: String!, options: CoreV1PodLogOptions): [LogRecord!]
 
   """
-  Logs Metadata API
-  """
-  logMetadataList(namespace: String): LogMetadataList
-
-  """
   Logs API
   """
   podLogHead(
@@ -773,11 +738,6 @@ type Subscription {
   CoreV1 PodLog tail
   """
   coreV1PodLogTail(namespace: String, name: String!, options: CoreV1PodLogOptions): LogRecord
-
-  """
-  Logs Metadata watch
-  """
-  logMetadataWatch(namespace: String): LogMetadataWatchEvent
 
   """
   Logs API

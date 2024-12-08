@@ -43,6 +43,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
+	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
+
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
 )
 
@@ -379,7 +381,7 @@ func watchEventProxyChannel(ctx context.Context, watchAPI watch.Interface) <-cha
 					if ok {
 						transport.AddSubscriptionError(ctx, NewWatchError(status))
 					} else {
-						transport.AddSubscriptionError(ctx, ErrInternalServerError)
+						transport.AddSubscriptionError(ctx, errors.ErrInternalServerError)
 					}
 					break Loop
 				}
@@ -421,7 +423,7 @@ Loop:
 				if ok {
 					transport.AddSubscriptionError(ctx, NewWatchError(status))
 				} else {
-					transport.AddSubscriptionError(ctx, ErrInternalServerError)
+					transport.AddSubscriptionError(ctx, errors.ErrInternalServerError)
 				}
 
 				// stop all

@@ -25,7 +25,6 @@ import (
 	zlog "github.com/rs/zerolog/log"
 	"k8s.io/client-go/rest"
 
-	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph"
 )
 
@@ -38,9 +37,9 @@ type GraphQLHandlers struct {
 }
 
 // GET|POST "/graphql": GraphQL query endpoint
-func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
+func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
 	// init resolver
-	r, err := graph.NewResolver(cfg, grpcDispatcher, allowedNamespaces)
+	r, err := graph.NewResolver(cfg, allowedNamespaces)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}

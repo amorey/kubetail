@@ -15,7 +15,6 @@
 package app
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -23,18 +22,26 @@ import (
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 
+	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
+
 	"github.com/kubetail-org/kubetail/modules/common/config"
 )
 
 type app struct {
 	*gin.Engine
+	grpcDispatcher *grpcdispatcher.Dispatcher
 }
 
 // Shutdown
 func (a *app) Shutdown() {
-	fmt.Println("shutdown")
+	// stop grpc dispatcher
+	if a.grpcDispatcher != nil {
+		// TODO: log dispatcher shutdown errors
+		a.grpcDispatcher.Shutdown()
+	}
 }
 
+// Create new gin app
 func NewApp(cfg *config.Config) (*app, error) {
 	// Init app
 	app := &app{Engine: gin.New()}
@@ -42,6 +49,9 @@ func NewApp(cfg *config.Config) (*app, error) {
 	// If not in test-mode
 	if gin.Mode() != gin.TestMode {
 		app.Use(gin.Recovery())
+
+		// init grpc dispatcher
+		app.grpcDispatcher = mustNewGrpcDispatcher(cfg)
 	}
 
 	// Add request-id middleware
@@ -71,8 +81,8 @@ func NewApp(cfg *config.Config) (*app, error) {
 	// GraphQL routes
 	graphql := root.Group("/graphql")
 	{
-		h := &GraphQLHandlers{}
-		endpointHandler := h.EndpointHandler()
+		h := &GraphQLHandlers{app}
+		endpointHandler := h.EndpointHandler(cfg.AllowedNamespaces)
 		graphql.GET("", endpointHandler)
 		graphql.POST("", endpointHandler)
 	}

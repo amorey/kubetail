@@ -1,16 +1,18 @@
 module github.com/kubetail-org/kubetail/modules/common
 
-go 1.22.0
+go 1.22.5
 
-toolchain go1.22.7
+toolchain go1.23.2
 
 require (
+	github.com/99designs/gqlgen v0.17.57
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gorilla/csrf v1.7.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
+	github.com/vektah/gqlparser/v2 v2.5.19
 	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.35.2
 	k8s.io/api v0.31.3
@@ -53,6 +55,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect

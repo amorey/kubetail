@@ -50,81 +50,11 @@ type Config struct {
 	AllowedNamespaces []string `mapstructure:"allowed-namespaces"`
 	KubeConfig        string   `mapstructure:"kube-config"`
 
-	// API options
-	API struct {
-		Addr    string `validate:"omitempty,hostname_port"`
-		GinMode string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
-
-		// TLS options
-		TLS struct {
-			// enable tls termination
-			Enabled bool
-
-			// TLS certificate file
-			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
-
-			// TLS certificate key file
-			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
-		}
-
-		// logging options
-		Logging struct {
-			// enable logging
-			Enabled bool
-
-			// log level
-			Level string `validate:"oneof=debug info warn error disabled"`
-
-			// log format
-			Format string `validate:"oneof=json pretty"`
-
-			// access-log options
-			AccessLog struct {
-				// enable access-log
-				Enabled bool
-
-				// hide health checks
-				HideHealthChecks bool `mapstructure:"hide-health-checks"`
-			} `mapstructure:"access-log"`
-		}
-	}
-
-	// agent options
-	Agent struct {
-		Addr             string `validate:"omitempty,hostname_port"`
-		ContainerLogsDir string `mapstructure:"container-logs-dir"`
-
-		// TLS options
-		TLS struct {
-			// enable tls termination
-			Enabled bool
-
-			// TLS certificate file
-			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
-
-			// TLS certificate key file
-			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
-		}
-
-		// logging options
-		Logging struct {
-			// enable logging
-			Enabled bool
-
-			// log level
-			Level string `validate:"oneof=debug info warn error disabled"`
-
-			// log format
-			Format string `validate:"oneof=json pretty"`
-		}
-	}
-
 	// dashboard options
 	Dashboard struct {
 		Addr              string `validate:"omitempty,hostname_port"`
 		BasePath          string `mapstructure:"base-path"`
 		GinMode           string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
-		AgentDispatchUrl  string `mapstructure:"agent-dispatch-url"`
 		ExtensionsEnabled bool   `mapstructure:"extensions-enabled"`
 
 		// session options
@@ -194,6 +124,76 @@ type Config struct {
 			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
 		}
 	}
+
+	// API options
+	API struct {
+		Addr             string `validate:"omitempty,hostname_port"`
+		GinMode          string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
+		AgentDispatchUrl string `mapstructure:"agent-dispatch-url"`
+
+		// TLS options
+		TLS struct {
+			// enable tls termination
+			Enabled bool
+
+			// TLS certificate file
+			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
+
+			// TLS certificate key file
+			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+		}
+
+		// logging options
+		Logging struct {
+			// enable logging
+			Enabled bool
+
+			// log level
+			Level string `validate:"oneof=debug info warn error disabled"`
+
+			// log format
+			Format string `validate:"oneof=json pretty"`
+
+			// access-log options
+			AccessLog struct {
+				// enable access-log
+				Enabled bool
+
+				// hide health checks
+				HideHealthChecks bool `mapstructure:"hide-health-checks"`
+			} `mapstructure:"access-log"`
+		}
+	}
+
+	// agent options
+	Agent struct {
+		Addr             string `validate:"omitempty,hostname_port"`
+		ContainerLogsDir string `mapstructure:"container-logs-dir"`
+
+		// TLS options
+		TLS struct {
+			// enable tls termination
+			Enabled bool
+
+			// TLS certificate file
+			CertFile string `mapstructure:"cert-file" validate:"omitempty,file"`
+
+			// TLS certificate key file
+			KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+		}
+
+		// logging options
+		Logging struct {
+			// enable logging
+			Enabled bool
+
+			// log level
+			Level string `validate:"oneof=debug info warn error disabled"`
+
+			// log format
+			Format string `validate:"oneof=json pretty"`
+		}
+	}
 }
 
 // Validate config
@@ -213,7 +213,6 @@ func DefaultConfig() *Config {
 	cfg.Dashboard.Addr = ":7500"
 	cfg.Dashboard.BasePath = "/"
 	cfg.Dashboard.GinMode = "release"
-	cfg.Dashboard.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
 	cfg.Dashboard.Session.Secret = ""
 	cfg.Dashboard.Session.Cookie.Name = "session"
 	cfg.Dashboard.Session.Cookie.Path = "/"
@@ -240,6 +239,7 @@ func DefaultConfig() *Config {
 
 	cfg.API.Addr = ":7501"
 	cfg.API.GinMode = "release"
+	cfg.API.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
 	cfg.API.Logging.Enabled = true
 	cfg.API.Logging.Level = "info"
 	cfg.API.Logging.Format = "json"

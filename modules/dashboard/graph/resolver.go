@@ -29,8 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
-
+	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
 	"github.com/kubetail-org/kubetail/modules/common/k8shelpers"
 )
 
@@ -46,7 +45,6 @@ type Resolver struct {
 	clientsetReadyCh     chan struct{}
 	dynamicClient        *dynamic.DynamicClient
 	dynamicClientReadyCh chan struct{}
-	grpcDispatcher       *grpcdispatcher.Dispatcher
 	allowedNamespaces    []string
 	TestClientset        *fake.Clientset
 	TestDynamicClient    *dynamicFake.FakeDynamicClient
@@ -108,7 +106,7 @@ func (r *Resolver) ToNamespace(namespace *string) (string, error) {
 
 	// perform auth
 	if len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return "", ErrForbidden
+		return "", errors.ErrForbidden
 	}
 
 	return ns, nil
@@ -124,7 +122,7 @@ func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
 
 	// perform auth
 	if ns != "" && len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return nil, ErrForbidden
+		return nil, errors.ErrForbidden
 	}
 
 	// listify
@@ -209,13 +207,12 @@ func (r *Resolver) WaitUntilReady(ctx context.Context) error {
 	}
 }
 
-func NewResolver(cfg *rest.Config, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string) (*Resolver, error) {
+func NewResolver(cfg *rest.Config, allowedNamespaces []string) (*Resolver, error) {
 	// init resolver
 	r := &Resolver{
 		k8sCfg:               cfg,
 		clientsetReadyCh:     make(chan struct{}),
 		dynamicClientReadyCh: make(chan struct{}),
-		grpcDispatcher:       grpcDispatcher,
 		allowedNamespaces:    allowedNamespaces,
 	}
 

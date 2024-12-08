@@ -366,22 +366,6 @@ models:
       object:
         resolver: true
 
-  # --- LogMetadata ---
-  LogMetadata:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadata
-
-  LogMetadataFileInfo:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataFileInfo
-
-  LogMetadataList:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataList
-
-  LogMetadataSpec:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataSpec
-
-  LogMetadataWatchEvent:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataWatchEvent
-
   # --- MetaV1 ---
   MetaV1GetOptions:
     model: k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions

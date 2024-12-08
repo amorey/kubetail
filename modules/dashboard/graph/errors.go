@@ -21,21 +21,13 @@ import (
 	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
 )
 
-// custom errors
-var (
-	ErrUnauthenticated     = errors.NewError("KUBETAIL_UNAUTHENTICATED", "Authentication required")
-	ErrForbidden           = errors.NewError("KUBETAIL_FORBIDDEN", "Access forbidden")
-	ErrWatchError          = errors.NewError("KUBETAIL_WATCH_ERROR", "Watch error")
-	ErrInternalServerError = errors.NewError("INTERNAL_SERVER_ERROR", "Internal server error")
-)
-
 // New Watch API error
 func NewWatchError(status *metav1.Status) *gqlerror.Error {
 	// init error
 	return &gqlerror.Error{
 		Message: status.Message,
 		Extensions: map[string]interface{}{
-			"code":   ErrWatchError.Extensions["code"],
+			"code":   errors.ErrWatchError.Extensions["code"],
 			"status": status.Status,
 			"reason": status.Reason,
 		},

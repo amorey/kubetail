@@ -28,18 +28,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
 	adapter "github.com/gwatts/gin-adapter"
-	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/modules/common/config"
-	server "github.com/kubetail-org/kubetail/modules/dashboard"
+
+	"github.com/kubetail-org/kubetail/modules/dashboard"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
 type GinApp struct {
 	*gin.Engine
 	k8sHelperService k8shelpers.Service
-	grpcDispatcher   *grpcdispatcher.Dispatcher
 	shutdownCh       chan struct{}
 
 	// for testing
@@ -48,19 +47,13 @@ type GinApp struct {
 }
 
 func (app *GinApp) Shutdown() {
-	// stop grpc dispatcher
-	if app.grpcDispatcher != nil {
-		// TODO: log dispatcher shutdown errors
-		app.grpcDispatcher.Shutdown()
-	}
-
 	// send shutdown signal to internal processes
 	if app.shutdownCh != nil {
 		close(app.shutdownCh)
 	}
 }
 
-// Create new kubetail Gin app
+// Create new gin app
 func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	// init app
 	app := &GinApp{Engine: gin.New()}
@@ -73,11 +66,6 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 		// init k8s helper service
 		app.k8sHelperService = k8shelpers.NewK8sHelperService(k8sCfg, k8shelpers.Mode(cfg.AuthMode))
-
-		// init grpc dispatcher
-		if cfg.Dashboard.ExtensionsEnabled {
-			app.grpcDispatcher = mustNewGrpcDispatcher(cfg)
-		}
 
 		// add recovery middleware
 		app.Use(gin.Recovery())
@@ -100,7 +88,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		Funcs(template.FuncMap{
 			"pathJoin": path.Join,
 		}).
-		ParseFS(server.TemplatesEmbedFS, "templates/*"),
+		ParseFS(dashboard.TemplatesEmbedFS, "templates/*"),
 	)
 	app.SetHTMLTemplate(tmpl)
 
@@ -197,7 +185,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 			// graphql handler
 			h := &GraphQLHandlers{app}
-			endpointHandler := h.EndpointHandler(k8sCfg, app.grpcDispatcher, cfg.AllowedNamespaces, csrfProtect)
+			endpointHandler := h.EndpointHandler(k8sCfg, cfg.AllowedNamespaces, csrfProtect)
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}
@@ -220,7 +208,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	})
 
 	// serve website from "/" and also unknown routes
-	websiteFS, err := fs.Sub(server.WebsiteEmbedFS, "website")
+	websiteFS, err := fs.Sub(dashboard.WebsiteEmbedFS, "website")
 	if err != nil {
 		return nil, err
 	}

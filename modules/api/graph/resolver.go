@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
+
+	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
 )
 
 // This file will not be regenerated automatically.
@@ -41,7 +43,7 @@ func (r *Resolver) ToNamespace(namespace *string) (string, error) {
 
 	// perform auth
 	if len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return "", ErrForbidden
+		return "", errors.ErrForbidden
 	}
 
 	return ns, nil
@@ -57,7 +59,7 @@ func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
 
 	// perform auth
 	if ns != "" && len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return nil, ErrForbidden
+		return nil, errors.ErrForbidden
 	}
 
 	// listify
@@ -68,4 +70,12 @@ func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
 	}
 
 	return namespaces, nil
+}
+
+// Create new Resolver instance
+func NewResolver(dispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string) (*Resolver, error) {
+	return &Resolver{
+		grpcDispatcher:    dispatcher,
+		allowedNamespaces: allowedNamespaces,
+	}, nil
 }

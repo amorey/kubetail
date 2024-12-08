@@ -12,17 +12,11 @@ import (
 	"io"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
+	gqlhelpers "github.com/kubetail-org/kubetail/modules/common/graph/errors"
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
-	zlog "github.com/rs/zerolog/log"
-	"github.com/vektah/gqlparser/v2/gqlerror"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -268,52 +262,6 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 	return out, nil
 }
 
-// LogMetadataList is the resolver for the logMetadataList field.
-func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*agentpb.LogMetadataList, error) {
-	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	// init response
-	outList := &agentpb.LogMetadataList{}
-
-	// init request
-	req := &agentpb.LogMetadataListRequest{Namespaces: namespaces}
-
-	// execute fanout query
-	var mu sync.Mutex
-	errs := gqlerror.List{}
-
-	r.grpcDispatcher.Fanout(ctx, func(ctx context.Context, conn *grpc.ClientConn) {
-		// init client
-		c := agentpb.NewLogMetadataServiceClient(conn)
-
-		// execute
-		resp, err := c.List(ctx, req)
-
-		// aquire lock
-		mu.Lock()
-		defer mu.Unlock()
-
-		// update vars
-		if err != nil {
-			errs = append(errs, NewGrpcError(conn, err))
-		} else {
-			// update items
-			outList.Items = append(outList.Items, resp.GetItems()...)
-		}
-	})
-
-	// throw error if response is missing
-	if len(errs) != 0 {
-		return nil, errs
-	}
-
-	return outList, nil
-}
-
 // PodLogHead is the resolver for the podLogHead field.
 func (r *queryResolver) PodLogHead(ctx context.Context, namespace *string, name string, container *string, after *string, since *string, first *int) (*model.PodLogQueryResponse, error) {
 	// init namespace
@@ -507,7 +455,7 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, option
 		for ev := range watchEventProxyChannel(ctx, watchAPI) {
 			ns, err := typeassertRuntimeObject[*corev1.Namespace](ev.Object)
 			if err != nil {
-				transport.AddSubscriptionError(ctx, ErrInternalServerError)
+				transport.AddSubscriptionError(ctx, gqlhelpers.ErrInternalServerError)
 				break
 			}
 
@@ -569,76 +517,6 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 			}
 		}
 		close(outCh)
-	}()
-
-	return outCh, nil
-}
-
-// LogMetadataWatch is the resolver for the logMetadataWatch field.
-func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *agentpb.LogMetadataWatchEvent, error) {
-	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	outCh := make(chan *agentpb.LogMetadataWatchEvent)
-
-	sub, err := r.grpcDispatcher.FanoutSubscribe(ctx, func(ctx context.Context, conn *grpc.ClientConn) {
-		// init client
-		c := agentpb.NewLogMetadataServiceClient(conn)
-
-		// init request
-		req := &agentpb.LogMetadataWatchRequest{Namespaces: namespaces}
-
-		// execute
-		stream, err := c.Watch(ctx, req)
-		if err != nil {
-			return
-		}
-
-		for {
-			ev, err := stream.Recv()
-
-			// handle errors
-			if err != nil {
-				// ignore normal errors
-				if err == io.EOF {
-					break
-				} else if err == context.Canceled {
-					break
-				}
-
-				// check for grpc status error
-				if s, ok := status.FromError(err); ok {
-					switch s.Code() {
-					case codes.Unavailable:
-						// server down (probably restarting)
-					case codes.Canceled:
-						// connection closed client-side
-					default:
-						zlog.Error().Caller().Err(err).Msgf("Unexpected gRPC error: %v\n", s.Message())
-					}
-					break
-				}
-
-				zlog.Error().Caller().Err(err).Msg("Unexpected error")
-
-				break
-			}
-
-			// forward event
-			outCh <- ev
-		}
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// unsubscribe when client disconnects
-	go func() {
-		<-ctx.Done()
-		sub.Unsubscribe()
 	}()
 
 	return outCh, nil

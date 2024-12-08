@@ -17,6 +17,7 @@ package app
 import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/gin-gonic/gin"
+	zlog "github.com/rs/zerolog/log"
 
 	"github.com/kubetail-org/kubetail/modules/api/graph"
 )
@@ -25,9 +26,12 @@ type GraphQLHandlers struct {
 	*app
 }
 
-func (a *GraphQLHandlers) EndpointHandler() gin.HandlerFunc {
+func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.HandlerFunc {
 	// Init resolver
-	r := &graph.Resolver{}
+	r, err := graph.NewResolver(a.grpcDispatcher, allowedNamespaces)
+	if err != nil {
+		zlog.Fatal().Err(err).Send()
+	}
 
 	// Init config
 	cfg := graph.Config{Resolvers: r}
