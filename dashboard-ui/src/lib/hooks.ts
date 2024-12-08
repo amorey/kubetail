@@ -389,7 +389,7 @@ export function useLogMetadata(options?: LogMetadataHookOptions) {
   const retryOnError = useRetryOnError();
 
   // initial query
-  const { loading, error, data, subscribeToMore, refetch } = useQuery(ops.LOGMETADATA_LIST_FETCH, {
+  const { loading, error, data, subscribeToMore, refetch } = useQuery(ops.KUBETAIL_API_LOG_METADATA_LIST_FETCH, {
     skip: !options?.enabled,
     onError: () => {
       retryOnError(refetch);
@@ -404,7 +404,7 @@ export function useLogMetadata(options?: LogMetadataHookOptions) {
     if (loading || error || !options?.enabled) return;
 
     return subscribeToMore({
-      document: ops.LOGMETADATA_LIST_WATCH,
+      document: ops.KUBETAIL_API_LOG_METADATA_LIST_WATCH,
       updateQuery: (prev, { subscriptionData }) => {
         const ev = subscriptionData.data.logMetadataWatch;
 

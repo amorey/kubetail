@@ -1090,11 +1090,11 @@ export const FOLLOW_CONTAINER_LOG = gql(`
 `);
 
 /**
- * LogMetadata
+ * Kubetail API Queries
  */
 
-export const LOGMETADATA_LIST_FETCH = gql(`
-  query LogMetadataListFetch($namespace: String = "") {
+export const KUBETAIL_API_LOG_METADATA_LIST_FETCH = gql(`
+  query KubetailAPILogMetadataListFetch($namespace: String = "") {
     logMetadataList(namespace: $namespace) {
       items {
         ...LogMetadataListItemFragment
@@ -1103,8 +1103,8 @@ export const LOGMETADATA_LIST_FETCH = gql(`
   }
 `);
 
-export const LOGMETADATA_LIST_WATCH = gql(`
-  subscription LogMetadataListWatch($namespace: String = "") {
+export const KUBETAIL_API_LOG_METADATA_LIST_WATCH = gql(`
+  subscription KubetailAPILogMetadataListWatch($namespace: String = "") {
     logMetadataWatch(namespace: $namespace) {
       type
       object {
@@ -1153,15 +1153,5 @@ export const INIT = gql(`
         serviceName
       }
     }
-  }
-`);
-
-/** 
- * Kubetail API Queries
-*/
-
-export const KUBETAIL_API_WHO_ARE_YOU = gql(`
-  query KubetailAPIWhoAreYou {
-    whoAreYou
   }
 `);

@@ -156,13 +156,12 @@ const documents = {
     "\n  query HeadContainerLog($namespace: String!, $name: String!, $container: String, $after: ID, $since: String, $first: Int) {\n    podLogHead(namespace: $namespace, name: $name, container: $container, after: $after, since: $since, first: $first) {\n      ...PodLogQueryResponseFragment\n    }\n  }\n": types.HeadContainerLogDocument,
     "\n  query TailContainerLog($namespace: String!, $name: String!, $container: String, $before: ID, $last: Int) {\n    podLogTail(namespace: $namespace, name: $name, container: $container, before: $before, last: $last) {\n      ...PodLogQueryResponseFragment\n    }\n  }\n": types.TailContainerLogDocument,
     "\n  subscription FollowContainerLog($namespace: String!, $name: String!, $container: String, $after: ID, $since: String) {\n    podLogFollow(namespace: $namespace, name: $name, container: $container, after: $after, since: $since) {\n      timestamp\n      message\n    }\n  }\n": types.FollowContainerLogDocument,
-    "\n  query LogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n": types.LogMetadataListFetchDocument,
-    "\n  subscription LogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n": types.LogMetadataListWatchDocument,
+    "\n  query KubetailAPILogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n": types.KubetailApiLogMetadataListFetchDocument,
+    "\n  subscription KubetailAPILogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n": types.KubetailApiLogMetadataListWatchDocument,
     "\n  subscription LivezWatch {\n    livezWatch {\n      status\n      message\n      timestamp\n    }\n  }\n": types.LivezWatchDocument,
     "\n  subscription ReadyzWatch {\n    readyzWatch {\n      status\n      message\n      timestamp\n    }\n  }\n": types.ReadyzWatchDocument,
     "\n  query ReadyWait {\n    readyWait(timeout: 20)\n  }\n": types.ReadyWaitDocument,
     "\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n": types.InitDocument,
-    "\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n": types.KubetailApiWhoAreYouDocument,
 };
 
 /**
@@ -750,11 +749,11 @@ export function gql(source: "\n  subscription FollowContainerLog($namespace: Str
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  query LogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  query LogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"];
+export function gql(source: "\n  query KubetailAPILogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  query KubetailAPILogMetadataListFetch($namespace: String = \"\") {\n    logMetadataList(namespace: $namespace) {\n      items {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function gql(source: "\n  subscription LogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription LogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"];
+export function gql(source: "\n  subscription KubetailAPILogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"): (typeof documents)["\n  subscription KubetailAPILogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -771,10 +770,6 @@ export function gql(source: "\n  query ReadyWait {\n    readyWait(timeout: 20)\n
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n"): (typeof documents)["\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n"];
-/**
- * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function gql(source: "\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n"): (typeof documents)["\n  query KubetailAPIWhoAreYou {\n    whoAreYou\n  }\n"];
 
 export function gql(source: string) {
   return (documents as any)[source] ?? {};

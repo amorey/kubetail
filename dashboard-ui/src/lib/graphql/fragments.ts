@@ -588,7 +588,7 @@ export const POD_LOG_QUERY_RESPONSE_FRAGMENT = gql(`
 /**
  * LogMetadata fragments
  */
-export const LOGMETADATA_LIST_ITEM_FRAGMENT = gql(`
+export const LOG_METADATA_LIST_ITEM_FRAGMENT = gql(`
   fragment LogMetadataListItemFragment on LogMetadata {
     id
     spec {
