@@ -15,7 +15,6 @@
 package app
 
 import (
-	"io/fs"
 	"net/http"
 	"path"
 
@@ -138,8 +137,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 	}
 
 	// Serve GraphQL playground at root
-	staticFS, _ := fs.Sub(api.StaticEmbedFS, "static")
-	root.StaticFileFS("/", "/graphiql.html", http.FS(staticFS))
+	root.StaticFileFS("/", "/static/graphiql.html", http.FS(api.StaticEmbedFS))
 
 	// Health endpoint
 	root.GET("/healthz", func(c *gin.Context) {
