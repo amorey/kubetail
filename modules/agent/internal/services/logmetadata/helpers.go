@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"

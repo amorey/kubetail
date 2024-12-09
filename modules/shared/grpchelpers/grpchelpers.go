@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 type ctxKey int

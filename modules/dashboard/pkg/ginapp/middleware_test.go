@@ -24,7 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 func TestAuthenticationMiddleware(t *testing.T) {

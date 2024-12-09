@@ -4,13 +4,13 @@ go 1.22.5
 
 toolchain go1.22.7
 
-replace github.com/kubetail-org/kubetail/modules/common => ../common
+replace github.com/kubetail-org/kubetail/modules/shared => ../shared
 
 require (
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-playground/validator/v10 v10.23.0
-	github.com/kubetail-org/kubetail/modules/common v0.0.0-00010101000000-000000000000
+	github.com/kubetail-org/kubetail/modules/shared v0.0.0-00010101000000-000000000000
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0

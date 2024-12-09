@@ -22,7 +22,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 // Int64 scalar

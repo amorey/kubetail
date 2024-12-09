@@ -25,8 +25,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 type LogMetadataTestSuite struct {

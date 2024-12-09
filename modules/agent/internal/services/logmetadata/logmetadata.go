@@ -31,8 +31,8 @@ import (
 
 	"github.com/kubetail-org/kubetail/modules/agent/internal/debounce"
 	"github.com/kubetail-org/kubetail/modules/agent/internal/helpers"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/common/grpchelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
 
 // event bus for test events

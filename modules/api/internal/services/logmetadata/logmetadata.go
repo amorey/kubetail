@@ -17,7 +17,7 @@ package logmetadata
 import (
 	"context"
 
-	"github.com/kubetail-org/kubetail/modules/common/apipb"
+	"github.com/kubetail-org/kubetail/modules/shared/apipb"
 )
 
 type LogMetadataService struct {

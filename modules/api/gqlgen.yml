@@ -88,27 +88,27 @@ autobind:
 models:
   # --- LogMetadata ---
   LogMetadata:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadata
+    model: github.com/kubetail-org/kubetail/modules/shared/agentpb.LogMetadata
 
   LogMetadataFileInfo:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataFileInfo
+    model: github.com/kubetail-org/kubetail/modules/shared/agentpb.LogMetadataFileInfo
 
   LogMetadataList:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataList
+    model: github.com/kubetail-org/kubetail/modules/shared/agentpb.LogMetadataList
 
   LogMetadataSpec:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataSpec
+    model: github.com/kubetail-org/kubetail/modules/shared/agentpb.LogMetadataSpec
 
   LogMetadataWatchEvent:
-    model: github.com/kubetail-org/kubetail/modules/common/agentpb.LogMetadataWatchEvent  
+    model: github.com/kubetail-org/kubetail/modules/shared/agentpb.LogMetadataWatchEvent  
 
   # --- custom scalars ---
   Int64:
-    model: github.com/kubetail-org/kubetail/modules/common/graph/model.Int64
+    model: github.com/kubetail-org/kubetail/modules/shared/graph/model.Int64
 
   TimestampPBTimestamp:
     model:
-      - github.com/kubetail-org/kubetail/modules/common/graph/model.TimestampPBTimestamp
+      - github.com/kubetail-org/kubetail/modules/shared/graph/model.TimestampPBTimestamp
 
   # --- gqlgen ---
   ID:

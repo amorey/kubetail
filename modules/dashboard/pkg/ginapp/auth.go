@@ -21,7 +21,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/formerrors"
 )
 

@@ -24,7 +24,7 @@ import (
 	"github.com/gin-gonic/gin"
 	zlog "github.com/rs/zerolog/log"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 type WebsiteHandlers struct {

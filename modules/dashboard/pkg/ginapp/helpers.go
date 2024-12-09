@@ -17,7 +17,7 @@ package ginapp
 import (
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 

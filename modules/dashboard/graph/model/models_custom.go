@@ -22,7 +22,7 @@ import (
 	zlog "github.com/rs/zerolog/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 type List interface{}

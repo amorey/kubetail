@@ -29,8 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
-	"github.com/kubetail-org/kubetail/modules/common/k8shelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 // This file will not be regenerated automatically.

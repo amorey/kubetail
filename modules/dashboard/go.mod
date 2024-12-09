@@ -2,7 +2,7 @@ module github.com/kubetail-org/kubetail/modules/dashboard
 
 go 1.22.5
 
-replace github.com/kubetail-org/kubetail/modules/common => ../common
+replace github.com/kubetail-org/kubetail/modules/shared => ../shared
 
 require (
 	github.com/99designs/gqlgen v0.17.57
@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/gwatts/gin-adapter v1.0.0
 	github.com/hasura/go-graphql-client v0.10.0
-	github.com/kubetail-org/kubetail/modules/common v0.0.0-00010101000000-000000000000
+	github.com/kubetail-org/kubetail/modules/shared v0.0.0-00010101000000-000000000000
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/zerolog v1.33.0
 	github.com/sosodev/duration v1.3.1

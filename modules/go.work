@@ -4,6 +4,6 @@ use (
 	./agent
 	./api
 	./cli
-	./common
 	./dashboard
+	./shared
 )

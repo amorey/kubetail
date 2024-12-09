@@ -27,8 +27,8 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/common/k8shelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 func TestRequestID(t *testing.T) {

@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/stretchr/testify/suite"
 )
 

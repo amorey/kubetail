@@ -1,4 +1,4 @@
-module github.com/kubetail-org/kubetail/modules/common
+module github.com/kubetail-org/kubetail/modules/shared
 
 go 1.22.5
 

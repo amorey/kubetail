@@ -23,9 +23,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/common/grpchelpers"
-	"github.com/kubetail-org/kubetail/modules/common/testpb"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/testpb"
 )
 
 func TestAuthModeNotToken(t *testing.T) {

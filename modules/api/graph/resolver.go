@@ -21,7 +21,7 @@ import (
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 
-	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 // This file will not be regenerated automatically.

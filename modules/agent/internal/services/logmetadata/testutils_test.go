@@ -28,9 +28,9 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/kubetail-org/kubetail/modules/agent/internal/server"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/common/grpchelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
 
 // Test client

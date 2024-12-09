@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/utils/pointer"
 
-	"github.com/kubetail-org/kubetail/modules/common/config"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers/mock"
 )
 

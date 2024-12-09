@@ -20,7 +20,7 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 
-	"github.com/kubetail-org/kubetail/modules/common/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 // New GRPC error

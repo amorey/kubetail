@@ -15,8 +15,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/common/graph/model"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -548,7 +548,7 @@ func (ec *executionContext) _LogMetadata_spec(ctx context.Context, field graphql
 	}
 	res := resTmp.(*agentpb.LogMetadataSpec)
 	fc.Result = res
-	return ec.marshalNLogMetadataSpec2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataSpec(ctx, field.Selections, res)
+	return ec.marshalNLogMetadataSpec2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataSpec(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LogMetadata_spec(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -604,7 +604,7 @@ func (ec *executionContext) _LogMetadata_fileInfo(ctx context.Context, field gra
 	}
 	res := resTmp.(*agentpb.LogMetadataFileInfo)
 	fc.Result = res
-	return ec.marshalNLogMetadataFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataFileInfo(ctx, field.Selections, res)
+	return ec.marshalNLogMetadataFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataFileInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LogMetadata_fileInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -739,7 +739,7 @@ func (ec *executionContext) _LogMetadataList_items(ctx context.Context, field gr
 	}
 	res := resTmp.([]*agentpb.LogMetadata)
 	fc.Result = res
-	return ec.marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataᚄ(ctx, field.Selections, res)
+	return ec.marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LogMetadataList_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1052,7 +1052,7 @@ func (ec *executionContext) _LogMetadataWatchEvent_object(ctx context.Context, f
 	}
 	res := resTmp.(*agentpb.LogMetadata)
 	fc.Result = res
-	return ec.marshalOLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadata(ctx, field.Selections, res)
+	return ec.marshalOLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadata(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_LogMetadataWatchEvent_object(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1101,7 +1101,7 @@ func (ec *executionContext) _Query_logMetadataList(ctx context.Context, field gr
 	}
 	res := resTmp.(*agentpb.LogMetadataList)
 	fc.Result = res
-	return ec.marshalOLogMetadataList2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataList(ctx, field.Selections, res)
+	return ec.marshalOLogMetadataList2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataList(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_logMetadataList(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1294,7 +1294,7 @@ func (ec *executionContext) _Subscription_logMetadataWatch(ctx context.Context, 
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataWatchEvent(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataWatchEvent(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -3803,7 +3803,7 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
-func (ec *executionContext) marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataᚄ(ctx context.Context, sel ast.SelectionSet, v []*agentpb.LogMetadata) graphql.Marshaler {
+func (ec *executionContext) marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataᚄ(ctx context.Context, sel ast.SelectionSet, v []*agentpb.LogMetadata) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3827,7 +3827,7 @@ func (ec *executionContext) marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadata(ctx, sel, v[i])
+			ret[i] = ec.marshalNLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadata(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3847,7 +3847,7 @@ func (ec *executionContext) marshalNLogMetadata2ᚕᚖgithubᚗcomᚋkubetailᚑ
 	return ret
 }
 
-func (ec *executionContext) marshalNLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadata(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadata) graphql.Marshaler {
+func (ec *executionContext) marshalNLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadata(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadata) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3857,7 +3857,7 @@ func (ec *executionContext) marshalNLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorg
 	return ec._LogMetadata(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNLogMetadataFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataFileInfo(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataFileInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNLogMetadataFileInfo2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataFileInfo(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataFileInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3867,7 +3867,7 @@ func (ec *executionContext) marshalNLogMetadataFileInfo2ᚖgithubᚗcomᚋkubeta
 	return ec._LogMetadataFileInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNLogMetadataSpec2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataSpec(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataSpec) graphql.Marshaler {
+func (ec *executionContext) marshalNLogMetadataSpec2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataSpec(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataSpec) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4171,21 +4171,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalOLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadata(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadata) graphql.Marshaler {
+func (ec *executionContext) marshalOLogMetadata2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadata(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadata) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._LogMetadata(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOLogMetadataList2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataList(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataList) graphql.Marshaler {
+func (ec *executionContext) marshalOLogMetadataList2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataList(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataList) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._LogMetadataList(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋcommonᚋagentpbᚐLogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataWatchEvent) graphql.Marshaler {
+func (ec *executionContext) marshalOLogMetadataWatchEvent2ᚖgithubᚗcomᚋkubetailᚑorgᚋkubetailᚋmodulesᚋsharedᚋagentpbᚐLogMetadataWatchEvent(ctx context.Context, sel ast.SelectionSet, v *agentpb.LogMetadataWatchEvent) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

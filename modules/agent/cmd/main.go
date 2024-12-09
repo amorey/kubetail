@@ -32,9 +32,9 @@ import (
 
 	"github.com/kubetail-org/kubetail/modules/agent/internal/server"
 	"github.com/kubetail-org/kubetail/modules/agent/internal/services/logmetadata"
-	"github.com/kubetail-org/kubetail/modules/common/agentpb"
-	"github.com/kubetail-org/kubetail/modules/common/config"
-	"github.com/kubetail-org/kubetail/modules/common/k8shelpers"
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 type CLI struct {
