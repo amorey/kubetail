@@ -18,7 +18,6 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
@@ -28,6 +27,7 @@ import (
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 
+	"github.com/kubetail-org/kubetail/modules/api"
 	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
@@ -126,9 +126,6 @@ func NewApp(cfg *config.Config) (*app, error) {
 			})
 		}
 
-		// Serve GraphQL playground at root
-		dynamicRoutes.GET("/", gin.WrapH(playground.Handler("Kubetail API Playground", "/graphql")))
-
 		// GraphQL endpoint
 		graphql := dynamicRoutes.Group("/graphql")
 		{
@@ -138,6 +135,15 @@ func NewApp(cfg *config.Config) (*app, error) {
 			graphql.POST("", endpointHandler)
 		}
 	}
+
+	// Serve GraphQL playground at root
+	/*
+		root.GET("/", func(c *gin.Context) {
+			html, _ := api.StaticEmbedFS.ReadFile("static/index.html")
+			fmt.Println(string(html))
+			c.String(http.StatusOK, string(html))
+		})*/
+	root.StaticFileFS("/x", "./static/index.html", http.FS(api.StaticEmbedFS))
 
 	// Health endpoint
 	root.GET("/healthz", func(c *gin.Context) {
