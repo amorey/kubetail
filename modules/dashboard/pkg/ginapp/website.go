@@ -29,7 +29,6 @@ import (
 
 type WebsiteHandlers struct {
 	*GinApp
-	//embedFS *embed.FS
 	websiteFS fs.FS
 }
 
