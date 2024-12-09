@@ -129,6 +129,7 @@ type Config struct {
 	API struct {
 		Addr             string `validate:"omitempty,hostname_port"`
 		GinMode          string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
+		BasePath         string `mapstructure:"base-path"`
 		AgentDispatchUrl string `mapstructure:"agent-dispatch-url"`
 
 		// csrf options
@@ -256,6 +257,7 @@ func DefaultConfig() *Config {
 	cfg.Dashboard.Logging.AccessLog.HideHealthChecks = false
 
 	cfg.API.Addr = ":7501"
+	cfg.API.BasePath = "/"
 	cfg.API.GinMode = "release"
 	cfg.API.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
 	cfg.API.CSRF.Enabled = true

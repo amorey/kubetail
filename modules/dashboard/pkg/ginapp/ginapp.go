@@ -198,9 +198,9 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	// kubetail api proxy routes
 	kubetailAPI := root.Group("/kubetail-api")
 	{
-		endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
-		kubetailAPI.GET("", endpointHandler)
-		kubetailAPI.POST("", endpointHandler)
+		prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
+		endpointHandler := newKubetailAPIProxyHandler(prefix, k8sCfg)
+		kubetailAPI.Any("*path", endpointHandler)
 	}
 
 	// health routes

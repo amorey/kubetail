@@ -16,6 +16,7 @@ package app
 
 import (
 	"net/http"
+	"path"
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-contrib/gzip"
@@ -78,7 +79,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 	app.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// Routes
-	root := app.Group("/")
+	root := app.Group(cfg.API.BasePath)
 
 	// Dynamic routes
 	dynamicRoutes := root.Group("/")
@@ -94,7 +95,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 
 		// Disable csrf protection for graphql endpoint (already rejects simple requests)
 		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == "/graphql" {
+			if c.Request.URL.Path == path.Join(cfg.API.BasePath, "/graphql") {
 				c.Request = csrf.UnsafeSkipCheck(c.Request)
 			}
 			c.Next()

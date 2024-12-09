@@ -47,6 +47,7 @@ data:
         key-file:
     api:
       addr: :7501
+      base-path: /
       gin-mode: debug
       agent-dispatch-url: kubernetes://kubetail-agent:50051
       csrf:

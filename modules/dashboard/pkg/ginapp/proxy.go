@@ -15,21 +15,25 @@
 package ginapp
 
 import (
+	"path"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	zlog "github.com/rs/zerolog/log"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/proxy"
 )
 
-func newKubetailAPIProxyHandler(cfg *rest.Config) gin.HandlerFunc {
+func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc {
 	h, err := proxy.NewProxyHandler("/", nil, cfg, 0, false)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}
 
 	return func(c *gin.Context) {
+		relPath := strings.TrimPrefix(c.Request.URL.Path, prefix)
 		urlCopy := *c.Request.URL
-		urlCopy.Path = "/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy/graphql"
+		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
 		h.ServeHTTP(c.Writer, c.Request)
 	}

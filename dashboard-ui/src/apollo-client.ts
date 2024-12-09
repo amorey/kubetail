@@ -31,7 +31,7 @@ import generatedIntrospection from '@/lib/graphql/__generated__/introspection-re
 import { getBasename, getCSRFToken, getAPICSRFToken, joinPaths } from './lib/helpers';
 
 const graphqlEndpoint1 = (new URL(joinPaths(getBasename(), '/graphql'), window.location.origin)).toString();
-const graphqlEndpoint2 = (new URL(joinPaths(getBasename(), '/kubetail-api'), window.location.origin)).toString();
+const graphqlEndpoint2 = (new URL(joinPaths(getBasename(), '/kubetail-api/graphql'), window.location.origin)).toString();
 
 // websocket clients
 const wsClientOptions: ClientOptions = {
