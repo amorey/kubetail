@@ -1,6 +1,6 @@
 module github.com/kubetail-org/kubetail/modules/agent
 
-go 1.22.0
+go 1.22.5
 
 toolchain go1.22.7
 

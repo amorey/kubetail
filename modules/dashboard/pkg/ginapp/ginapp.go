@@ -101,7 +101,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	}
 
 	// gzip middleware
-	app.Use(gzip.Gzip(gzip.DefaultCompression))
+	app.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/kubetail-api"})))
 
 	// root route
 	root := app.Group(cfg.Dashboard.BasePath)
@@ -189,21 +189,21 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}
-
-		// kubetail api proxy routes
-		kubetailAPI := dynamicRoutes.Group("/kubetail-api")
-		{
-			// require token
-			if cfg.AuthMode == config.AuthModeToken {
-				kubetailAPI.Use(k8sTokenRequiredMiddleware)
-			}
-
-			endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
-			kubetailAPI.GET("", endpointHandler)
-			kubetailAPI.POST("", endpointHandler)
-		}
 	}
 	app.dynamicroutes = dynamicRoutes // for unit tests
+
+	// kubetail api proxy routes
+	kubetailAPI := root.Group("/kubetail-api")
+	{
+		// require token
+		if cfg.AuthMode == config.AuthModeToken {
+			kubetailAPI.Use(k8sTokenRequiredMiddleware)
+		}
+
+		endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
+		kubetailAPI.GET("", endpointHandler)
+		kubetailAPI.POST("", endpointHandler)
+	}
 
 	// health routes
 	root.GET("/healthz", func(c *gin.Context) {

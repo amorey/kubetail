@@ -19,10 +19,13 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	zlog "github.com/rs/zerolog/log"
+	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/kubetail-org/kubetail/modules/api/graph"
 )
@@ -45,18 +48,33 @@ func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.Handle
 	schema := graph.NewExecutableSchema(cfg)
 
 	// Init handler
-	h := handler.NewDefaultServer(schema)
+	h := handler.New(schema)
+
+	// Add transports from NewDefaultServer()
+	h.AddTransport(transport.GET{})
+	h.AddTransport(transport.POST{})
+
+	h.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
 	// Configure WebSocket (without CORS)
 	h.AddTransport(&transport.Websocket{
 		Upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
+				// We have to return true here because `kubectl proxy` modifies the Host header
+				// so requests will fail same-origin tests and unfortunately not all browsers
+				// have implemented `sec-fetch-site` header. Instead, we will use CSRF token
+				// validation to ensure requests are coming from the same site.
 				return true
 			},
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},
 		KeepAlivePingInterval: 10 * time.Second,
+	})
+
+	h.Use(extension.Introspection{})
+	h.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
 	})
 
 	return gin.WrapH(h)
