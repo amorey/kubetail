@@ -140,6 +140,21 @@ export async function getCSRFToken() {
 }
 
 /**
+ * Get CSRF token for API
+ */
+
+let apiCSRFToken: string;
+
+export async function getAPICSRFToken() {
+  if (apiCSRFToken === undefined) {
+    const url = new URL(joinPaths(getBasename(), '/kubetail-api/csrf-token'), window.location.origin);
+    const resp = await fetch(url);
+    csrfToken = (await resp.json()).value;
+  }
+  return csrfToken;
+}
+
+/**
  * Find intersection of multiple sets
  */
 

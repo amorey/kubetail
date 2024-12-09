@@ -28,7 +28,7 @@ import { ClientOptions, createClient } from 'graphql-ws';
 import toast from 'react-hot-toast';
 
 import generatedIntrospection from '@/lib/graphql/__generated__/introspection-result.json';
-import { getBasename, getCSRFToken, joinPaths } from './lib/helpers';
+import { getBasename, getCSRFToken, getAPICSRFToken, joinPaths } from './lib/helpers';
 
 const graphqlEndpoint1 = (new URL(joinPaths(getBasename(), '/graphql'), window.location.origin)).toString();
 const graphqlEndpoint2 = (new URL(joinPaths(getBasename(), '/kubetail-api'), window.location.origin)).toString();
@@ -37,9 +37,6 @@ const graphqlEndpoint2 = (new URL(joinPaths(getBasename(), '/kubetail-api'), win
 const wsClientOptions: ClientOptions = {
   url: '',
   connectionAckWaitTimeout: 3000,
-  connectionParams: async () => ({
-    authorization: `${await getCSRFToken()}`,
-  }),
   keepAlive: 3000,
   retryAttempts: Infinity,
   shouldRetry: () => true,
@@ -48,8 +45,21 @@ const wsClientOptions: ClientOptions = {
   }),
 };
 
-export const wsClient1 = createClient({ ...wsClientOptions, url: graphqlEndpoint1.replace(/^(http)/, 'ws') });
-export const wsClient2 = createClient({ ...wsClientOptions, url: graphqlEndpoint2.replace(/^(http)/, 'ws') });
+export const wsClient1 = createClient({
+  ...wsClientOptions,
+  url: graphqlEndpoint1.replace(/^(http)/, 'ws'),
+  connectionParams: async() => ({
+    authorization: `${await getCSRFToken()}`,
+  }),
+});
+
+export const wsClient2 = createClient({
+  ...wsClientOptions,
+  url: graphqlEndpoint2.replace(/^(http)/, 'ws'),
+  connectionParams: async() => ({
+    authorization: `${await getAPICSRFToken()}`,
+  }),
+});
 
 // HTTP Link
 const httpLink1 = createHttpLink({ uri: graphqlEndpoint1 });

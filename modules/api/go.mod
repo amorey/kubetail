@@ -8,6 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.17.57
 	github.com/gin-contrib/gzip v1.0.1
 	github.com/gin-contrib/requestid v1.0.3
+	github.com/gin-contrib/secure v1.1.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gorilla/websocket v1.5.1

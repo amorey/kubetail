@@ -131,6 +131,24 @@ type Config struct {
 		GinMode          string `mapstructure:"gin-mode" validate:"omitempty,oneof=debug release"`
 		AgentDispatchUrl string `mapstructure:"agent-dispatch-url"`
 
+		// csrf options
+		CSRF struct {
+			Enabled   bool
+			Secret    string
+			FieldName string `mapstructure:"field-name"`
+
+			// cookie options
+			Cookie struct {
+				Name     string
+				Path     string
+				Domain   string
+				MaxAge   int `mapstructure:"max-age"`
+				Secure   bool
+				HttpOnly bool              `mapstructure:"http-only"`
+				SameSite csrf.SameSiteMode `mapstructure:"same-site"`
+			}
+		}
+
 		// TLS options
 		TLS struct {
 			// enable tls termination
@@ -224,7 +242,7 @@ func DefaultConfig() *Config {
 	cfg.Dashboard.CSRF.Enabled = true
 	cfg.Dashboard.CSRF.Secret = ""
 	cfg.Dashboard.CSRF.FieldName = "csrf_token"
-	cfg.Dashboard.CSRF.Cookie.Name = "csrf"
+	cfg.Dashboard.CSRF.Cookie.Name = "kubetail_dashboard_csrf"
 	cfg.Dashboard.CSRF.Cookie.Path = "/"
 	cfg.Dashboard.CSRF.Cookie.Domain = ""
 	cfg.Dashboard.CSRF.Cookie.MaxAge = 60 * 60 * 12 // 12 hours
@@ -240,6 +258,16 @@ func DefaultConfig() *Config {
 	cfg.API.Addr = ":7501"
 	cfg.API.GinMode = "release"
 	cfg.API.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"
+	cfg.API.CSRF.Enabled = true
+	cfg.API.CSRF.Secret = ""
+	cfg.API.CSRF.FieldName = "csrf_token"
+	cfg.API.CSRF.Cookie.Name = "kubetail_api_csrf"
+	cfg.API.CSRF.Cookie.Path = "/"
+	cfg.API.CSRF.Cookie.Domain = ""
+	cfg.API.CSRF.Cookie.MaxAge = 60 * 60 * 12 // 12 hours
+	cfg.API.CSRF.Cookie.Secure = false
+	cfg.API.CSRF.Cookie.HttpOnly = true
+	cfg.API.CSRF.Cookie.SameSite = csrf.SameSiteStrictMode
 	cfg.API.Logging.Enabled = true
 	cfg.API.Logging.Level = "info"
 	cfg.API.Logging.Format = "json"

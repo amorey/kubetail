@@ -15,7 +15,10 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"net/http/httptest"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -30,16 +33,23 @@ import (
 	"github.com/kubetail-org/kubetail/modules/api/graph"
 )
 
+type key int
+
+const graphQLCookiesCtxKey key = iota
+
 type GraphQLHandlers struct {
 	*app
 }
 
-func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.HandlerFunc {
+func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
 	// Init resolver
 	r, err := graph.NewResolver(a.grpcDispatcher, allowedNamespaces)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}
+
+	csrfTestServer := http.NewServeMux()
+	csrfTestServer.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	// Init config
 	cfg := graph.Config{Resolvers: r}
@@ -70,6 +80,44 @@ func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.Handle
 			WriteBufferSize: 1024,
 		},
 		KeepAlivePingInterval: 10 * time.Second,
+		InitFunc: func(ctx context.Context, initPayload transport.InitPayload) (context.Context, *transport.InitPayload, error) {
+			// Check if csrf protection is disabled
+			if csrfProtect == nil {
+				return ctx, &initPayload, nil
+			}
+
+			csrfToken := initPayload.Authorization()
+
+			cookies, ok := ctx.Value(graphQLCookiesCtxKey).([]*http.Cookie)
+			if !ok {
+				return ctx, nil, errors.New("AUTHORIZATION_REQUIRED")
+			}
+
+			// Make mock request
+			r, _ := http.NewRequest("POST", "/", nil)
+			for _, cookie := range cookies {
+				r.AddCookie(cookie)
+			}
+			r.Header.Set("X-CSRF-Token", csrfToken)
+
+			// Run request through csrf protect function
+			rr := httptest.NewRecorder()
+			p := csrfProtect(csrfTestServer)
+			p.ServeHTTP(rr, r)
+
+			if rr.Code != 200 {
+				return ctx, nil, errors.New("AUTHORIZATION_REQUIRED")
+			}
+
+			// Close websockets on shutdown signal
+			ctx, cancel := context.WithCancel(ctx)
+			go func() {
+				defer cancel()
+				<-a.shutdownCh
+			}()
+
+			return ctx, &initPayload, nil
+		},
 	})
 
 	h.Use(extension.Introspection{})
@@ -77,5 +125,13 @@ func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.Handle
 		Cache: lru.New[string](100),
 	})
 
-	return gin.WrapH(h)
+	// Return gin handler func
+	return func(c *gin.Context) {
+		// save cookies for use in WSInitFunc
+		ctx := context.WithValue(c.Request.Context(), graphQLCookiesCtxKey, c.Request.Cookies())
+		c.Request = c.Request.WithContext(ctx)
+
+		// execute
+		h.ServeHTTP(c.Writer, c.Request)
+	}
 }

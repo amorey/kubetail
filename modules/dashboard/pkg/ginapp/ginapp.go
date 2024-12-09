@@ -56,7 +56,10 @@ func (app *GinApp) Shutdown() {
 // Create new gin app
 func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	// init app
-	app := &GinApp{Engine: gin.New()}
+	app := &GinApp{
+		Engine:     gin.New(),
+		shutdownCh: make(chan struct{}),
+	}
 
 	// only if not in test-mode
 	var k8sCfg *rest.Config
@@ -132,7 +135,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 		// disable csrf protection for graphql endpoint (already rejects simple requests)
 		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") || c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/kubetail-api") {
+			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") {
 				c.Request = csrf.UnsafeSkipCheck(c.Request)
 			}
 			c.Next()
@@ -195,11 +198,6 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	// kubetail api proxy routes
 	kubetailAPI := root.Group("/kubetail-api")
 	{
-		// require token
-		if cfg.AuthMode == config.AuthModeToken {
-			kubetailAPI.Use(k8sTokenRequiredMiddleware)
-		}
-
 		endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
 		kubetailAPI.GET("", endpointHandler)
 		kubetailAPI.POST("", endpointHandler)
