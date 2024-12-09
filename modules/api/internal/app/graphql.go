@@ -15,8 +15,13 @@
 package app
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	zlog "github.com/rs/zerolog/log"
 
 	"github.com/kubetail-org/kubetail/modules/api/graph"
@@ -41,6 +46,18 @@ func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string) gin.Handle
 
 	// Init handler
 	h := handler.NewDefaultServer(schema)
+
+	// Configure WebSocket (without CORS)
+	h.AddTransport(&transport.Websocket{
+		Upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+		KeepAlivePingInterval: 10 * time.Second,
+	})
 
 	return gin.WrapH(h)
 }

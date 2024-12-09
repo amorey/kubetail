@@ -28,7 +28,9 @@ func newKubetailAPIProxyHandler(cfg *rest.Config) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		c.Request.URL.Path = "/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy/graphql"
+		urlCopy := *c.Request.URL
+		urlCopy.Path = "/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy/graphql"
+		c.Request.URL = &urlCopy
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 }

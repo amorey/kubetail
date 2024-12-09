@@ -193,6 +193,11 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		// kubetail api proxy routes
 		kubetailAPI := dynamicRoutes.Group("/kubetail-api")
 		{
+			// require token
+			if cfg.AuthMode == config.AuthModeToken {
+				kubetailAPI.Use(k8sTokenRequiredMiddleware)
+			}
+
 			endpointHandler := newKubetailAPIProxyHandler(k8sCfg)
 			kubetailAPI.GET("", endpointHandler)
 			kubetailAPI.POST("", endpointHandler)
