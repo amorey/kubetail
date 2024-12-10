@@ -26,6 +26,8 @@ import (
 	dynamicFake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
+
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 func TestAllowedNamespacesGetQueries(t *testing.T) {
@@ -49,31 +51,31 @@ func TestAllowedNamespacesGetQueries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := r.AppsV1DaemonSetsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1DeploymentsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1ReplicaSetsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1StatefulSetsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.BatchV1CronJobsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.BatchV1JobsGet(context.Background(), "", tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.CoreV1PodsGet(context.Background(), tt.setNamespace, "", nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 		})
 	}
 }
@@ -105,31 +107,31 @@ func TestAllowedNamespacesListQueries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := r.AppsV1DaemonSetsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1DeploymentsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1ReplicaSetsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.AppsV1StatefulSetsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.BatchV1CronJobsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.BatchV1JobsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 
 			_, err = r.CoreV1PodsList(context.Background(), tt.setNamespace, nil)
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 		})
 	}
 }

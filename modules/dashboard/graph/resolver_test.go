@@ -17,6 +17,7 @@ package graph
 import (
 	"testing"
 
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/ptr"
 )
@@ -120,7 +121,7 @@ func TestToNamespaceError(t *testing.T) {
 			ns, err := r.ToNamespace(tt.setNamespace)
 			assert.Equal(t, ns, "")
 			assert.NotNil(t, err)
-			assert.Equal(t, err, ErrForbidden)
+			assert.Equal(t, err, errors.ErrForbidden)
 		})
 	}
 }
@@ -203,25 +204,25 @@ func TestToNamespacesError(t *testing.T) {
 			"single namespace allowed: <empty>",
 			[]string{"testns"},
 			nil,
-			ErrForbidden,
+			errors.ErrForbidden,
 		},
 		{
 			"single namespace allowed: not-testns",
 			[]string{"testns"},
 			ptr.To[string]("not-testns"),
-			ErrForbidden,
+			errors.ErrForbidden,
 		},
 		{
 			"multiple namespaces allowed: <empty>",
 			[]string{"testns1", "testns2"},
 			nil,
-			ErrForbidden,
+			errors.ErrForbidden,
 		},
 		{
 			"multiple namespaces allowed: not-testns1",
 			[]string{"testns1", "testns2"},
 			ptr.To[string]("not-testns1"),
-			ErrForbidden,
+			errors.ErrForbidden,
 		},
 	}
 

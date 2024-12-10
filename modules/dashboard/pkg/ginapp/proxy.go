@@ -25,6 +25,13 @@ import (
 )
 
 func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc {
+	// Handle test-mode
+	if cfg == nil {
+		return func(c *gin.Context) {
+			panic("not implemented")
+		}
+	}
+
 	h, err := proxy.NewProxyHandler("/", nil, cfg, 0, false)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()

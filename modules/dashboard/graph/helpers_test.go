@@ -28,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/utils/ptr"
+
+	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
 )
 
 func TestGetGVRSuccess(t *testing.T) {
@@ -275,7 +277,7 @@ func TestMergeResultsError(t *testing.T) {
 	// build fetch responses
 	fetchResponses := []FetchResponse{
 		{Namespace: "ns1", Result: &unstructured.UnstructuredList{Object: r1Obj}},
-		{Namespace: "ns2", Error: ErrForbidden},
+		{Namespace: "ns2", Error: errors.ErrForbidden},
 	}
 
 	// merge results
