@@ -17,7 +17,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
-	model1 "github.com/kubetail-org/kubetail/modules/shared/graph/model"
+	model1 "github.com/kubetail-org/kubetail/modules/shared/graphql/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	v12 "k8s.io/api/apps/v1"

@@ -18,7 +18,7 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
 // New Watch API error

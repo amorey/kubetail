@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
 func TestAllowedNamespacesGetQueries(t *testing.T) {

@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 

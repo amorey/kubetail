@@ -7,7 +7,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
 var validate *validator.Validate

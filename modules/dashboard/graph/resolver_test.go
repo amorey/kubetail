@@ -17,7 +17,7 @@ package graph
 import (
 	"testing"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/ptr"
 )

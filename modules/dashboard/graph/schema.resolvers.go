@@ -16,7 +16,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
-	gqlhelpers "github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	gqlhelpers "github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"

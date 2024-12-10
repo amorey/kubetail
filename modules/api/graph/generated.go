@@ -16,7 +16,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
-	"github.com/kubetail-org/kubetail/modules/shared/graph/model"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/timestamppb"

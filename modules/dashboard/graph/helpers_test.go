@@ -29,7 +29,7 @@ import (
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/utils/ptr"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graph/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
 func TestGetGVRSuccess(t *testing.T) {
