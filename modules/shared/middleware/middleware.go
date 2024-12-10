@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+package middleware
 
 import (
 	"strings"
@@ -24,7 +24,7 @@ import (
 )
 
 // Log HTTP requests
-func loggingMiddleware(hideHealthChecks bool) gin.HandlerFunc {
+func LoggingMiddleware(hideHealthChecks bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if hideHealthChecks && strings.HasSuffix(c.Request.URL.Path, "/healthz") {
 			c.Next()

@@ -12,31 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ginapp
+package app
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/testutils"
 )
 
 type GraphQLTestSuite struct {
-	WebTestSuiteBase
+	suite.Suite
 }
 
 func (suite *GraphQLTestSuite) TestAccess() {
 	suite.Run("GraphQL Endpoint", func() {
+		client := testutils.NewWebTestClient(suite.T(), NewTestApp(nil))
+		defer client.Teardown()
+
 		schemaQuery := `{"query":"{ __schema { types { name } } }"}`
 
 		suite.Run("simple POST requests are rejected", func() {
 			// build request
-			client := suite.defaultclient
 			req := client.NewRequest("POST", "/graphql", strings.NewReader(schemaQuery))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -49,7 +50,6 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 		suite.Run("preflighted POST requests are ok", func() {
 			// build request
-			client := suite.defaultclient
 			req := client.NewRequest("POST", "/graphql", strings.NewReader(schemaQuery))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -62,7 +62,6 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 		suite.Run("GET requests are rejected", func() {
 			// build request
-			client := suite.defaultclient
 			req := client.NewRequest("GET", "/graphql", strings.NewReader(schemaQuery))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -76,7 +75,6 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 		suite.Run("DELETE requests are ignored", func() {
 			// build request
-			client := suite.defaultclient
 			req := client.NewRequest("DELETE", "/graphql", strings.NewReader(schemaQuery))
 			req.Header.Set("Content-Type", "application/json")
 
@@ -89,7 +87,6 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 		suite.Run("OPTIONS requests are ignored", func() {
 			// build request
-			client := suite.defaultclient
 			req := client.NewRequest("OPTIONS", "/graphql", nil)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -102,7 +99,7 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 		suite.Run("cross-origin websocket requests are allowed when csrf protection is disabled", func() {
 			// init websocket connection
-			u := "ws" + strings.TrimPrefix(suite.defaultclient.testserver.URL, "http") + "/graphql"
+			u := "ws" + strings.TrimPrefix(client.Server.URL, "http") + "/graphql"
 			h := http.Header{}
 			conn, resp, err := websocket.DefaultDialer.Dial(u, h)
 
@@ -124,12 +121,12 @@ func (suite *GraphQLTestSuite) TestAccess() {
 		suite.Run("websocket requests require csrf validation when csrf protection is enabled", func() {
 			// init client
 			cfg := NewTestConfig()
-			cfg.Dashboard.CSRF.Enabled = true
-			client := NewWebTestClient(suite.T(), NewTestApp(cfg))
+			cfg.API.CSRF.Enabled = true
+			client := testutils.NewWebTestClient(suite.T(), NewTestApp(cfg))
 			defer client.Teardown()
 
 			// init websocket connection
-			u := "ws" + strings.TrimPrefix(client.testserver.URL, "http") + "/graphql"
+			u := "ws" + strings.TrimPrefix(client.Server.URL, "http") + "/graphql"
 			h := http.Header{}
 			conn, resp, err := websocket.DefaultDialer.Dial(u, h)
 
@@ -148,46 +145,6 @@ func (suite *GraphQLTestSuite) TestAccess() {
 			suite.Contains(string(msg), "connection_error")
 		})
 	})
-}
-
-func (suite *GraphQLTestSuite) TestAuth() {
-	tests := []struct {
-		name     string
-		mode     config.AuthMode
-		wantCode int
-	}{
-		{
-			"cluster",
-			config.AuthModeCluster,
-			http.StatusUnprocessableEntity,
-		},
-		{
-			"token",
-			config.AuthModeToken,
-			http.StatusUnauthorized,
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			cfg := NewTestConfig()
-			cfg.AuthMode = tt.mode
-			app := NewTestApp(cfg)
-
-			// request without token
-			w1 := httptest.NewRecorder()
-			r1 := httptest.NewRequest("GET", "/graphql", nil)
-			app.ServeHTTP(w1, r1)
-			suite.Equal(tt.wantCode, w1.Result().StatusCode)
-
-			// request with token
-			w2 := httptest.NewRecorder()
-			r2 := httptest.NewRequest("GET", "/graphql", nil)
-			r2.Header.Set("Authorization", "Bearer xxx")
-			app.ServeHTTP(w2, r2)
-			suite.Equal(http.StatusUnprocessableEntity, w2.Result().StatusCode)
-		})
-	}
 }
 
 // test runner

@@ -27,14 +27,19 @@ import (
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 
-	"github.com/kubetail-org/kubetail/modules/api"
 	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/middleware"
+
+	"github.com/kubetail-org/kubetail/modules/api"
 )
 
 type app struct {
 	*gin.Engine
 	grpcDispatcher *grpcdispatcher.Dispatcher
 	shutdownCh     chan struct{}
+
+	// for testing
+	dynamicRoutes *gin.RouterGroup
 }
 
 // Shutdown
@@ -72,7 +77,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 
 	// Add logging middleware
 	if cfg.API.Logging.AccessLog.Enabled {
-		app.Use(loggingMiddleware(cfg.API.Logging.AccessLog.HideHealthChecks))
+		app.Use(middleware.LoggingMiddleware(cfg.API.Logging.AccessLog.HideHealthChecks))
 	}
 
 	// Gzip middleware
@@ -135,6 +140,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 			graphql.POST("", endpointHandler)
 		}
 	}
+	app.dynamicRoutes = dynamicRoutes // for unit tests
 
 	// Serve GraphQL playground at root
 	root.StaticFileFS("/", "/static/graphiql.html", http.FS(api.StaticEmbedFS))

@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/middleware"
 
 	"github.com/kubetail-org/kubetail/modules/dashboard"
 	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
@@ -100,7 +101,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 	// add logging middleware
 	if cfg.Dashboard.Logging.AccessLog.Enabled {
-		app.Use(loggingMiddleware(cfg.Dashboard.Logging.AccessLog.HideHealthChecks))
+		app.Use(middleware.LoggingMiddleware(cfg.Dashboard.Logging.AccessLog.HideHealthChecks))
 	}
 
 	// gzip middleware

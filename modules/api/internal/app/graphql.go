@@ -80,6 +80,9 @@ func (a *GraphQLHandlers) EndpointHandler(allowedNamespaces []string, csrfProtec
 			WriteBufferSize: 1024,
 		},
 		KeepAlivePingInterval: 10 * time.Second,
+		// Because we had to disable same-origin checks in the CheckOrigin() handler
+		// we will use use CSRF token validation to ensure requests are coming from
+		// the same site. (See https://dev.to/pssingh21/websockets-bypassing-sop-cors-5ajm)
 		InitFunc: func(ctx context.Context, initPayload transport.InitPayload) (context.Context, *transport.InitPayload, error) {
 			// Check if csrf protection is disabled
 			if csrfProtect == nil {
