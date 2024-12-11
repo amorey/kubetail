@@ -37,7 +37,7 @@ type GraphQLHandlers struct {
 }
 
 // GET|POST "/graphql": GraphQL query endpoint
-func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces []string, csrfProtect func(http.Handler) http.Handler) gin.HandlerFunc {
+func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces []string, csrfProtectMiddleware func(http.Handler) http.Handler) gin.HandlerFunc {
 	// init resolver
 	r, err := graph.NewResolver(cfg, allowedNamespaces)
 	if err != nil {
@@ -47,8 +47,11 @@ func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces 
 	// warm up in background
 	r.WarmUp()
 
-	csrfTestServer := http.NewServeMux()
-	csrfTestServer.HandleFunc("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	// Setup csrf query method
+	var csrfProtect http.Handler
+	if csrfProtectMiddleware != nil {
+		csrfProtect = csrfProtectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	}
 
 	// init handler options
 	opts := graph.NewDefaultHandlerOptions()
@@ -58,7 +61,7 @@ func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces 
 	// the same site. (See https://dev.to/pssingh21/websockets-bypassing-sop-cors-5ajm)
 	opts.WSInitFunc = func(ctx context.Context, initPayload transport.InitPayload) (context.Context, *transport.InitPayload, error) {
 		// check if csrf protection is disabled
-		if csrfProtect == nil {
+		if csrfProtectMiddleware == nil {
 			return ctx, &initPayload, nil
 		}
 
@@ -78,8 +81,7 @@ func (app *GraphQLHandlers) EndpointHandler(cfg *rest.Config, allowedNamespaces 
 
 		// run request through csrf protect function
 		rr := httptest.NewRecorder()
-		p := csrfProtect(csrfTestServer)
-		p.ServeHTTP(rr, r)
+		csrfProtect.ServeHTTP(rr, r)
 
 		if rr.Code != 200 {
 			return ctx, nil, errors.New("AUTHORIZATION_REQUIRED")
