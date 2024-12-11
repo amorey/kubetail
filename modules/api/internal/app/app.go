@@ -15,6 +15,7 @@
 package app
 
 import (
+	"io/fs"
 	"net/http"
 	"path"
 
@@ -143,7 +144,14 @@ func NewApp(cfg *config.Config) (*app, error) {
 	app.dynamicRoutes = dynamicRoutes // for unit tests
 
 	// Serve GraphQL playground at root
-	root.StaticFileFS("/", "/static/graphiql.html", http.FS(api.StaticEmbedFS))
+	sub, err := fs.Sub(api.StaticEmbedFS, "static")
+	if err != nil {
+		return nil, err
+	}
+	staticFS := http.FS(sub)
+	root.StaticFileFS("/", "/graphiql.html", staticFS)
+	root.StaticFileFS("/favicon.ico", "/favicon.ico", staticFS)
+	root.StaticFileFS("/favicon.svg", "/favicon.svg", staticFS)
 
 	// Health endpoint
 	root.GET("/healthz", func(c *gin.Context) {
