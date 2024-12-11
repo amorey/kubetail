@@ -9,18 +9,20 @@ import (
 	"io"
 	"sync"
 
-	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 // LogMetadataList is the resolver for the logMetadataList field.
 func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*agentpb.LogMetadataList, error) {
 	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
+	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +68,7 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
 func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *agentpb.LogMetadataWatchEvent, error) {
 	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
+	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}

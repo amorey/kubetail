@@ -17,7 +17,6 @@ package graph
 import (
 	"context"
 	"net/http"
-	"slices"
 	"time"
 
 	zlog "github.com/rs/zerolog/log"
@@ -29,7 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
@@ -96,43 +94,6 @@ func (r *Resolver) K8SDynamicClient(ctx context.Context) dynamic.Interface {
 	}
 
 	return r.dynamicClient
-}
-
-func (r *Resolver) ToNamespace(namespace *string) (string, error) {
-	ns := metav1.NamespaceDefault
-	if namespace != nil {
-		ns = *namespace
-	}
-
-	// perform auth
-	if len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return "", errors.ErrForbidden
-	}
-
-	return ns, nil
-}
-
-func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
-	var namespaces []string
-
-	ns := metav1.NamespaceDefault
-	if namespace != nil {
-		ns = *namespace
-	}
-
-	// perform auth
-	if ns != "" && len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return nil, errors.ErrForbidden
-	}
-
-	// listify
-	if ns == "" && len(r.allowedNamespaces) > 0 {
-		namespaces = r.allowedNamespaces
-	} else {
-		namespaces = []string{ns}
-	}
-
-	return namespaces, nil
 }
 
 func (r *Resolver) WarmUp() {

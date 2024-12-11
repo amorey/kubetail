@@ -15,14 +15,16 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
-	gqlhelpers "github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
+	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 // Object is the resolver for the object field.
@@ -72,7 +74,7 @@ func (r *coreV1PodsWatchEventResolver) Object(ctx context.Context, obj *watch.Ev
 
 // AppsV1DaemonSetsGet is the resolver for the appsV1DaemonSetsGet field.
 func (r *queryResolver) AppsV1DaemonSetsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*appsv1.DaemonSet, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,7 @@ func (r *queryResolver) AppsV1DaemonSetsList(ctx context.Context, namespace *str
 
 // AppsV1DeploymentsGet is the resolver for the appsV1DeploymentsGet field.
 func (r *queryResolver) AppsV1DeploymentsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*appsv1.Deployment, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +110,7 @@ func (r *queryResolver) AppsV1DeploymentsList(ctx context.Context, namespace *st
 
 // AppsV1ReplicaSetsGet is the resolver for the appsV1ReplicaSetsGet field.
 func (r *queryResolver) AppsV1ReplicaSetsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*appsv1.ReplicaSet, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +128,7 @@ func (r *queryResolver) AppsV1ReplicaSetsList(ctx context.Context, namespace *st
 
 // AppsV1StatefulSetsGet is the resolver for the appsV1StatefulSetsGet field.
 func (r *queryResolver) AppsV1StatefulSetsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*appsv1.StatefulSet, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +146,7 @@ func (r *queryResolver) AppsV1StatefulSetsList(ctx context.Context, namespace *s
 
 // BatchV1CronJobsGet is the resolver for the batchV1CronJobsGet field.
 func (r *queryResolver) BatchV1CronJobsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*batchv1.CronJob, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +164,7 @@ func (r *queryResolver) BatchV1CronJobsList(ctx context.Context, namespace *stri
 
 // BatchV1JobsGet is the resolver for the batchV1JobsGet field.
 func (r *queryResolver) BatchV1JobsGet(ctx context.Context, name string, namespace *string, options *metav1.GetOptions) (*batchv1.Job, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +208,7 @@ func (r *queryResolver) CoreV1NodesList(ctx context.Context, options *metav1.Lis
 
 // CoreV1PodsGet is the resolver for the coreV1PodsGet field.
 func (r *queryResolver) CoreV1PodsGet(ctx context.Context, namespace *string, name string, options *metav1.GetOptions) (*corev1.Pod, error) {
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +227,7 @@ func (r *queryResolver) CoreV1PodsList(ctx context.Context, namespace *string, o
 // CoreV1PodsGetLogs is the resolver for the coreV1PodsGetLogs field.
 func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string, name string, options *corev1.PodLogOptions) ([]model.LogRecord, error) {
 	// init namespace
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +267,7 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 // PodLogHead is the resolver for the podLogHead field.
 func (r *queryResolver) PodLogHead(ctx context.Context, namespace *string, name string, container *string, after *string, since *string, first *int) (*model.PodLogQueryResponse, error) {
 	// init namespace
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +293,7 @@ func (r *queryResolver) PodLogHead(ctx context.Context, namespace *string, name 
 // PodLogTail is the resolver for the podLogTail field.
 func (r *queryResolver) PodLogTail(ctx context.Context, namespace *string, name string, container *string, before *string, last *int) (*model.PodLogQueryResponse, error) {
 	// init namespace
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +457,7 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, option
 		for ev := range watchEventProxyChannel(ctx, watchAPI) {
 			ns, err := typeassertRuntimeObject[*corev1.Namespace](ev.Object)
 			if err != nil {
-				transport.AddSubscriptionError(ctx, gqlhelpers.ErrInternalServerError)
+				transport.AddSubscriptionError(ctx, errors.ErrInternalServerError)
 				break
 			}
 
@@ -488,7 +490,7 @@ func (r *subscriptionResolver) CoreV1PodsWatch(ctx context.Context, namespace *s
 // CoreV1PodLogTail is the resolver for the coreV1PodLogTail field.
 func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *string, name string, options *corev1.PodLogOptions) (<-chan *model.LogRecord, error) {
 	// init namespace
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -525,7 +527,7 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 // PodLogFollow is the resolver for the podLogFollow field.
 func (r *subscriptionResolver) PodLogFollow(ctx context.Context, namespace *string, name string, container *string, after *string, since *string) (<-chan *model.LogRecord, error) {
 	// init namespace
-	ns, err := r.ToNamespace(namespace)
+	ns, err := k8shelpers.ToNamespace(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}

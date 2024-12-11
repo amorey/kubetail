@@ -44,6 +44,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 
 	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
 )
@@ -333,7 +334,7 @@ func listResource(r *queryResolver, ctx context.Context, namespace *string, opti
 	client := r.K8SDynamicClient(ctx).Resource(gvr)
 
 	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
+	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
 	if err != nil {
 		return err
 	}
@@ -444,7 +445,7 @@ func watchResourceMulti(r *subscriptionResolver, ctx context.Context, gvr schema
 	client := r.K8SDynamicClient(ctx).Resource(gvr)
 
 	// init namespaces
-	namespaces, err := r.ToNamespaces(namespace)
+	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
 	if err != nil {
 		return nil, err
 	}

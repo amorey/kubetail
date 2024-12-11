@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package graph
+package k8shelpers
 
 import (
 	"testing"
@@ -69,8 +69,7 @@ func TestToNamespaceSuccess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Resolver{allowedNamespaces: tt.setAllowedNamespaces}
-			actualNamespace, err := r.ToNamespace(tt.setNamespace)
+			actualNamespace, err := ToNamespace(tt.setAllowedNamespaces, tt.setNamespace)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.wantNamespace, actualNamespace)
 		})
@@ -117,8 +116,7 @@ func TestToNamespaceError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Resolver{allowedNamespaces: tt.setAllowedNamespaces}
-			ns, err := r.ToNamespace(tt.setNamespace)
+			ns, err := ToNamespace(tt.setAllowedNamespaces, tt.setNamespace)
 			assert.Equal(t, ns, "")
 			assert.NotNil(t, err)
 			assert.Equal(t, err, errors.ErrForbidden)
@@ -185,8 +183,7 @@ func TestToNamespacesSuccess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Resolver{allowedNamespaces: tt.setAllowedNamespaces}
-			actualNamespaces, err := r.ToNamespaces(tt.setNamespace)
+			actualNamespaces, err := ToNamespaces(tt.setAllowedNamespaces, tt.setNamespace)
 			assert.Nil(t, err)
 			assert.Equal(t, tt.wantNamespaces, actualNamespaces)
 		})
@@ -228,8 +225,7 @@ func TestToNamespacesError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Resolver{allowedNamespaces: tt.setAllowedNamespaces}
-			actualNamespaces, err := r.ToNamespaces(tt.setNamespace)
+			actualNamespaces, err := ToNamespaces(tt.setAllowedNamespaces, tt.setNamespace)
 			assert.NotNil(t, err)
 			assert.Equal(t, tt.wantError, err)
 			assert.Equal(t, []string(nil), actualNamespaces)

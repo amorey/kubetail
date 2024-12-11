@@ -15,13 +15,7 @@
 package graph
 
 import (
-	"slices"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
-
-	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
 // This file will not be regenerated automatically.
@@ -33,43 +27,6 @@ import (
 type Resolver struct {
 	grpcDispatcher    *grpcdispatcher.Dispatcher
 	allowedNamespaces []string
-}
-
-func (r *Resolver) ToNamespace(namespace *string) (string, error) {
-	ns := metav1.NamespaceDefault
-	if namespace != nil {
-		ns = *namespace
-	}
-
-	// perform auth
-	if len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return "", errors.ErrForbidden
-	}
-
-	return ns, nil
-}
-
-func (r *Resolver) ToNamespaces(namespace *string) ([]string, error) {
-	var namespaces []string
-
-	ns := metav1.NamespaceDefault
-	if namespace != nil {
-		ns = *namespace
-	}
-
-	// perform auth
-	if ns != "" && len(r.allowedNamespaces) > 0 && !slices.Contains(r.allowedNamespaces, ns) {
-		return nil, errors.ErrForbidden
-	}
-
-	// listify
-	if ns == "" && len(r.allowedNamespaces) > 0 {
-		namespaces = r.allowedNamespaces
-	} else {
-		namespaces = []string{ns}
-	}
-
-	return namespaces, nil
 }
 
 // Create new Resolver instance
