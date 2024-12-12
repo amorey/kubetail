@@ -15,13 +15,19 @@
 package ginapp
 
 import (
+	"context"
+	"fmt"
 	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	zlog "github.com/rs/zerolog/log"
+	authv1 "k8s.io/api/authentication/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/proxy"
+	"k8s.io/utils/ptr"
 )
 
 func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc {
@@ -30,6 +36,33 @@ func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc
 		return func(c *gin.Context) {
 			panic("not implemented")
 		}
+	}
+
+	// Create a clientset
+	clientset, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	// Define the namespace and service account
+	namespace := "kubetail-system"
+	serviceAccountName := "kubetail-cli"
+
+	// Prepare the TokenRequest object
+	tokenRequest := &authv1.TokenRequest{
+		Spec: authv1.TokenRequestSpec{
+			ExpirationSeconds: ptr.To[int64](3600), // Token validity (e.g., 1 hour)
+			Audiences: []string{
+				"https://kubernetes.default.svc",
+				"http://kubetail-api.kubetail-system.svc",
+			},
+		},
+	}
+
+	// Request a token for the ServiceAccount
+	token, err := clientset.CoreV1().ServiceAccounts(namespace).CreateToken(context.TODO(), serviceAccountName, tokenRequest, metav1.CreateOptions{})
+	if err != nil {
+		panic(err)
 	}
 
 	h, err := proxy.NewProxyHandler("/", nil, cfg, 0, false)
@@ -42,6 +75,8 @@ func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc
 		urlCopy := *c.Request.URL
 		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
+
+		c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token.Status.Token))
 
 		h.ServeHTTP(c.Writer, c.Request)
 	}
