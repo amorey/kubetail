@@ -16,9 +16,11 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
@@ -32,16 +34,13 @@ func authenticationMiddleware(mode config.AuthMode) gin.HandlerFunc {
 			return
 		}
 
-		var token string
-
-		/*
-			// check cookie session
-			session := sessions.Default(c)
-			tokenIF := session.Get(k8sTokenSessionKey)
-			if tokenIF != nil {
-				token = tokenIF.(string)
+		for key, values := range c.Request.Header {
+			for _, value := range values {
+				fmt.Printf("%s: %s\n", key, value)
 			}
-		*/
+		}
+
+		var token string
 
 		// Check Authorization header
 		header := c.GetHeader("Authorization")

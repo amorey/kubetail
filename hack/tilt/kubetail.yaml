@@ -65,6 +65,9 @@ data:
         enabled: true
         level: debug
         format: pretty
+        access-log:
+          enabled: true
+          hide-health-checks: true
       tls:
         enabled: false
         cert-file:
@@ -463,7 +466,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-testuser
-  namespace: default
+  namespace: kubetail-system
 rules:
 - apiGroups: [discovery.k8s.io]
   resources: [endpointslices]
@@ -473,12 +476,12 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-testuser
-  namespace: default
+  namespace: kubetail-system
 roleRef:
   kind: Role
   name: kubetail-testuser
   apiGroup: rbac.authorization.k8s.io
 subjects:
-  - kind: ServiceAccount
-    name: kubetail-testuser
-    namespace: default
+- kind: ServiceAccount
+  name: kubetail-testuser
+  namespace: default

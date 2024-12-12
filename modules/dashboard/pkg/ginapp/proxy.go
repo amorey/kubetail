@@ -42,6 +42,7 @@ func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc
 		urlCopy := *c.Request.URL
 		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
+
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 }
