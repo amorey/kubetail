@@ -16,9 +16,11 @@ package grpchelpers
 
 import (
 	"context"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -32,6 +34,11 @@ const K8STokenCtxKey ctxKey = iota
 // Create new auth server interceptor
 func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Bypass authentication for health checks
+		if strings.HasPrefix(info.FullMethod, "/"+grpc_health_v1.Health_ServiceDesc.ServiceName) {
+			return handler(ctx, req)
+		}
+
 		// continue if auth-mode is not `token`
 		if cfg.AuthMode != config.AuthModeToken {
 			return handler(ctx, req)
