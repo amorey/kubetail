@@ -16,13 +16,9 @@ package grpchelpers
 
 import (
 	"context"
-	"strings"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 
 	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
@@ -34,40 +30,29 @@ const K8STokenCtxKey ctxKey = iota
 // Create new auth server interceptor
 func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Bypass authentication for health checks
-		if strings.HasPrefix(info.FullMethod, "/"+grpc_health_v1.Health_ServiceDesc.ServiceName) {
-			return handler(ctx, req)
+		// Add token to context, if present
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			authorization := md["authorization"]
+			if len(authorization) > 0 {
+				// Add token to context
+				ctx = context.WithValue(ctx, K8STokenCtxKey, authorization[0])
+			}
 		}
 
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, status.Errorf(codes.Unauthenticated, "missing metadata")
-		}
-
-		authorization := md["authorization"]
-
-		if len(authorization) < 1 {
-			return nil, status.Errorf(codes.Unauthenticated, "missing token")
-		}
-
-		// Add token to context
-		newCtx := context.WithValue(ctx, K8STokenCtxKey, authorization[0])
-
-		return handler(newCtx, req)
+		// Continue
+		return handler(ctx, req)
 	}
 }
 
 // Create new auth client interceptor
 func NewUnaryAuthClientInterceptor(cfg *config.Config) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		// Get token from context
-		token, ok := ctx.Value(K8STokenCtxKey).(string)
-		if !ok {
-			return status.Errorf(codes.FailedPrecondition, "missing token in context")
+		// Get token context and add to metadata, if present
+		if token, ok := ctx.Value(K8STokenCtxKey).(string); ok {
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", token)
 		}
 
-		// Add to metadata and continue execution
-		newCtx := metadata.AppendToOutgoingContext(ctx, "authorization", token)
-		return invoker(newCtx, method, req, reply, cc, opts...)
+		// Continue
+		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }

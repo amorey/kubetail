@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	authv1 "k8s.io/api/authorization/v1"
@@ -76,43 +77,47 @@ func TestLogfileRegex(t *testing.T) {
 }
 
 func TestCheckPermissionFailure(t *testing.T) {
+	ctxWithToken := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+
 	t.Run("namespaces required", func(t *testing.T) {
-		err := checkPermission(context.Background(), nil, []string{}, "x")
+		err := checkPermission(ctxWithToken, nil, []string{}, "x")
 		require.ErrorContains(t, err, "namespaces required")
 	})
 
 	t.Run("single namespace", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
-		err := checkPermission(context.Background(), clientset, []string{"ns1"}, "x")
+		err := checkPermission(ctxWithToken, clientset, []string{"ns1"}, "x")
 		require.ErrorContains(t, err, "permission denied")
 	})
 
 	t.Run("multiple namespaces", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
-		err := checkPermission(context.Background(), clientset, []string{"ns1", "ns2"}, "x")
+		err := checkPermission(ctxWithToken, clientset, []string{"ns1", "ns2"}, "x")
 		require.ErrorContains(t, err, "permission denied")
 	})
 
 	t.Run("one of several not allowed", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
 		allowSSAR(clientset, []string{"ns1"}, []string{"x"})
-		err := checkPermission(context.Background(), clientset, []string{"ns1", "ns2"}, "x")
+		err := checkPermission(ctxWithToken, clientset, []string{"ns1", "ns2"}, "x")
 		require.ErrorContains(t, err, "permission denied")
 	})
 }
 
 func TestCheckPermissionSuccess(t *testing.T) {
+	ctxWithToken := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+
 	t.Run("single namespace", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
 		allowSSAR(clientset, []string{"ns1"}, []string{"x"})
-		err := checkPermission(context.Background(), clientset, []string{"ns1"}, "x")
+		err := checkPermission(ctxWithToken, clientset, []string{"ns1"}, "x")
 		require.Nil(t, err)
 	})
 
 	t.Run("multiple namespaces", func(t *testing.T) {
 		clientset := fake.NewSimpleClientset()
 		allowSSAR(clientset, []string{"ns1", "ns2"}, []string{"x"})
-		err := checkPermission(context.Background(), clientset, []string{"ns1", "ns2"}, "x")
+		err := checkPermission(ctxWithToken, clientset, []string{"ns1", "ns2"}, "x")
 		require.Nil(t, err)
 	})
 }

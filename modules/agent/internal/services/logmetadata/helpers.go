@@ -27,6 +27,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -40,6 +41,11 @@ var logfileRegex = regexp.MustCompile(`^(?P<PodName>[^_]+)_(?P<Namespace>[^_]+)_
 
 // Check if client has required pods/log permissions for given namespace+verb
 func checkPermission(ctx context.Context, clientset kubernetes.Interface, namespaces []string, verb string) error {
+	// Ensure token is present
+	if _, ok := ctx.Value(grpchelpers.K8STokenCtxKey).(string); !ok {
+		return status.Errorf(codes.Unauthenticated, "missing token")
+	}
+
 	// ensure namespaces argument is present
 	if len(namespaces) < 1 {
 		return errors.New("namespaces required")

@@ -27,6 +27,7 @@ import (
 
 	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
 	"github.com/kubetail-org/kubetail/modules/shared/config"
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
 
 type LogMetadataTestSuite struct {
@@ -51,7 +52,6 @@ func (suite *LogMetadataTestSuite) SetupSuite() {
 
 	// test config
 	cfg := config.DefaultConfig()
-	cfg.AuthMode = config.AuthModeCluster
 	cfg.Agent.ContainerLogsDir = containerLogsDir
 
 	// init test server
@@ -126,12 +126,15 @@ func (suite *LogMetadataTestSuite) TestList() {
 	f3.Write([]byte("123456789"))
 	f3.Close()
 
+	// authenticate
+	ctxWithToken := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+
 	suite.Run("single namespace", func() {
 		// allow access
 		suite.testServer.AllowSSAR([]string{"ns1"}, []string{"list"})
 
 		client := suite.testServer.NewTestClient()
-		resp, err := client.List(context.Background(), &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1"}})
+		resp, err := client.List(ctxWithToken, &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1"}})
 		suite.Require().Nil(err)
 
 		// check number of items
@@ -159,7 +162,7 @@ func (suite *LogMetadataTestSuite) TestList() {
 		suite.testServer.AllowSSAR([]string{"ns1", "ns2"}, []string{"list"})
 
 		client := suite.testServer.NewTestClient()
-		resp, err := client.List(context.Background(), &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1", "ns2"}})
+		resp, err := client.List(ctxWithToken, &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1", "ns2"}})
 		suite.Require().Nil(err)
 
 		// check number of items
@@ -179,7 +182,7 @@ func (suite *LogMetadataTestSuite) TestList() {
 		suite.testServer.AllowSSAR([]string{""}, []string{"list"})
 
 		client := suite.testServer.NewTestClient()
-		resp, err := client.List(context.Background(), &agentpb.LogMetadataListRequest{Namespaces: []string{""}})
+		resp, err := client.List(ctxWithToken, &agentpb.LogMetadataListRequest{Namespaces: []string{""}})
 		suite.Require().Nil(err)
 
 		// check number of items

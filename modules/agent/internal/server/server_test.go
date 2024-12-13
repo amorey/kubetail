@@ -28,37 +28,6 @@ import (
 	"github.com/kubetail-org/kubetail/modules/shared/testpb"
 )
 
-func TestAuthModeNotToken(t *testing.T) {
-	tests := []struct {
-		name        string
-		setAuthMode config.AuthMode
-	}{
-		{"cluster", config.AuthModeCluster},
-		{"local", config.AuthModeLocal},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := config.DefaultConfig()
-			cfg.AuthMode = tt.setAuthMode
-
-			// init server
-			server := NewTestServer(cfg)
-			defer server.Stop()
-
-			// init client
-			client, err := server.NewTestClient()
-			require.Nil(t, err)
-			defer client.Close()
-
-			// execute request
-			resp, err := client.Echo(context.Background(), &testpb.EchoRequest{Message: "xxx"})
-			require.Nil(t, err)
-			require.Equal(t, "xxx", resp.Message)
-		})
-	}
-}
-
 func TestRequestWithoutAuthClientInterceptor(t *testing.T) {
 	cfg := config.DefaultConfig()
 
