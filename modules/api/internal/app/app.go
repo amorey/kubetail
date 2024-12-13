@@ -133,7 +133,7 @@ func NewApp(cfg *config.Config) (*app, error) {
 		}
 
 		// authentication middleware
-		dynamicRoutes.Use(authenticationMiddleware(cfg.AuthMode))
+		dynamicRoutes.Use(authenticationMiddleware)
 
 		// GraphQL endpoint
 		graphql := dynamicRoutes.Group("/graphql")

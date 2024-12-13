@@ -53,8 +53,8 @@ func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc
 		Spec: authv1.TokenRequestSpec{
 			ExpirationSeconds: ptr.To[int64](3600), // Token validity (e.g., 1 hour)
 			Audiences: []string{
-				"https://kubernetes.default.svc",
-				"http://kubetail-api.kubetail-system.svc",
+				"https://kubernetes.default.svc.cluster.local",
+				"http://kubetail-api.kubetail-system.svc.cluster.local",
 			},
 		},
 	}

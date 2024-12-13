@@ -39,11 +39,6 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 			return handler(ctx, req)
 		}
 
-		// continue if auth-mode is not `token`
-		if cfg.AuthMode != config.AuthModeToken {
-			return handler(ctx, req)
-		}
-
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, status.Errorf(codes.Unauthenticated, "missing metadata")
@@ -55,7 +50,7 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 			return nil, status.Errorf(codes.Unauthenticated, "missing token")
 		}
 
-		// add token to context
+		// Add token to context
 		newCtx := context.WithValue(ctx, K8STokenCtxKey, authorization[0])
 
 		return handler(newCtx, req)
@@ -65,18 +60,13 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 // Create new auth client interceptor
 func NewUnaryAuthClientInterceptor(cfg *config.Config) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		// continue if auth-mode is not `token`
-		if cfg.AuthMode != config.AuthModeToken {
-			return invoker(ctx, method, req, reply, cc, opts...)
-		}
-
-		// get token from context
+		// Get token from context
 		token, ok := ctx.Value(K8STokenCtxKey).(string)
 		if !ok {
 			return status.Errorf(codes.FailedPrecondition, "missing token in context")
 		}
 
-		// add to metadata and continue execution
+		// Add to metadata and continue execution
 		newCtx := metadata.AppendToOutgoingContext(ctx, "authorization", token)
 		return invoker(newCtx, method, req, reply, cc, opts...)
 	}

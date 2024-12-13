@@ -17,46 +17,44 @@ package app
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
 
 // Add user to context if authenticated
-func authenticationMiddleware(mode config.AuthMode) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Skip if not in token mode
-		if mode != config.AuthModeToken {
-			c.Next()
-			return
+func authenticationMiddleware(c *gin.Context) {
+	for key, values := range c.Request.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
 		}
-
-		for key, values := range c.Request.Header {
-			for _, value := range values {
-				fmt.Printf("%s: %s\n", key, value)
-			}
-		}
-
-		var token string
-
-		// Check Authorization header
-		header := c.GetHeader("Authorization")
-		if strings.HasPrefix(header, "Bearer ") {
-			token = strings.TrimPrefix(header, "Bearer ")
-		}
-
-		// If present, add token to request context
-		if token != "" {
-			// Add to context for grpc requests
-			ctx := context.WithValue(c.Request.Context(), grpchelpers.K8STokenCtxKey, token)
-
-			c.Request = c.Request.WithContext(ctx)
-		}
-
-		// continue with the request
-		c.Next()
 	}
+
+	var token string
+
+	// Check X-Forwarded-Authorization & Authorization headers
+	header := c.GetHeader("X-Forwarded-Authorization")
+	if header == "" {
+		header = c.GetHeader("Authorization")
+	}
+	if strings.HasPrefix(header, "Bearer ") {
+		token = strings.TrimPrefix(header, "Bearer ")
+	}
+
+	// Require token
+	if token == "" {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// Add to context for grpc requests
+	ctx := context.WithValue(c.Request.Context(), grpchelpers.K8STokenCtxKey, token)
+
+	c.Request = c.Request.WithContext(ctx)
+
+	// Continue
+	c.Next()
 }
