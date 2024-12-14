@@ -28,44 +28,51 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/proxy"
 	"k8s.io/utils/ptr"
+
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
-func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc {
+func newKubetailAPIProxyHandler(cfg *config.Config, prefix string, k8scfg *rest.Config) gin.HandlerFunc {
 	// Handle test-mode
-	if cfg == nil {
+	if k8scfg == nil {
 		return func(c *gin.Context) {
 			panic("not implemented")
 		}
 	}
 
-	// Create a clientset
-	clientset, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
+	var token string
 
-	// Define the namespace and service account
-	namespace := "kubetail-system"
-	serviceAccountName := "kubetail-cli"
+	if cfg.AuthMode == config.AuthModeLocal {
+		// Create a clientset
+		clientset, err := kubernetes.NewForConfig(k8scfg)
+		if err != nil {
+			panic(err)
+		}
 
-	// Prepare the TokenRequest object
-	tokenRequest := &authv1.TokenRequest{
-		Spec: authv1.TokenRequestSpec{
-			ExpirationSeconds: ptr.To[int64](3600), // Token validity (e.g., 1 hour)
-			Audiences: []string{
-				"https://kubernetes.default.svc.cluster.local",
-				"http://kubetail-api.kubetail-system.svc.cluster.local",
+		// Define the namespace and service account
+		namespace := "kubetail-system"
+		serviceAccountName := "kubetail-cli"
+
+		// Prepare the TokenRequest object
+		tokenRequest := &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				ExpirationSeconds: ptr.To[int64](3600), // Token validity (e.g., 1 hour)
+				Audiences: []string{
+					"https://kubernetes.default.svc.cluster.local",
+					"http://kubetail-api.kubetail-system.svc.cluster.local",
+				},
 			},
-		},
+		}
+
+		// Request a token for the ServiceAccount
+		t, err := clientset.CoreV1().ServiceAccounts(namespace).CreateToken(context.TODO(), serviceAccountName, tokenRequest, metav1.CreateOptions{})
+		if err != nil {
+			panic(err)
+		}
+		token = t.Status.Token
 	}
 
-	// Request a token for the ServiceAccount
-	token, err := clientset.CoreV1().ServiceAccounts(namespace).CreateToken(context.TODO(), serviceAccountName, tokenRequest, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	h, err := proxy.NewProxyHandler("/", nil, cfg, 0, false)
+	h, err := proxy.NewProxyHandler("/", nil, k8scfg, 0, false)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}
@@ -76,7 +83,9 @@ func newKubetailAPIProxyHandler(prefix string, cfg *rest.Config) gin.HandlerFunc
 		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
 
-		c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token.Status.Token))
+		if token != "" {
+			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token))
+		}
 
 		h.ServeHTTP(c.Writer, c.Request)
 	}

@@ -16,6 +16,7 @@ package grpchelpers
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -34,6 +35,8 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			authorization := md["authorization"]
 			if len(authorization) > 0 {
+				fmt.Println(authorization[0])
+
 				// Add token to context
 				ctx = context.WithValue(ctx, K8STokenCtxKey, authorization[0])
 			}

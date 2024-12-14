@@ -9,7 +9,7 @@ local_resource(
   'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/api ./api/cmd/main.go',
   deps=[
     './modules/api',
-    './modules/common'
+    './modules/shared'
   ]
 )
 
@@ -32,7 +32,7 @@ local_resource(
   'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/agent ./agent/cmd/main.go',
   deps=[
     './modules/agent',
-    './modules/common'
+    './modules/shared'
   ]
 )
 
@@ -55,7 +55,7 @@ local_resource(
   'cd modules && CGO_ENABLED=0 GOOS=linux go build -o ../.tilt/dashboard ./dashboard/cmd/main.go',
   deps=[
     './modules/dashboard',
-    './modules/common'
+    './modules/shared'
   ]
 )
 

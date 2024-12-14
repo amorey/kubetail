@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package apipb;
 
-option go_package = "common/apipb";
+option go_package = "shared/apipb";
 
 import "google/protobuf/timestamp.proto";
 

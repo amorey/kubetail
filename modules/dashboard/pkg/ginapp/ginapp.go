@@ -200,7 +200,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	kubetailAPI := root.Group("/kubetail-api")
 	{
 		prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
-		endpointHandler := newKubetailAPIProxyHandler(prefix, k8sCfg)
+		endpointHandler := newKubetailAPIProxyHandler(cfg, prefix, k8sCfg)
 		kubetailAPI.Any("*path", endpointHandler)
 	}
 

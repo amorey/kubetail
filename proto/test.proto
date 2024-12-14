@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package testpb;
 
-option go_package = "common/testpb";
+option go_package = "shared/testpb";
 
 service TestService {
   rpc Echo (EchoRequest) returns (EchoResponse);

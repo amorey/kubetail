@@ -42,14 +42,14 @@ FROM golang:1.22.7 AS dashboard-builder
 WORKDIR /work
 
 # install dependencies (for cache)
-COPY modules/common/go.mod ./common/go.mod
-COPY modules/common/go.sum ./common/go.sum
+COPY modules/shared/go.mod ./shared/go.mod
+COPY modules/shared/go.sum ./shared/go.sum
 COPY modules/dashboard/go.mod ./dashboard/go.mod
 COPY modules/dashboard/go.sum ./dashboard/go.sum
 RUN cd dashboard && go mod download all
 
 # copy code
-COPY modules/common ./common
+COPY modules/shared ./shared
 COPY modules/dashboard ./dashboard
 
 # copy frontend

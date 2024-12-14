@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package agentpb;
 
-option go_package = "common/agentpb";
+option go_package = "shared/agentpb";
 
 import "google/protobuf/timestamp.proto";
 

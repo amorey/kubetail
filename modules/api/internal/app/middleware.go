@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -27,12 +26,6 @@ import (
 
 // Add user to context if authenticated
 func authenticationMiddleware(c *gin.Context) {
-	for key, values := range c.Request.Header {
-		for _, value := range values {
-			fmt.Printf("%s: %s\n", key, value)
-		}
-	}
-
 	var token string
 
 	// Check X-Forwarded-Authorization & Authorization headers
