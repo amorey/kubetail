@@ -6,17 +6,23 @@ Go workspace that contains the modules used by Kubetail
 
 This workspace contains the following modules:
 
-* [agent](agent) - Kubetail agent
-* [api](api) - Kubetail API server
-* [cli](cli) - Kubetail CLI executable
-* [dashboard](dashboard) - Kubetail dashboard server
+* [agent](agent) - Kubetail Agent
+* [api](api) - Kubetail API
+* [cli](cli) - Kubetail CLI
+* [dashboard](dashboard) - Kubetail Dashboard
 * [shared](shared) - Shared libraries
 
 Please view the README in each directory for more details. 
 
 ## Run code generators
 
-To run the code generators in all the modules:
+First install the dependencies:
+
+```console
+brew install protobuf protoc-gen-go protoc-gen-go-grpc
+```
+
+Next, run the code generators:
 
 ```console
 go generate github.com/kubetail-org/kubetail/modules/...
@@ -27,5 +33,5 @@ go generate github.com/kubetail-org/kubetail/modules/...
 To run the tests in all the modules:
 
 ```console
-go test -race github.com/kubetail-org/kubetail/modules/...
+go test github.com/kubetail-org/kubetail/modules/...
 ```

@@ -23,14 +23,13 @@ The Kubetail backend server executable supports the following command line confi
 
 ### Config file
 
-The Kubetail backend server can be configured using a configuration file written in YAML, JSON, TOML, HCL or envfile format. The application will automatically replace ENV variables written in the format `${NAME}` with their corresponding values. The config file supports the following options (also see [hack/config.yaml](hack/config.yaml)):
+The Kubetail backend server can be configured using a configuration file written in YAML, JSON, TOML, HCL or envfile format. The application will automatically replace ENV variables written in the format `${NAME}` with their corresponding values. The config file supports the following options (also see [hack/config.yaml](../../hack/config.yaml)):
 
 | Name                                            | Datatype | Description                                          | Default                             |
 | ----------------------------------------------- | -------- | ---------------------------------------------------- | ----------------------------------- |
 | auth-mode                                       | string   | Auth mode (token, cluster, local)                    | "token"                             |
 | allowed-namespaces                              | []string | If populated, restricts namespace access             | []                                  |
 | dashboard.addr                                  | string   | Host address to bind to                              | ":7500"                             |
-| dashboard.agent-dispatch-url                    | string   | Url for sending dispatch requests to agent           | "kubernetes://kubetail-agent:50051" |
 | dashboard.base-path                             | string   | URL path prefix                                      | "/"                                 |
 | dashboard.gin-mode                              | string   | Gin mode (release, debug)                            | "release"                           |
 | dashboard.csrf.enabled                          | bool     | Enable CSRF protection                               | true                                |
@@ -70,7 +69,7 @@ go generate ./...
 
 ## Test
 
-This project uses the [stretchr/testify](https://github.com/stretchr/testify) library for testing. To run the test suite execute this command:
+To run the test suite execute this command:
 
 ```console
 go test ./...
