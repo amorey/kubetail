@@ -4,7 +4,7 @@ Go-based gRPC service that runs on every node in a cluster and responds to reque
 
 ## Overview
 
-The Kubetail agent is a small Go-based gRPC service that's designed to run on every node in a Kubernetes cluster and respond to node-specific requests from Kubetail API instances using gRPC. Currently, the agent returns real-time information about container log files such as file size and when the last event occurred.
+The Kubetail Agent is a small Go-based gRPC service that's designed to run on every node in a Kubernetes cluster and respond to node-specific requests from Kubetail API instances using gRPC. Currently, the agent returns real-time information about container log files such as file size and when the last event occurred.
 
 ## Configure
 
