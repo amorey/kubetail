@@ -9,14 +9,13 @@ import (
 	"io"
 	"sync"
 
+	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/kubetail-org/kubetail/modules/shared/agentpb"
-	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 // LogMetadataList is the resolver for the logMetadataList field.

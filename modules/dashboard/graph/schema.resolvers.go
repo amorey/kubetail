@@ -15,16 +15,15 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
+	gqlerrors "github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
-	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
-	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 // Object is the resolver for the object field.
@@ -457,7 +456,7 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, option
 		for ev := range watchEventProxyChannel(ctx, watchAPI) {
 			ns, err := typeassertRuntimeObject[*corev1.Namespace](ev.Object)
 			if err != nil {
-				transport.AddSubscriptionError(ctx, errors.ErrInternalServerError)
+				transport.AddSubscriptionError(ctx, gqlerrors.ErrInternalServerError)
 				break
 			}
 
