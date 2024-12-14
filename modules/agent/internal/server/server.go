@@ -26,6 +26,7 @@ func NewServer(cfg *config.Config) (*grpc.Server, error) {
 	// init grpc server
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpchelpers.NewUnaryAuthServerInterceptor(cfg)),
+		grpc.StreamInterceptor(grpchelpers.NewStreamAuthServerInterceptor()),
 	}
 
 	// configure tls

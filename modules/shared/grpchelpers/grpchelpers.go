@@ -16,7 +16,6 @@ package grpchelpers
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -28,16 +27,23 @@ type ctxKey int
 
 const K8STokenCtxKey ctxKey = iota
 
-// Create new auth server interceptor
+// Represents wrap of original stream that returns modified context
+type wrappedStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (s *wrappedStream) Context() context.Context {
+	return s.ctx
+}
+
+// Create new auth server unary interceptor
 func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// Add token to context, if present
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			authorization := md["authorization"]
-			fmt.Println(authorization)
 			if len(authorization) > 0 {
-				fmt.Println(authorization[0])
-
 				// Add token to context
 				ctx = context.WithValue(ctx, K8STokenCtxKey, authorization[0])
 			}
@@ -48,7 +54,7 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 	}
 }
 
-// Create new auth client interceptor
+// Create new auth client unary interceptor
 func NewUnaryAuthClientInterceptor(cfg *config.Config) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		// Get token context and add to metadata, if present
@@ -58,5 +64,47 @@ func NewUnaryAuthClientInterceptor(cfg *config.Config) grpc.UnaryClientIntercept
 
 		// Continue
 		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+}
+
+// Create new auth server stream interceptor
+func NewStreamAuthServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := ss.Context()
+
+		// Add token to context, if present
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			authorization := md["authorization"]
+			if len(authorization) > 0 {
+				// Add token to context
+				ctx = context.WithValue(ctx, K8STokenCtxKey, authorization[0])
+			}
+		}
+
+		newStream := &wrappedStream{
+			ServerStream: ss,
+			ctx:          ctx,
+		}
+
+		// Continue
+		return handler(srv, newStream)
+	}
+}
+
+// Create new auth client stream interceptor
+func NewStreamAuthClientInterceptor() grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		// Get token context and add to metadata, if present
+		if token, ok := ctx.Value(K8STokenCtxKey).(string); ok {
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", token)
+		}
+
+		// Call the original streamer to proceed with the RPC
+		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		return clientStream, nil
 	}
 }

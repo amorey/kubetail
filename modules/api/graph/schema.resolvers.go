@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 
@@ -67,8 +66,6 @@ func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) 
 
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
 func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *agentpb.LogMetadataWatchEvent, error) {
-	fmt.Println("XXXX")
-
 	// init namespaces
 	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
 	if err != nil {
