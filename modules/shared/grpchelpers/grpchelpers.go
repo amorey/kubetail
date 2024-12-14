@@ -34,6 +34,7 @@ func NewUnaryAuthServerInterceptor(cfg *config.Config) grpc.UnaryServerIntercept
 		// Add token to context, if present
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			authorization := md["authorization"]
+			fmt.Println(authorization)
 			if len(authorization) > 0 {
 				fmt.Println(authorization[0])
 
