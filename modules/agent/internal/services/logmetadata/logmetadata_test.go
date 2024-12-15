@@ -37,6 +37,8 @@ type LogMetadataTestSuite struct {
 	testServer       *TestServer
 }
 
+var ctxWithToken = context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+
 // Setup suite
 func (suite *LogMetadataTestSuite) SetupSuite() {
 	// disable logging
@@ -106,7 +108,20 @@ func (suite *LogMetadataTestSuite) createContainerLogFile(namespace string, podN
 	return f
 }
 
-func (suite *LogMetadataTestSuite) TestList() {
+func (suite *LogMetadataTestSuite) TestList_Unauthenticated() {
+	client := suite.testServer.NewTestClient()
+	_, err := client.List(context.Background(), &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1"}})
+	suite.Require().ErrorContains(err, "missing token")
+}
+
+func (suite *LogMetadataTestSuite) TestList_Unauthorized() {
+	ctx := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+	client := suite.testServer.NewTestClient()
+	_, err := client.List(ctx, &agentpb.LogMetadataListRequest{Namespaces: []string{"ns1"}})
+	suite.Require().ErrorContains(err, "permission denied")
+}
+
+func (suite *LogMetadataTestSuite) TestList_Authorized() {
 	// add file to namespace ns1
 	f0 := suite.createContainerLogFile("ns1", "pn1", "cn", "000")
 	f0.Close()
@@ -125,9 +140,6 @@ func (suite *LogMetadataTestSuite) TestList() {
 	f3 := suite.createContainerLogFile("ns3", "pn", "cn", "333")
 	f3.Write([]byte("123456789"))
 	f3.Close()
-
-	// authenticate
-	ctxWithToken := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
 
 	suite.Run("single namespace", func() {
 		// allow access
@@ -198,6 +210,29 @@ func (suite *LogMetadataTestSuite) TestList() {
 	})
 }
 
+func (suite *LogMetadataTestSuite) TestWatch_Unauthenticated() {
+	// init
+	client := suite.testServer.NewTestClient()
+	stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: []string{"ns1"}})
+	suite.Require().Nil(err)
+
+	// wait for stream
+	_, err = stream.Recv()
+	suite.Require().ErrorContains(err, "missing token")
+}
+
+func (suite *LogMetadataTestSuite) TestWatch_Unauthorized() {
+	// init
+	ctx := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+	client := suite.testServer.NewTestClient()
+	stream, err := client.Watch(ctx, &agentpb.LogMetadataWatchRequest{Namespaces: []string{"ns1"}})
+	suite.Require().Nil(err)
+
+	// wait for stream
+	_, err = stream.Recv()
+	suite.Require().ErrorContains(err, "permission denied")
+}
+
 func (suite *LogMetadataTestSuite) TestWatch_HandleClientClose() {
 	// init client
 	client := suite.testServer.NewTestClient()
@@ -209,7 +244,7 @@ func (suite *LogMetadataTestSuite) TestWatch_HandleClientClose() {
 	})
 
 	// init watch
-	stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: []string{""}})
+	stream, err := client.Watch(ctxWithToken, &agentpb.LogMetadataWatchRequest{Namespaces: []string{""}})
 	suite.Require().Nil(err)
 
 	// wait for stream
@@ -228,7 +263,7 @@ func (suite *LogMetadataTestSuite) TestWatch_HandleShutdown() {
 	})
 
 	// init watch
-	stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: []string{""}})
+	stream, err := client.Watch(ctxWithToken, &agentpb.LogMetadataWatchRequest{Namespaces: []string{""}})
 	suite.Require().Nil(err)
 
 	// wait for stream
@@ -273,7 +308,7 @@ func (suite *LogMetadataTestSuite) TestWatch_Added() {
 		})
 
 		// init watch
-		stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
+		stream, err := client.Watch(ctxWithToken, &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
 		suite.Require().Nil(err)
 
 		// wait for stream
@@ -322,7 +357,7 @@ func (suite *LogMetadataTestSuite) TestWatch_Modified() {
 		})
 
 		// init watch
-		stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
+		stream, err := client.Watch(ctxWithToken, &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
 		suite.Require().Nil(err)
 
 		// wait for stream
@@ -371,7 +406,7 @@ func (suite *LogMetadataTestSuite) TestWatch_Deleted() {
 		})
 
 		// init watch
-		stream, err := client.Watch(context.Background(), &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
+		stream, err := client.Watch(ctxWithToken, &agentpb.LogMetadataWatchRequest{Namespaces: tt.setNamespaces})
 		suite.Require().Nil(err)
 
 		// wait for stream

@@ -15,6 +15,7 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -43,7 +44,7 @@ func (suite *GraphQLTestSuite) TestAccess() {
 
 			// execute request
 			resp := client.Do(req)
-
+			fmt.Println(resp)
 			// check response
 			suite.Equal(http.StatusBadRequest, resp.StatusCode)
 		})

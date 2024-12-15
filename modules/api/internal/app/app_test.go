@@ -24,8 +24,9 @@ import (
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
-	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 func TestRequestID(t *testing.T) {

@@ -84,7 +84,8 @@ func (ts *TestServer) NewTestClient() *TestClient {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(dialerFunc),
-		grpc.WithUnaryInterceptor(grpchelpers.NewUnaryAuthClientInterceptor(ts.cfg)),
+		grpc.WithUnaryInterceptor(grpchelpers.AuthUnaryClientInterceptor),
+		grpc.WithStreamInterceptor(grpchelpers.AuthStreamClientInterceptor),
 	}
 
 	grpcConn, err := grpc.NewClient("passthrough://bufnet", opts...)
