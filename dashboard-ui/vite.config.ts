@@ -23,7 +23,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '^/api/auth/.*': {
-        target: 'http://localhost:7500',
+        target: `http://localhost:7500`,
       },
       '^/csrf-token': {
         target: 'http://localhost:7500',
