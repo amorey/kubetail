@@ -30,9 +30,9 @@ dashboard:
   #
   # Sets the target ip and port to bind the server to
   #
-  # Default value: ":7500"
+  # Default value: ":80"
   #
-  addr: :7500
+  addr: :80
   
   ## base-path ##
   #
@@ -289,9 +289,9 @@ api:
   #
   # Sets the target ip and port to bind the server to
   #
-  # Default value: ":7501"
+  # Default value: ":80"
   #
-  addr: :7501
+  addr: :80
     
   ## gin-mode ##
   #

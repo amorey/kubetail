@@ -11,7 +11,7 @@ The Kubetail API executable supports the following command line configuration op
 | Flag         | Datatype | Description                      | Default   |
 | ------------ | -------- | -------------------------------- | --------- |
 | -c, --config | string   | Path to Kubetail config file     | ""        |
-| -a, --addr   | string   | Host address to bind to          | ":7501"   |
+| -a, --addr   | string   | Host address to bind to          | ":80"     |
 | --gin-mode   | string   | Gin mode (release, debug)        | "release" |
 | -p, --param  | []string | Config params ("key:val" format) | []        |
 
@@ -22,7 +22,7 @@ The Kubetail API executable can be configured using a configuration file written
 | Name                                      | Datatype | Description                                          | Default                             |
 | ----------------------------------------- | -------- | ---------------------------------------------------- | ----------------------------------- |
 | allowed-namespaces                        | []string | If populated, restricts namespace access             | []                                  |
-| api.addr                                  | string   | Host address to bind to                              | ":7501"                             |
+| api.addr                                  | string   | Host address to bind to                              | ":80"                               |
 | api.agent-dispatch-url                    | string   | Url for sending dispatch requests to agent           | "kubernetes://kubetail-agent:50051" |
 | api.base-path                             | string   | URL path prefix                                      | "/"                                 |
 | api.gin-mode                              | string   | Gin mode (release, debug)                            | "release"                           |

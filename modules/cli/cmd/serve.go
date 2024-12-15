@@ -31,8 +31,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/dashboard/pkg/ginapp"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 
 	"github.com/kubetail-org/kubetail/modules/cli/internal/tunnel"
 )
@@ -192,7 +192,7 @@ func serveRemote(localPort int, skipOpen bool) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	defer close(quit)
 
-	tunnel, err := tunnel.NewTunnel("kubetail-system", "kubetail-dashboard", 7500, localPort)
+	tunnel, err := tunnel.NewTunnel("kubetail-system", "kubetail-dashboard", 80, localPort)
 	if err != nil {
 		zlog.Fatal().Err(err).Send()
 	}

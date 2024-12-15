@@ -10,7 +10,7 @@ data:
     auth-mode: token
     allowed-namespaces: []
     dashboard:
-      addr: :7500
+      addr: :80
       base-path: /
       gin-mode: debug
       extensions-enabled: false
@@ -46,7 +46,7 @@ data:
         cert-file:
         key-file:
     api:
-      addr: :7501
+      addr: :80
       base-path: /
       gin-mode: debug
       agent-dispatch-url: kubernetes://kubetail-agent:50051
@@ -83,6 +83,123 @@ data:
         cert-file:
         key-file:
 ---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kubetail-dashboard
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-dashboard
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+rules:
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, namespaces, nodes, pods, pods/log, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-dashboard
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-dashboard
+subjects:
+- kind: ServiceAccount
+  name: kubetail-dashboard
+  namespace: kubetail-system
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetail-dashboard
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/component: dashboard
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubetail
+        app.kubernetes.io/component: dashboard
+    spec:
+      serviceAccountName: kubetail-dashboard
+      containers:
+      - name: kubetail-dashboard
+        image: kubetail-dashboard
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+        args:
+        - --config=/etc/kubetail/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        resources: {}
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubetail-dashboard
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+spec:
+  selector:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: dashboard
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: http
+    appProtocol: http
+---    
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -152,7 +269,7 @@ spec:
         ports:
         - name: http
           protocol: TCP
-          containerPort: 7501
+          containerPort: 80
         args:
         - --config=/etc/kubetail/config.yaml
         volumeMounts:
@@ -198,7 +315,7 @@ spec:
   ports:
   - name: http
     protocol: TCP
-    port: 7501
+    port: 80
     targetPort: http
     appProtocol: http
 ---
@@ -335,104 +452,6 @@ spec:
         matchLabels:
           app.kubernetes.io/name: kubetail
           app.kubernetes.io/component: api
----
-kind: ServiceAccount
-apiVersion: v1
-metadata:
-  name: kubetail-dashboard
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: dashboard
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-dashboard
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: dashboard
-rules:
-- apiGroups: ["", apps, batch]
-  resources: [cronjobs, daemonsets, deployments, jobs, namespaces, nodes, pods, pods/log, replicasets, statefulsets]
-  verbs: [get, list, watch]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-dashboard
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: dashboard
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubetail-dashboard
-subjects:
-- kind: ServiceAccount
-  name: kubetail-dashboard
-  namespace: kubetail-system
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  name: kubetail-dashboard
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: dashboard
-spec:
-  replicas: 1
-  revisionHistoryLimit: 5
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: kubetail
-      app.kubernetes.io/component: dashboard
-  strategy:
-    type: RollingUpdate
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: kubetail
-        app.kubernetes.io/component: dashboard
-    spec:
-      serviceAccountName: kubetail-dashboard
-      containers:
-      - name: kubetail-dashboard
-        image: kubetail-dashboard
-        ports:
-        - name: http
-          protocol: TCP
-          containerPort: 7500
-        args:
-        - --config=/etc/kubetail/config.yaml
-        volumeMounts:
-        - name: config
-          mountPath: /etc/kubetail
-          readOnly: true
-        readinessProbe:
-          httpGet:
-            scheme: HTTP
-            path: /healthz
-            port: http
-          initialDelaySeconds: 10
-          timeoutSeconds: 30
-          periodSeconds: 5
-          failureThreshold: 3
-        livenessProbe:
-          httpGet:
-            scheme: HTTP
-            path: /healthz
-            port: http
-          initialDelaySeconds: 10
-          timeoutSeconds: 30
-          periodSeconds: 5
-          failureThreshold: 3
-        resources: {}
-      volumes:
-      - name: config
-        configMap:
-          name: kubetail
 ---
 kind: ServiceAccount
 apiVersion: v1

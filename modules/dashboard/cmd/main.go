@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/dashboard/pkg/ginapp"
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 )
 
 type CLI struct {
@@ -138,7 +138,7 @@ func main() {
 	flagset := cmd.Flags()
 	flagset.SortFlags = false
 	flagset.StringVarP(&cli.Config, "config", "c", "", "Path to configuration file (e.g. \"/etc/kubetail/config.yaml\")")
-	flagset.StringP("addr", "a", ":7500", "Host address to bind to")
+	flagset.StringP("addr", "a", ":80", "Host address to bind to")
 	flagset.String("gin-mode", "release", "Gin mode (release, debug)")
 	flagset.StringArrayVarP(&params, "param", "p", []string{}, "Config params")
 

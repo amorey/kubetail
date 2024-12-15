@@ -24,13 +24,14 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 )
 
 func TestLogfileRegex(t *testing.T) {
@@ -78,6 +79,11 @@ func TestLogfileRegex(t *testing.T) {
 
 func TestCheckPermissionFailure(t *testing.T) {
 	ctxWithToken := context.WithValue(context.Background(), grpchelpers.K8STokenCtxKey, "xxx")
+
+	t.Run("missing token", func(t *testing.T) {
+		err := checkPermission(context.Background(), nil, []string{}, "x")
+		require.ErrorContains(t, err, "missing token")
+	})
 
 	t.Run("namespaces required", func(t *testing.T) {
 		err := checkPermission(ctxWithToken, nil, []string{}, "x")

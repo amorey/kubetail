@@ -229,7 +229,7 @@ func DefaultConfig() *Config {
 	cfg.AllowedNamespaces = []string{}
 	cfg.KubeConfig = filepath.Join(home, ".kube", "config")
 
-	cfg.Dashboard.Addr = ":7500"
+	cfg.Dashboard.Addr = ":80"
 	cfg.Dashboard.BasePath = "/"
 	cfg.Dashboard.GinMode = "release"
 	cfg.Dashboard.Session.Secret = ""
@@ -256,7 +256,7 @@ func DefaultConfig() *Config {
 	cfg.Dashboard.Logging.AccessLog.Enabled = true
 	cfg.Dashboard.Logging.AccessLog.HideHealthChecks = false
 
-	cfg.API.Addr = ":7501"
+	cfg.API.Addr = ":80"
 	cfg.API.BasePath = "/"
 	cfg.API.GinMode = "release"
 	cfg.API.AgentDispatchUrl = "kubernetes://kubetail-agent:50051"

@@ -96,7 +96,7 @@ k8s_resource(
 
 k8s_resource(
   'kubetail-api',
-  port_forwards='7501:7501',
+  port_forwards='7501:80',
   objects=[
     'kubetail-api:serviceaccount',
     'kubetail-api:role',
@@ -118,7 +118,7 @@ k8s_resource(
 
 k8s_resource(
   'kubetail-dashboard',
-  #port_forwards='7500:7500',
+  #port_forwards='7500:80',
   objects=[
     'kubetail-dashboard:clusterrole',
     'kubetail-dashboard:clusterrolebinding',

@@ -17,7 +17,7 @@ The Kubetail backend server executable supports the following command line confi
 | Flag         | Datatype | Description                      | Default   |
 | ------------ | -------- | -------------------------------- | --------- |
 | -c, --config | string   | Path to Kubetail config file     | ""        |
-| -a, --addr   | string   | Host address to bind to          | ":7500"   |
+| -a, --addr   | string   | Host address to bind to          | ":80"     |
 | --gin-mode   | string   | Gin mode (release, debug)        | "release" |
 | -p, --param  | []string | Config params ("key:val" format) | []        |
 
@@ -29,7 +29,7 @@ The Kubetail backend server can be configured using a configuration file written
 | ----------------------------------------------- | -------- | ---------------------------------------------------- | ----------------------------------- |
 | auth-mode                                       | string   | Auth mode (token, cluster, local)                    | "token"                             |
 | allowed-namespaces                              | []string | If populated, restricts namespace access             | []                                  |
-| dashboard.addr                                  | string   | Host address to bind to                              | ":7500"                             |
+| dashboard.addr                                  | string   | Host address to bind to                              | ":80"                               |
 | dashboard.base-path                             | string   | URL path prefix                                      | "/"                                 |
 | dashboard.gin-mode                              | string   | Gin mode (release, debug)                            | "release"                           |
 | dashboard.csrf.enabled                          | bool     | Enable CSRF protection                               | true                                |

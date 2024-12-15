@@ -68,7 +68,7 @@ For more information on how to configure the helm chart, see the chart's [values
 To access the web dashboard you can expose it as an ingress using the chart or you can use your usual access methods such as `kubectl port-forward`:
 
 ```console
-kubectl port-forward -n kubetail-system svc/kubetail-server 7500:7500
+kubectl port-forward -n kubetail-system svc/kubetail-dashboard 7500:80
 ```
 
 Visit [http://localhost:7500](http://localhost:7500). Have fun viewing your Kubernetes logs in realtime!
@@ -94,7 +94,7 @@ kubectl apply -f https://github.com/kubetail-org/helm-charts/releases/latest/dow
 To access the web dashboard you can use your usual access methods such as `kubectl port-forward`:
 
 ```console
-kubectl port-forward -n kubetail-system svc/kubetail-server 7500:7500
+kubectl port-forward -n kubetail-system svc/kubetail-dashboard 7500:80
 ```
 
 Visit [http://localhost:7500](http://localhost:7500). Have fun viewing your Kubernetes logs in realtime!
