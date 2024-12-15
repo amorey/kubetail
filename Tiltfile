@@ -128,6 +128,15 @@ k8s_resource(
 )
 
 k8s_resource(
+  objects=[
+    'kubetail-cli:serviceaccount',
+    'kubetail-cli:clusterrole',
+    'kubetail-cli:clusterrolebinding',
+  ],
+  new_name='kubetail-cli',
+)
+
+k8s_resource(
   'chaoskube',
   objects=[
     'chaoskube:serviceaccount',
