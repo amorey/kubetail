@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -37,16 +36,11 @@ func authenticationMiddleware(c *gin.Context) {
 		token = strings.TrimPrefix(header, "Bearer ")
 	}
 
-	// Require token
-	if token == "" {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+	// Add to context for gRPC requests
+	if token != "" {
+		ctx := context.WithValue(c.Request.Context(), grpchelpers.K8STokenCtxKey, token)
+		c.Request = c.Request.WithContext(ctx)
 	}
-
-	// Add to context for grpc requests
-	ctx := context.WithValue(c.Request.Context(), grpchelpers.K8STokenCtxKey, token)
-
-	c.Request = c.Request.WithContext(ctx)
 
 	// Continue
 	c.Next()
