@@ -1,7 +1,7 @@
 auth-mode: local
 allowed-namespaces: []
 dashboard:
-  addr: :7500
+  addr: :4000
   base-path: /
   gin-mode: debug
   csrf:
