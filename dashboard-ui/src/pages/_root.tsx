@@ -14,7 +14,7 @@
 
 import { useSuspenseQuery, useQuery } from '@apollo/client';
 import { XCircleIcon } from '@heroicons/react/24/outline';
-import { Suspense, useEffect, useState, use } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import toastlib, { useToaster, resolveValue } from 'react-hot-toast';
 import type { Toast } from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
@@ -118,8 +118,11 @@ function readyWait() {
 }
 
 function OutletWrapper() {
-  readyWait().read();
+  /*
+  const readyWaitPromise = useMemo(() => wrapPromise(fetch('/readywait')), []);
 
+  readyWaitPromise.read();
+  */
   /*
   useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
