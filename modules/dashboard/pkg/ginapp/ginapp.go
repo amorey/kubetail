@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/requestid"
@@ -136,7 +137,8 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 
 		// disable csrf protection for graphql endpoint (already rejects simple requests)
 		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == path.Join(cfg.Dashboard.BasePath, "/graphql") {
+			p := c.Request.URL.Path
+			if strings.HasPrefix(p, path.Join(cfg.Dashboard.BasePath, "/graphql")) || strings.HasPrefix(p, path.Join(cfg.Dashboard.BasePath, "/kubetail-api")) {
 				c.Request = csrf.UnsafeSkipCheck(c.Request)
 			}
 			c.Next()
@@ -182,36 +184,25 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		// graphql routes
 		graphql := dynamicRoutes.Group("/graphql")
 		{
-			// require token
-			if cfg.AuthMode == config.AuthModeToken {
-				graphql.Use(k8sTokenRequiredMiddleware)
-			}
-
-			// graphql handler
 			h := &GraphQLHandlers{app}
 			endpointHandler := h.EndpointHandler(k8sCfg, cfg.AllowedNamespaces, csrfProtect)
 			graphql.GET("", endpointHandler)
 			graphql.POST("", endpointHandler)
 		}
+
+		// kubetail api proxy routes
+		kubetailAPI := dynamicRoutes.Group("/kubetail-api")
+		{
+			h := &ProxyHandlers{app}
+			prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
+			endpointHandler, err := h.EndpointHandler(prefix, cfg, k8sCfg)
+			if err != nil {
+				return nil, err
+			}
+			kubetailAPI.Any("*path", endpointHandler)
+		}
 	}
 	app.dynamicroutes = dynamicRoutes // for unit tests
-
-	// kubetail api proxy routes
-	kubetailAPI := root.Group("/kubetail-api")
-	{
-		// require token
-		if cfg.AuthMode == config.AuthModeToken {
-			kubetailAPI.Use(k8sTokenRequiredMiddleware)
-		}
-
-		h := &ProxyHandlers{app}
-		prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
-		endpointHandler, err := h.EndpointHandler(prefix, cfg, k8sCfg)
-		if err != nil {
-			return nil, err
-		}
-		kubetailAPI.Any("*path", endpointHandler)
-	}
 
 	// health routes
 	root.GET("/healthz", func(c *gin.Context) {

@@ -78,8 +78,14 @@ func (app *ProxyHandlers) EndpointHandler(prefix string, cfg *config.Config, k8s
 		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
 
-		if sat != nil {
+		// Handle Auth
+		token := c.GetString(k8sTokenCtxKey)
+		if token != "" {
+			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token))
+		} else if sat != nil {
 			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", sat.Token()))
+		} else if k8scfg.BearerToken != "" {
+			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", k8scfg.BearerToken))
 		}
 
 		h.ServeHTTP(c.Writer, c.Request)

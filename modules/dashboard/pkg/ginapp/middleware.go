@@ -40,9 +40,8 @@ func authenticationMiddleware(mode config.AuthMode) gin.HandlerFunc {
 
 		// check cookie session
 		session := sessions.Default(c)
-		tokenIF := session.Get(k8sTokenSessionKey)
-		if tokenIF != nil {
-			token = tokenIF.(string)
+		if val, ok := session.Get(k8sTokenSessionKey).(string); ok {
+			token = val
 		}
 
 		// check Authorization header
