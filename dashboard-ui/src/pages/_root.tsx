@@ -112,22 +112,10 @@ const LoadingModal = () => (
   </div>
 );
 
-function readyWait() {
-  const promise = fetch('/readywait');
-  return wrapPromise(promise);
-}
+const readyWait = wrapPromise(fetch('/api/readywait'));
 
 function OutletWrapper() {
-  /*
-  const readyWaitPromise = useMemo(() => wrapPromise(fetch('/readywait')), []);
-
-  readyWaitPromise.read();
-  */
-  /*
-  useSuspenseQuery(ops.INIT, {
-    fetchPolicy: 'no-cache',
-  });*/
-
+  readyWait.read();
   return <Outlet />;
 }
 

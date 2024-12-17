@@ -95,8 +95,19 @@ k8s_resource(
 )
 
 k8s_resource(
+  'kubetail-dashboard',
+  port_forwards='4000:80',
+  objects=[
+    'kubetail-dashboard:clusterrole',
+    'kubetail-dashboard:clusterrolebinding',
+    'kubetail-dashboard:serviceaccount',
+  ],
+  resource_deps=['kubetail-shared'],
+)
+
+k8s_resource(
   'kubetail-api',
-  port_forwards='5001:80',
+  port_forwards='4001:80',
   objects=[
     'kubetail-api:serviceaccount',
     'kubetail-api:role',
@@ -112,17 +123,6 @@ k8s_resource(
     'kubetail-agent:clusterrole',
     'kubetail-agent:clusterrolebinding',
     'kubetail-agent:networkpolicy',
-  ],
-  resource_deps=['kubetail-shared'],
-)
-
-k8s_resource(
-  'kubetail-dashboard',
-  port_forwards='5000:80',
-  objects=[
-    'kubetail-dashboard:clusterrole',
-    'kubetail-dashboard:clusterrolebinding',
-    'kubetail-dashboard:serviceaccount',
   ],
   resource_deps=['kubetail-shared'],
 )

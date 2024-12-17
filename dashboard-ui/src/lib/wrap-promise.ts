@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export default function wrapPromise<T>(promise: Promise<T>) {
+type SuspenseResource<T> = {
+  read: () => T;
+};
+
+export default function wrapPromise<T>(promise: Promise<T>): SuspenseResource<T> {
   let status = 'pending';
-  let response: T
+  let response: T;
   let error: Error;
 
   const suspender = promise.then(
@@ -26,18 +30,18 @@ export default function wrapPromise<T>(promise: Promise<T>) {
       status = 'error';
       error = err;
     },
-  )
+  );
 
-  const read = () => {
-    switch (status) {
-      case 'pending':
-        throw suspender;
-      case 'error':
-        throw error;
-      default:
-        return response;
-    }
-  }
-
-  return { read };
+  return {
+    read: () => {
+      switch (status) {
+        case 'pending':
+          throw suspender;
+        case 'error':
+          throw error;
+        default:
+          return response;
+      }  
+    },
+  };
 }

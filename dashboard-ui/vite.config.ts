@@ -27,7 +27,7 @@ export default ({ mode }) => {
     server: {
       host: true,
       proxy: {
-        '^/api/auth/.*': {
+        '^/api/.*': {
           target: backendTarget,
         },
         '^/csrf-token': {

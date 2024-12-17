@@ -198,7 +198,7 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 			graphql.POST("", h.EndpointHandler)
 
 			// Note: not subject to k8sTokenRequiredMiddleware
-			dynamicRoutes.GET("/readywait", h.ReadyWaitHandler)
+			dynamicRoutes.GET("/api/readywait", h.ReadyWaitHandler)
 		}
 
 		// kubetail api proxy routes
