@@ -48,7 +48,7 @@ type Resolver struct {
 	TestDynamicClient    *dynamicFake.FakeDynamicClient
 }
 
-func (r *Resolver) K8SClientset(ctx context.Context) kubernetes.Interface {
+func (r *Resolver) K8SClientset() kubernetes.Interface {
 	if r.TestClientset != nil {
 		return r.TestClientset
 	}
@@ -72,7 +72,7 @@ func (r *Resolver) K8SClientset(ctx context.Context) kubernetes.Interface {
 	return r.clientset
 }
 
-func (r *Resolver) K8SDynamicClient(ctx context.Context) dynamic.Interface {
+func (r *Resolver) K8SDynamicClient() dynamic.Interface {
 	if r.TestDynamicClient != nil {
 		return r.TestDynamicClient
 	}
@@ -111,8 +111,8 @@ func (r *Resolver) WarmUp() {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
-		clientset := r.K8SClientset(ctx)
-		clientset.Discovery().ServerVersion()
+		clientset := r.K8SClientset()
+		clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{Limit: 1})
 		close(r.clientsetReadyCh)
 	}()
 
@@ -133,7 +133,7 @@ func (r *Resolver) WarmUp() {
 		defer cancel()
 
 		// Make a lightweight API call to list namespaces
-		client := r.K8SDynamicClient(ctx)
+		client := r.K8SDynamicClient()
 		client.Resource(namespaceGVR).List(ctx, metav1.ListOptions{Limit: 1})
 		close(r.dynamicClientReadyCh)
 	}()

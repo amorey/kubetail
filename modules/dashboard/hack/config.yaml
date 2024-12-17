@@ -1,4 +1,4 @@
-auth-mode: local
+auth-mode: token
 allowed-namespaces: []
 dashboard:
   addr: :4000

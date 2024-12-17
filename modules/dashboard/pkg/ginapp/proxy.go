@@ -15,67 +15,62 @@
 package ginapp
 
 import (
-	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	zlog "github.com/rs/zerolog/log"
-	authv1 "k8s.io/api/authentication/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/proxy"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubetail-org/kubetail/modules/shared/config"
+	sharedk8shelpers "github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
+
+	"github.com/kubetail-org/kubetail/modules/dashboard/internal/k8shelpers"
 )
 
-func newKubetailAPIProxyHandler(cfg *config.Config, prefix string, k8scfg *rest.Config) gin.HandlerFunc {
+type ProxyHandlers struct {
+	*GinApp
+}
+
+func (app *ProxyHandlers) EndpointHandler(prefix string, cfg *config.Config, k8scfg *rest.Config) (gin.HandlerFunc, error) {
 	// Handle test-mode
 	if k8scfg == nil {
 		return func(c *gin.Context) {
 			panic("not implemented")
-		}
+		}, nil
 	}
 
-	var token string
-
-	if cfg.AuthMode == config.AuthModeLocal {
-		// Create a clientset
-		clientset, err := kubernetes.NewForConfig(k8scfg)
-		if err != nil {
-			panic(err)
-		}
-
-		// Define the namespace and service account
-		namespace := "kubetail-system"
-		serviceAccountName := "kubetail-cli"
-
-		// Prepare the TokenRequest object
-		tokenRequest := &authv1.TokenRequest{
-			Spec: authv1.TokenRequestSpec{
-				ExpirationSeconds: ptr.To[int64](3600), // Token validity (e.g., 1 hour)
-				Audiences: []string{
-					"https://kubernetes.default.svc.cluster.local",
-					"http://kubetail-api.kubetail-system.svc.cluster.local",
-				},
-			},
-		}
-
-		// Request a token for the ServiceAccount
-		t, err := clientset.CoreV1().ServiceAccounts(namespace).CreateToken(context.TODO(), serviceAccountName, tokenRequest, metav1.CreateOptions{})
-		if err != nil {
-			panic(err)
-		}
-		token = t.Status.Token
+	// Add bearer token middleware
+	k8scfgCopy := rest.CopyConfig(k8scfg)
+	k8scfgCopy.WrapTransport = func(transport http.RoundTripper) http.RoundTripper {
+		return sharedk8shelpers.NewBearerTokenRoundTripper(transport)
 	}
 
-	h, err := proxy.NewProxyHandler("/", nil, k8scfg, 0, false)
+	// Initialize handler
+	h, err := proxy.NewProxyHandler("/", nil, k8scfgCopy, 0, false)
 	if err != nil {
-		zlog.Fatal().Err(err).Send()
+		return nil, err
 	}
+
+	// Initialize service account token (if necessary)
+	var sat *k8shelpers.ServiceAccountToken
+	if cfg.AuthMode == config.AuthModeLocal && k8scfg.BearerToken == "" {
+		if tmp, err := k8shelpers.NewServiceAccountToken("kubetail-system", "kubetail-cli", k8scfg, app.shutdownCh); err != nil {
+			return nil, err
+		} else {
+			sat = tmp
+		}
+	}
+
+	// Warm up handler in background
+	go func() {
+		r, _ := http.NewRequest("GET", "/", nil)
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, r)
+	}()
 
 	return func(c *gin.Context) {
 		relPath := strings.TrimPrefix(c.Request.URL.Path, prefix)
@@ -83,10 +78,10 @@ func newKubetailAPIProxyHandler(cfg *config.Config, prefix string, k8scfg *rest.
 		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
 		c.Request.URL = &urlCopy
 
-		if token != "" {
-			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token))
+		if sat != nil {
+			c.Request.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", sat.Token()))
 		}
 
 		h.ServeHTTP(c.Writer, c.Request)
-	}
+	}, nil
 }

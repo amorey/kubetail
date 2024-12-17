@@ -77,7 +77,7 @@ func (r *queryResolver) AppsV1DaemonSetsGet(ctx context.Context, name string, na
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).AppsV1().DaemonSets(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().AppsV1().DaemonSets(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // AppsV1DaemonSetsList is the resolver for the appsV1DaemonSetsList field.
@@ -95,7 +95,7 @@ func (r *queryResolver) AppsV1DeploymentsGet(ctx context.Context, name string, n
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).AppsV1().Deployments(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().AppsV1().Deployments(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // AppsV1DeploymentsList is the resolver for the appsV1DeploymentsList field.
@@ -113,7 +113,7 @@ func (r *queryResolver) AppsV1ReplicaSetsGet(ctx context.Context, name string, n
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).AppsV1().ReplicaSets(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().AppsV1().ReplicaSets(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // AppsV1ReplicaSetsList is the resolver for the appsV1ReplicaSetsList field.
@@ -131,7 +131,7 @@ func (r *queryResolver) AppsV1StatefulSetsGet(ctx context.Context, name string, 
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).AppsV1().StatefulSets(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().AppsV1().StatefulSets(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // AppsV1StatefulSetsList is the resolver for the appsV1StatefulSetsList field.
@@ -149,7 +149,7 @@ func (r *queryResolver) BatchV1CronJobsGet(ctx context.Context, name string, nam
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).BatchV1().CronJobs(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().BatchV1().CronJobs(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // BatchV1CronJobsList is the resolver for the batchV1CronJobsList field.
@@ -167,7 +167,7 @@ func (r *queryResolver) BatchV1JobsGet(ctx context.Context, name string, namespa
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).BatchV1().Jobs(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().BatchV1().Jobs(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // BatchV1JobsList is the resolver for the batchV1JobsList field.
@@ -181,7 +181,7 @@ func (r *queryResolver) BatchV1JobsList(ctx context.Context, namespace *string, 
 
 // CoreV1NamespacesList is the resolver for the coreV1NamespacesList field.
 func (r *queryResolver) CoreV1NamespacesList(ctx context.Context, options *metav1.ListOptions) (*corev1.NamespaceList, error) {
-	response, err := r.K8SClientset(ctx).CoreV1().Namespaces().List(ctx, toListOptions(options))
+	response, err := r.K8SClientset().CoreV1().Namespaces().List(ctx, toListOptions(options))
 	if err != nil {
 		return response, nil
 	}
@@ -202,7 +202,7 @@ func (r *queryResolver) CoreV1NamespacesList(ctx context.Context, options *metav
 
 // CoreV1NodesList is the resolver for the coreV1NodesList field.
 func (r *queryResolver) CoreV1NodesList(ctx context.Context, options *metav1.ListOptions) (*corev1.NodeList, error) {
-	return r.K8SClientset(ctx).CoreV1().Nodes().List(ctx, toListOptions(options))
+	return r.K8SClientset().CoreV1().Nodes().List(ctx, toListOptions(options))
 }
 
 // CoreV1PodsGet is the resolver for the coreV1PodsGet field.
@@ -211,7 +211,7 @@ func (r *queryResolver) CoreV1PodsGet(ctx context.Context, namespace *string, na
 	if err != nil {
 		return nil, err
 	}
-	return r.K8SClientset(ctx).CoreV1().Pods(ns).Get(ctx, name, toGetOptions(options))
+	return r.K8SClientset().CoreV1().Pods(ns).Get(ctx, name, toGetOptions(options))
 }
 
 // CoreV1PodsList is the resolver for the coreV1PodsList field.
@@ -237,7 +237,7 @@ func (r *queryResolver) CoreV1PodsGetLogs(ctx context.Context, namespace *string
 	opts.Timestamps = true
 
 	// execute query
-	req := r.K8SClientset(ctx).CoreV1().Pods(ns).GetLogs(name, &opts)
+	req := r.K8SClientset().CoreV1().Pods(ns).GetLogs(name, &opts)
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		return nil, err
@@ -286,7 +286,7 @@ func (r *queryResolver) PodLogHead(ctx context.Context, namespace *string, name 
 		args.First = uint(*first)
 	}
 
-	return headPodLog(ctx, r.K8SClientset(ctx), ns, name, container, args)
+	return headPodLog(ctx, r.K8SClientset(), ns, name, container, args)
 }
 
 // PodLogTail is the resolver for the podLogTail field.
@@ -308,17 +308,17 @@ func (r *queryResolver) PodLogTail(ctx context.Context, namespace *string, name 
 		args.Last = uint(*last)
 	}
 
-	return tailPodLog(ctx, r.K8SClientset(ctx), ns, name, container, args)
+	return tailPodLog(ctx, r.K8SClientset(), ns, name, container, args)
 }
 
 // LivezGet is the resolver for the livezGet field.
 func (r *queryResolver) LivezGet(ctx context.Context) (model.HealthCheckResponse, error) {
-	return getHealth(ctx, r.K8SClientset(ctx), "livez"), nil
+	return getHealth(ctx, r.K8SClientset(), "livez"), nil
 }
 
 // ReadyzGet is the resolver for the readyzGet field.
 func (r *queryResolver) ReadyzGet(ctx context.Context) (model.HealthCheckResponse, error) {
-	return getHealth(ctx, r.K8SClientset(ctx), "readyz"), nil
+	return getHealth(ctx, r.K8SClientset(), "readyz"), nil
 }
 
 // APIHealthzGet is the resolver for the apiHealthzGet field.
@@ -329,7 +329,7 @@ func (r *queryResolver) APIHealthzGet(ctx context.Context) (model.HealthCheckRes
 	}
 
 	// Get clientset
-	clientset := r.K8SClientset(ctx)
+	clientset := r.K8SClientset()
 
 	// Define the label selector
 	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
@@ -353,22 +353,6 @@ func (r *queryResolver) APIHealthzGet(ctx context.Context) (model.HealthCheckRes
 	return resp, nil
 }
 
-// ReadyWait is the resolver for the readyWait field.
-func (r *queryResolver) ReadyWait(ctx context.Context, timeout *int) (bool, error) {
-	t := 20 * time.Second
-	if timeout != nil {
-		t = time.Duration(*timeout) * time.Second
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, t)
-	defer cancel()
-
-	if err := r.WaitUntilReady(ctx); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 // Init is the resolver for the init field.
 func (r *queryResolver) Init(ctx context.Context) (model.InitResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
@@ -379,7 +363,7 @@ func (r *queryResolver) Init(ctx context.Context) (model.InitResponse, error) {
 	}
 
 	// Get clientset
-	clientset := r.K8SClientset(ctx)
+	clientset := r.K8SClientset()
 
 	// Define the label selector
 	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
@@ -446,7 +430,7 @@ func (r *subscriptionResolver) BatchV1JobsWatch(ctx context.Context, namespace *
 
 // CoreV1NamespacesWatch is the resolver for the coreV1NamespacesWatch field.
 func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, options *metav1.ListOptions) (<-chan *watch.Event, error) {
-	watchAPI, err := r.K8SClientset(ctx).CoreV1().Namespaces().Watch(ctx, toListOptions(options))
+	watchAPI, err := r.K8SClientset().CoreV1().Namespaces().Watch(ctx, toListOptions(options))
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +457,7 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, option
 
 // CoreV1NodesWatch is the resolver for the coreV1NodesWatch field.
 func (r *subscriptionResolver) CoreV1NodesWatch(ctx context.Context, options *metav1.ListOptions) (<-chan *watch.Event, error) {
-	watchAPI, err := r.K8SClientset(ctx).CoreV1().Nodes().Watch(ctx, toListOptions(options))
+	watchAPI, err := r.K8SClientset().CoreV1().Nodes().Watch(ctx, toListOptions(options))
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +484,7 @@ func (r *subscriptionResolver) CoreV1PodLogTail(ctx context.Context, namespace *
 	opts.Timestamps = true
 
 	// execute query
-	req := r.K8SClientset(ctx).CoreV1().Pods(ns).GetLogs(name, &opts)
+	req := r.K8SClientset().CoreV1().Pods(ns).GetLogs(name, &opts)
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		return nil, err
@@ -543,7 +527,7 @@ func (r *subscriptionResolver) PodLogFollow(ctx context.Context, namespace *stri
 	}
 
 	// init follow
-	inCh, err := followPodLog(ctx, r.K8SClientset(ctx), ns, name, container, args)
+	inCh, err := followPodLog(ctx, r.K8SClientset(), ns, name, container, args)
 	if err != nil {
 		return nil, err
 	}
@@ -571,12 +555,12 @@ func (r *subscriptionResolver) PodLogFollow(ctx context.Context, namespace *stri
 
 // LivezWatch is the resolver for the livezWatch field.
 func (r *subscriptionResolver) LivezWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error) {
-	return watchHealthChannel(ctx, r.K8SClientset(ctx), "livez"), nil
+	return watchHealthChannel(ctx, r.K8SClientset(), "livez"), nil
 }
 
 // ReadyzWatch is the resolver for the readyzWatch field.
 func (r *subscriptionResolver) ReadyzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error) {
-	return watchHealthChannel(ctx, r.K8SClientset(ctx), "readyz"), nil
+	return watchHealthChannel(ctx, r.K8SClientset(), "readyz"), nil
 }
 
 // APIHealthzWatch is the resolver for the apiHealthzWatch field.

@@ -702,10 +702,6 @@ type Query {
   readyzGet: HealthCheckResponse!
   apiHealthzGet: HealthCheckResponse!
 
-  readyWait(
-    timeout: Int = 20,
-  ): Boolean!
-
   """
   Miscellaneous
   """

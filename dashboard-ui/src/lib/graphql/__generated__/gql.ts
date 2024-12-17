@@ -160,7 +160,6 @@ const documents = {
     "\n  subscription KubetailAPILogMetadataListWatch($namespace: String = \"\") {\n    logMetadataWatch(namespace: $namespace) {\n      type\n      object {\n        ...LogMetadataListItemFragment\n      }\n    }\n  }\n": types.KubetailApiLogMetadataListWatchDocument,
     "\n  subscription LivezWatch {\n    livezWatch {\n      status\n      message\n      timestamp\n    }\n  }\n": types.LivezWatchDocument,
     "\n  subscription ReadyzWatch {\n    readyzWatch {\n      status\n      message\n      timestamp\n    }\n  }\n": types.ReadyzWatchDocument,
-    "\n  query ReadyWait {\n    readyWait(timeout: 20)\n  }\n": types.ReadyWaitDocument,
     "\n  query Init {\n    init {\n      kubetailAPI {\n        version\n        namespace\n        serviceName\n      }\n    }\n  }\n": types.InitDocument,
 };
 
@@ -762,10 +761,6 @@ export function gql(source: "\n  subscription LivezWatch {\n    livezWatch {\n  
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  subscription ReadyzWatch {\n    readyzWatch {\n      status\n      message\n      timestamp\n    }\n  }\n"): (typeof documents)["\n  subscription ReadyzWatch {\n    readyzWatch {\n      status\n      message\n      timestamp\n    }\n  }\n"];
-/**
- * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function gql(source: "\n  query ReadyWait {\n    readyWait(timeout: 20)\n  }\n"): (typeof documents)["\n  query ReadyWait {\n    readyWait(timeout: 20)\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

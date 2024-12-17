@@ -331,7 +331,7 @@ func listResource(r *queryResolver, ctx context.Context, namespace *string, opti
 		return err
 	}
 
-	client := r.K8SDynamicClient(ctx).Resource(gvr)
+	client := r.K8SDynamicClient().Resource(gvr)
 
 	// init namespaces
 	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)
@@ -442,7 +442,7 @@ Loop:
 
 // watchResourceMulti
 func watchResourceMulti(r *subscriptionResolver, ctx context.Context, gvr schema.GroupVersionResource, namespace *string, options *metav1.ListOptions) (<-chan *watch.Event, error) {
-	client := r.K8SDynamicClient(ctx).Resource(gvr)
+	client := r.K8SDynamicClient().Resource(gvr)
 
 	// init namespaces
 	namespaces, err := k8shelpers.ToNamespaces(r.allowedNamespaces, namespace)

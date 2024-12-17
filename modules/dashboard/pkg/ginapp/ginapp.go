@@ -199,8 +199,17 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 	// kubetail api proxy routes
 	kubetailAPI := root.Group("/kubetail-api")
 	{
+		// require token
+		if cfg.AuthMode == config.AuthModeToken {
+			kubetailAPI.Use(k8sTokenRequiredMiddleware)
+		}
+
+		h := &ProxyHandlers{app}
 		prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
-		endpointHandler := newKubetailAPIProxyHandler(cfg, prefix, k8sCfg)
+		endpointHandler, err := h.EndpointHandler(prefix, cfg, k8sCfg)
+		if err != nil {
+			return nil, err
+		}
 		kubetailAPI.Any("*path", endpointHandler)
 	}
 
