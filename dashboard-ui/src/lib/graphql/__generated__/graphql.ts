@@ -650,7 +650,6 @@ export type Query = {
   /** Logs API */
   podLogHead?: Maybe<PodLogQueryResponse>;
   podLogTail?: Maybe<PodLogQueryResponse>;
-  readyWait: Scalars['Boolean']['output'];
   readyzGet: HealthCheckResponse;
 };
 
@@ -784,11 +783,6 @@ export type QueryPodLogTailArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   namespace?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryReadyWaitArgs = {
-  timeout?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Subscription = {

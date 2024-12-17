@@ -19,7 +19,6 @@ import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MemoryRouter, Routes } from 'react-router-dom';
 
-import * as ops from '@/lib/graphql/ops';
 import { routes } from './routes';
 
 vi.mock('@/pages/home', () => ({
@@ -38,18 +37,7 @@ vi.mock('@/pages/auth/logout', () => ({
   default: () => <div>Auth-Logout</div>,
 }));
 
-const mocks: MockedResponse[] = [
-  {
-    request: {
-      query: ops.READY_WAIT,
-    },
-    result: {
-      data: {
-        readyWait: true,
-      },
-    },
-  },
-];
+const mocks: MockedResponse[] = [];
 
 const renderPage = (path: string) => (
   render(

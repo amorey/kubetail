@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/* eslint-disable @typescript-eslint/no-throw-literal */
+
 type SuspenseResource<T> = {
   read: () => T;
 };
@@ -41,7 +43,7 @@ export default function wrapPromise<T>(promise: Promise<T>): SuspenseResource<T>
           throw error;
         default:
           return response;
-      }  
+      }
     },
   };
 }

@@ -48,7 +48,7 @@ const wsClientOptions: ClientOptions = {
 export const wsClient1 = createClient({
   ...wsClientOptions,
   url: graphqlEndpoint1.replace(/^(http)/, 'ws'),
-  connectionParams: async() => ({
+  connectionParams: async () => ({
     authorization: `${await getCSRFToken()}`,
   }),
 });
@@ -56,7 +56,7 @@ export const wsClient1 = createClient({
 export const wsClient2 = createClient({
   ...wsClientOptions,
   url: graphqlEndpoint2.replace(/^(http)/, 'ws'),
-  connectionParams: async() => ({
+  connectionParams: async () => ({
     authorization: `${await getAPICSRFToken()}`,
   }),
 });

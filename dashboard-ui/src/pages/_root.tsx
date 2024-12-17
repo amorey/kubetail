@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useSuspenseQuery, useQuery } from '@apollo/client';
 import { XCircleIcon } from '@heroicons/react/24/outline';
-import { Suspense, useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import toastlib, { useToaster, resolveValue } from 'react-hot-toast';
 import type { Toast } from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
@@ -23,7 +22,6 @@ import Button from '@kubetail/ui/elements/Button';
 import Spinner from '@kubetail/ui/elements/Spinner';
 
 import Modal from '@/components/elements/Modal';
-import * as ops from '@/lib/graphql/ops';
 import { joinPaths, getBasename } from '@/lib/helpers';
 import wrapPromise from '@/lib/wrap-promise';
 
