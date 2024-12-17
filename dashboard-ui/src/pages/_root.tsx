@@ -14,7 +14,7 @@
 
 import { useSuspenseQuery, useQuery } from '@apollo/client';
 import { XCircleIcon } from '@heroicons/react/24/outline';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, use } from 'react';
 import toastlib, { useToaster, resolveValue } from 'react-hot-toast';
 import type { Toast } from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
@@ -25,6 +25,7 @@ import Spinner from '@kubetail/ui/elements/Spinner';
 import Modal from '@/components/elements/Modal';
 import * as ops from '@/lib/graphql/ops';
 import { joinPaths, getBasename } from '@/lib/helpers';
+import wrapPromise from '@/lib/wrap-promise';
 
 const QueryError = ({ toast }: { toast: Toast }) => (
   <div className="relative bg-red-100 border-2 border-red-200 p-1">
@@ -111,10 +112,18 @@ const LoadingModal = () => (
   </div>
 );
 
+function readyWait() {
+  const promise = fetch('/readywait');
+  return wrapPromise(promise);
+}
+
 function OutletWrapper() {
+  readyWait().read();
+
+  /*
   useSuspenseQuery(ops.INIT, {
     fetchPolicy: 'no-cache',
-  });
+  });*/
 
   return <Outlet />;
 }

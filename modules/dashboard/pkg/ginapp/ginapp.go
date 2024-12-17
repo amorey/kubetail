@@ -184,15 +184,29 @@ func NewGinApp(cfg *config.Config) (*GinApp, error) {
 		// graphql routes
 		graphql := dynamicRoutes.Group("/graphql")
 		{
-			h := &GraphQLHandlers{app}
-			endpointHandler := h.EndpointHandler(k8sCfg, cfg.AllowedNamespaces, csrfProtect)
-			graphql.GET("", endpointHandler)
-			graphql.POST("", endpointHandler)
+			// require token
+			if cfg.AuthMode == config.AuthModeToken {
+				graphql.Use(k8sTokenRequiredMiddleware)
+			}
+
+			h, err := NewGraphQLHandlers(app, k8sCfg, cfg.AllowedNamespaces, csrfProtect)
+			if err != nil {
+				return nil, err
+			}
+
+			dynamicRoutes.GET("/readywait", h.ReadyWaitHandler)
+			graphql.GET("", h.EndpointHandler)
+			graphql.POST("", h.EndpointHandler)
 		}
 
 		// kubetail api proxy routes
 		kubetailAPI := dynamicRoutes.Group("/kubetail-api")
 		{
+			// require token
+			if cfg.AuthMode == config.AuthModeToken {
+				graphql.Use(k8sTokenRequiredMiddleware)
+			}
+
 			h := &ProxyHandlers{app}
 			prefix := path.Join(cfg.Dashboard.BasePath, "kubetail-api")
 			endpointHandler, err := h.EndpointHandler(prefix, cfg, k8sCfg)
