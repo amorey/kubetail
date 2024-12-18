@@ -38,24 +38,15 @@ type ServiceAccountToken struct {
 }
 
 func (sat *ServiceAccountToken) Token() string {
-	sat.mu.RLock()
-	defer sat.mu.RUnlock()
-
-	if sat.latestTokenRequest == nil {
-		// wait for writer
-		sat.mu.Lock()
-		defer sat.mu.Unlock()
+	tr := sat.getTokenRequest()
+	if tr == nil {
 		return ""
 	}
-
-	return sat.latestTokenRequest.Status.Token
+	return tr.Status.Token
 }
 
 // Refresh the token
 func (sat *ServiceAccountToken) refreshToken(ctx context.Context) error {
-	sat.mu.Lock()
-	defer sat.mu.Unlock()
-
 	// Prepare the TokenRequest object
 	tokenRequest := &authv1.TokenRequest{
 		Spec: authv1.TokenRequestSpec{
@@ -68,11 +59,12 @@ func (sat *ServiceAccountToken) refreshToken(ctx context.Context) error {
 	}
 
 	// Request a token for the ServiceAccount
-	if tmp, err := sat.clientset.CoreV1().ServiceAccounts(sat.namespace).CreateToken(ctx, sat.name, tokenRequest, metav1.CreateOptions{}); err != nil {
+	val, err := sat.clientset.CoreV1().ServiceAccounts(sat.namespace).CreateToken(ctx, sat.name, tokenRequest, metav1.CreateOptions{})
+	if err != nil {
 		return err
-	} else {
-		sat.latestTokenRequest = tmp
 	}
+
+	sat.updateTokenRequest(val)
 
 	return nil
 }
@@ -87,24 +79,25 @@ func (sat *ServiceAccountToken) startBackgroundRefresh() {
 	Loop:
 		for {
 			// Refresh token
-			if err := sat.refreshToken(ctx); err != nil {
-				zlog.Error().Err(err).Send()
+			ctxChild, cancel := context.WithTimeout(ctx, 10*time.Second)
+			if err := sat.refreshToken(ctxChild); err != nil {
+				zlog.Error().Caller().Err(err).Send()
 			}
+			cancel()
 
-			// Exit if context was canceled
+			// Exit if parent context was canceled
 			if ctx.Err() != nil {
 				break Loop
 			}
 
 			// Calculate sleep time
 			sleepTime := time.Duration(30 * time.Second)
-			if sat.latestTokenRequest != nil {
-				sat.mu.RLock()
-				t := time.Until(sat.latestTokenRequest.Status.ExpirationTimestamp.Time) / 2
+			tr := sat.getTokenRequest()
+			if tr != nil {
+				t := time.Until(tr.Status.ExpirationTimestamp.Time) / 2
 				if t > 30*time.Second {
 					sleepTime = t
 				}
-				sat.mu.RUnlock()
 			}
 
 			// Wait with context awareness
@@ -120,6 +113,18 @@ func (sat *ServiceAccountToken) startBackgroundRefresh() {
 
 	// Wait for shutdown signal
 	<-sat.shutdownCh
+}
+
+func (sat *ServiceAccountToken) getTokenRequest() *authv1.TokenRequest {
+	sat.mu.RLock()
+	defer sat.mu.RUnlock()
+	return sat.latestTokenRequest
+}
+
+func (sat *ServiceAccountToken) updateTokenRequest(newVal *authv1.TokenRequest) {
+	sat.mu.Lock()
+	defer sat.mu.Unlock()
+	sat.latestTokenRequest = newVal
 }
 
 func NewServiceAccountToken(namespace string, name string, cfg *rest.Config, shutdownCh chan struct{}) (*ServiceAccountToken, error) {
