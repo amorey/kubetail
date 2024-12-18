@@ -74,9 +74,9 @@ func (app *ProxyHandlers) EndpointHandler(prefix string, cfg *config.Config, k8s
 
 	return func(c *gin.Context) {
 		relPath := strings.TrimPrefix(c.Request.URL.Path, prefix)
-		urlCopy := *c.Request.URL
-		urlCopy.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
-		c.Request.URL = &urlCopy
+		newURL := *c.Request.URL
+		newURL.Path = path.Join("/api/v1/namespaces/kubetail-system/services/kubetail-api:http/proxy", relPath)
+		c.Request.URL = &newURL
 
 		// Handle Auth
 		token := c.GetString(k8sTokenCtxKey)

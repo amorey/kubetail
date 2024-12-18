@@ -558,6 +558,71 @@ func watchHealthChannel(ctx context.Context, clientset kubernetes.Interface, end
 	return outCh
 }
 
+// getAPIHealth
+func getAPIHealth(ctx context.Context, clientset kubernetes.Interface) model.HealthCheckResponse {
+	resp := model.HealthCheckResponse{
+		Status:    model.HealthCheckStatusUnknown,
+		Timestamp: time.Now().UTC(),
+	}
+
+	// Define the label selector
+	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
+
+	// List services with the specified labels
+	services, err := clientset.CoreV1().Services("").List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		resp.Status = model.HealthCheckStatusFailure
+		return resp
+	}
+
+	// None found
+	if len(services.Items) == 0 {
+		resp.Status = model.HealthCheckStatusNotfound
+		return resp
+	}
+
+	// TODO: perform healthcheck
+	resp.Status = model.HealthCheckStatusSuccess
+	return resp
+}
+
+// watchAPIHealthChannel
+func watchAPIHealthChannel(ctx context.Context, clientset kubernetes.Interface) <-chan model.HealthCheckResponse {
+	outCh := make(chan model.HealthCheckResponse)
+
+	go func() {
+		var lastStatus model.HealthCheckStatus
+		ticker := time.NewTicker(3 * time.Second)
+
+		resp := getAPIHealth(ctx, clientset)
+		lastStatus = resp.Status
+		outCh <- resp
+
+	Loop:
+		for {
+			select {
+			case <-ctx.Done():
+				// listener closed connection
+				break Loop
+			case <-ticker.C:
+				resp := getAPIHealth(ctx, clientset)
+				if lastStatus != resp.Status {
+					lastStatus = resp.Status
+					outCh <- resp
+				}
+			}
+		}
+
+		// cleanup
+		ticker.Stop()
+		close(outCh)
+	}()
+
+	return outCh
+}
+
 // conversion helpers
 func toListOptions(options *metav1.ListOptions) metav1.ListOptions {
 	opts := metav1.ListOptions{}

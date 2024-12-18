@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -323,34 +322,7 @@ func (r *queryResolver) ReadyzGet(ctx context.Context) (model.HealthCheckRespons
 
 // APIHealthzGet is the resolver for the apiHealthzGet field.
 func (r *queryResolver) APIHealthzGet(ctx context.Context) (model.HealthCheckResponse, error) {
-	resp := model.HealthCheckResponse{
-		Status:    model.HealthCheckStatusUnknown,
-		Timestamp: time.Now().UTC(),
-	}
-
-	// Get clientset
-	clientset := r.K8SClientset()
-
-	// Define the label selector
-	labelSelector := "app.kubernetes.io/name=kubetail,app.kubernetes.io/component=api"
-
-	// List services with the specified labels
-	services, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		return resp, err
-	}
-
-	// None found
-	if len(services.Items) == 0 {
-		resp.Status = model.HealthCheckStatusNotfound
-		return resp, nil
-	}
-
-	// TODO: perform healthcheck
-	resp.Status = model.HealthCheckStatusSuccess
-	return resp, nil
+	return getAPIHealth(ctx, r.K8SClientset()), nil
 }
 
 // Init is the resolver for the init field.
@@ -565,7 +537,7 @@ func (r *subscriptionResolver) ReadyzWatch(ctx context.Context) (<-chan model.He
 
 // APIHealthzWatch is the resolver for the apiHealthzWatch field.
 func (r *subscriptionResolver) APIHealthzWatch(ctx context.Context) (<-chan model.HealthCheckResponse, error) {
-	panic(fmt.Errorf("not implemented: APIHealthzWatch - apiHealthzWatch"))
+	return watchAPIHealthChannel(ctx, r.K8SClientset()), nil
 }
 
 // AppsV1DaemonSetsWatchEvent returns AppsV1DaemonSetsWatchEventResolver implementation.

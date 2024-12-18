@@ -29,6 +29,9 @@ const HealthDot = ({ status }: { status: Status }) => {
     case Status.Unhealthy:
       color = 'red';
       break;
+    case Status.NotFound:
+      color = 'yellow';
+      break;
     case Status.Unknown:
       color = 'chrome';
       break;
@@ -44,6 +47,7 @@ const HealthDot = ({ status }: { status: Status }) => {
           'bg-chrome-300': color === 'chrome',
           'bg-red-500': color === 'red',
           'bg-green-500': color === 'green',
+          'bg-yellow-500': color === 'yellow',
         },
       )}
     />
@@ -56,6 +60,8 @@ const statusMessage = (s: ServerStatus, unknownDefault: string): string => {
       return s.message || 'Ok';
     case Status.Unhealthy:
       return s.message || 'Error';
+    case Status.NotFound:
+      return s.message || 'Not found';
     case Status.Unknown:
       return s.message || unknownDefault;
     default:
@@ -82,18 +88,29 @@ const ServerStatusWidget = ({ className }: ServerStatusProps) => {
         <HealthDot status={status} />
       </button>
       <Modal
-        className="max-w-[500px]"
+        className="max-w-[500px] pb-10"
         open={modalIsOpen}
         onClose={() => setModalIsOpen(false)}
       >
-        <Modal.Title>Server Status</Modal.Title>
+        <Modal.Title>Health Status</Modal.Title>
+        <div className="ml-[12px] mb-1">Kubetail</div>
         <DataTable>
           <DataTable.Body>
             <DataTable.Row>
-              <DataTable.DataCell className="w-[1px]">Kubetail Backend</DataTable.DataCell>
+              <DataTable.DataCell className="w-[1px]">Dashboard Backend</DataTable.DataCell>
               <DataTable.DataCell className="w-[1px]"><HealthDot status={details.backendServer.status} /></DataTable.DataCell>
               <DataTable.DataCell className="whitespace-normal">{statusMessage(details.backendServer, 'Connecting...')}</DataTable.DataCell>
             </DataTable.Row>
+            <DataTable.Row>
+              <DataTable.DataCell className="w-[1px]">Cluster Resources</DataTable.DataCell>
+              <DataTable.DataCell className="w-[1px]"><HealthDot status={details.kubetailAPI.status} /></DataTable.DataCell>
+              <DataTable.DataCell className="whitespace-normal">{statusMessage(details.kubetailAPI, 'Connecting...')}</DataTable.DataCell>
+            </DataTable.Row>
+          </DataTable.Body>
+        </DataTable>
+        <div className="mt-8 ml-[12px] mb-1">Kubernetes</div>
+        <DataTable>
+          <DataTable.Body>
             <DataTable.Row>
               <DataTable.DataCell className="w-[1px]">Kubernetes Livez</DataTable.DataCell>
               <DataTable.DataCell className="w-[1px]"><HealthDot status={details.k8sLivez.status} /></DataTable.DataCell>

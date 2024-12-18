@@ -1138,6 +1138,16 @@ export const READYZ_WATCH = gql(`
   }
 `);
 
+export const API_HEALTHZ_WATCH = gql(`
+  subscription APIHealthzWatch {
+    apiHealthzWatch {
+      status
+      message
+      timestamp
+    }
+  }
+`);
+
 export const INIT = gql(`
   query Init {
     init {

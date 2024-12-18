@@ -23,6 +23,7 @@ export const enum Status {
   Healthy = 'HEALTHY',
   Unhealthy = 'UNHEALTHY',
   Unknown = 'UNKNOWN',
+  NotFound = 'NOTFOUND',
 }
 
 export class ServerStatus {
@@ -37,18 +38,35 @@ export class ServerStatus {
   }
 
   static fromK8sHealthCheck(healthCheck: HealthCheckResponse | undefined) {
-    return new ServerStatus({
-      status: healthCheck?.status === HealthCheckStatus.Success ? Status.Healthy : Status.Unhealthy,
+    const ss = new ServerStatus({
       message: healthCheck?.message || null,
       lastUpdatedAt: healthCheck?.timestamp || null,
     });
+
+    switch (healthCheck?.status) {
+      case HealthCheckStatus.Success:
+        ss.status = Status.Healthy;
+        break;
+      case HealthCheckStatus.Notfound:
+        ss.status = Status.NotFound;
+        break;
+      default:
+        ss.status = Status.Unhealthy;
+    }
+
+    return ss;
   }
 }
 
 export function useServerStatus() {
   const [backendStatus, setBackendStatus] = useState<ServerStatus>(new ServerStatus());
+  const [apiStatus, setAPIStatus] = useState<ServerStatus>(new ServerStatus());
   const [k8sLivezStatus, setK8sLivezStatus] = useState<ServerStatus>(new ServerStatus());
   const [k8sReadyzStatus, setK8sReadyzStatus] = useState<ServerStatus>(new ServerStatus());
+
+  useSubscription(ops.API_HEALTHZ_WATCH, {
+    onData: ({ data }) => setAPIStatus(ServerStatus.fromK8sHealthCheck(data.data?.apiHealthzWatch)),
+  });
 
   useSubscription(ops.LIVEZ_WATCH, {
     onData: ({ data }) => setK8sLivezStatus(ServerStatus.fromK8sHealthCheck(data.data?.livezWatch)),
@@ -86,7 +104,7 @@ export function useServerStatus() {
     return () => fns.forEach((fn) => fn());
   }, []);
 
-  const all = [backendStatus, k8sLivezStatus, k8sReadyzStatus];
+  const all = [backendStatus, apiStatus, k8sLivezStatus, k8sReadyzStatus];
 
   let status = Status.Unknown;
   if (all.every((item) => item.status === Status.Healthy)) status = Status.Healthy;
@@ -96,6 +114,7 @@ export function useServerStatus() {
     status,
     details: {
       backendServer: backendStatus,
+      kubetailAPI: apiStatus,
       k8sLivez: k8sLivezStatus,
       k8sReadyz: k8sReadyzStatus,
     },
