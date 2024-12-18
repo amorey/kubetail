@@ -23,7 +23,7 @@ import Spinner from '@kubetail/ui/elements/Spinner';
 
 import Modal from '@/components/elements/Modal';
 import { joinPaths, getBasename } from '@/lib/helpers';
-import wrapPromise from '@/lib/wrap-promise';
+import { readyWaitFetch, wrapPromise } from '@/lib/utils';
 
 const QueryError = ({ toast }: { toast: Toast }) => (
   <div className="relative bg-red-100 border-2 border-red-200 p-1">
@@ -110,7 +110,7 @@ const LoadingModal = () => (
   </div>
 );
 
-const readyWait = wrapPromise(fetch('/api/readywait'));
+const readyWait = wrapPromise(readyWaitFetch());
 
 function OutletWrapper() {
   readyWait.read();

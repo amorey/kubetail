@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { MockedProvider } from '@apollo/client/testing';
-import type { MockedResponse } from '@apollo/client/testing';
 import { render, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -37,24 +35,25 @@ vi.mock('@/pages/auth/logout', () => ({
   default: () => <div>Auth-Logout</div>,
 }));
 
-const mocks: MockedResponse[] = [];
+vi.mock('@/lib/utils', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/utils')>();
+  return {
+    ...mod,
+    readyWaitFetch: vi.fn().mockResolvedValue({}),
+  };
+});
 
 const renderPage = (path: string) => (
   render(
-    <MockedProvider
-      mocks={mocks}
-      addTypename={false}
-    >
-      <ErrorBoundary fallback={<div>error</div>}>
-        <Suspense fallback={<div>loading...</div>}>
-          <MemoryRouter initialEntries={[path]}>
-            <Routes>
-              {routes}
-            </Routes>
-          </MemoryRouter>
-        </Suspense>
-      </ErrorBoundary>
-    </MockedProvider>,
+    <ErrorBoundary fallback={<div>error</div>}>
+      <Suspense fallback={<div>loading...</div>}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            {routes}
+          </Routes>
+        </MemoryRouter>
+      </Suspense>
+    </ErrorBoundary>,
   )
 );
 

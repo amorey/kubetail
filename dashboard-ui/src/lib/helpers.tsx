@@ -143,7 +143,7 @@ export async function getCSRFToken() {
  * Get CSRF token for API
  */
 
-let apiCSRFToken: string;
+let apiCSRFToken: string | undefined;
 
 export async function getAPICSRFToken() {
   if (apiCSRFToken === undefined) {
