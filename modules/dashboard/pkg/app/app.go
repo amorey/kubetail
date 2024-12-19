@@ -12,27 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mock
+package app
 
-import "github.com/stretchr/testify/mock"
+import (
+	"net/http"
 
-type Service struct {
-	mock.Mock
+	"github.com/gin-gonic/gin"
+)
+
+type app struct {
+	*gin.Engine
+	shutdownCh chan struct{}
 }
 
-// Mock function to authenticate a token
-func (s *Service) HasAccess(token string) (string, error) {
-	ret := s.Called(token)
+// Shutdown
+func (a *app) Shutdown() {
+	// Send shutdown signal to internal processes
+	if a.shutdownCh != nil {
+		close(a.shutdownCh)
+	}
+}
 
-	var r0 string
-	if ret.Get(0) != nil {
-		r0 = ret.Get(0).(string)
+// Create new gin app
+func NewApp() (*app, error) {
+	// Init app
+	app := &app{
+		Engine:     gin.New(),
+		shutdownCh: make(chan struct{}),
 	}
 
-	var r1 error
-	if ret.Get(1) != nil {
-		r1 = ret.Get(1).(error)
-	}
+	app.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "hello")
+	})
 
-	return r0, r1
+	return app, nil
 }
