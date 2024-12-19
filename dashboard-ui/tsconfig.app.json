@@ -37,6 +37,11 @@
         "./src/*"
       ]
     },
+
+    /* Misc */
+    "types": [
+      "vitest/globals"
+    ]
   },
   "include": [
     "src"

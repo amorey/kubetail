@@ -11,7 +11,6 @@ module.exports = {
   ignorePatterns: [
     'dist',
     'codegen.ts',
-    'vitest.setup.ts',
     '**/__generated__/*.ts',
   ],
   parser: '@typescript-eslint/parser',
