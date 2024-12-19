@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dashboard
+package graph
 
-import "embed"
+// This file will not be regenerated automatically.
+//
+// It serves as dependency injection for your app, add any dependencies you require here.
 
-//go:embed templates/*
-var TemplatesEmbedFS embed.FS
+//go:generate go run github.com/99designs/gqlgen generate
 
-//go:embed static/*
-var StaticEmbedFS embed.FS
+type Resolver struct {
+	allowedNamespaces []string
+}
 
-//go:embed website/*
-var WebsiteEmbedFS embed.FS
+// Create new Resolver instance
+func NewResolver(allowedNamespaces []string) (*Resolver, error) {
+	return &Resolver{
+		allowedNamespaces: allowedNamespaces,
+	}, nil
+}

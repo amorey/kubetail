@@ -86,7 +86,7 @@ func main() {
 			})
 
 			// Create app
-			app, err := app.NewApp()
+			app, err := app.NewApp(cfg)
 			if err != nil {
 				zlog.Fatal().Caller().Err(err).Send()
 			}
