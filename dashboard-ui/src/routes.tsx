@@ -16,6 +16,7 @@ import { Route } from 'react-router-dom';
 
 import Root from '@/pages/_root';
 import Home from '@/pages/home';
+import ErrorPage from '@/error-page';
 
 /*
 import Login from '@/pages/auth/login';
@@ -36,7 +37,7 @@ export const routes = (
 */
 
 export const routes = (
-  <Route path="/" element={<Root />}>
+  <Route path="/" element={<Root />} errorElement={<ErrorPage />}>
     <Route index element={<Home />} />
   </Route>
 );
