@@ -1,7 +1,9 @@
+import { myString } from "@/lib/x";
+
 function App() {
   return (
     <div>
-      hello
+      {myString}
     </div>
   );
 }
