@@ -6,26 +6,43 @@ package graph
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/kubetail-org/kubetail/modules/dashboard/graph/model"
+	"time"
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: CreateTodo - createTodo"))
+// SayHi is the resolver for the sayHi field.
+func (r *queryResolver) SayHi(ctx context.Context) (string, error) {
+	return "hi", nil
 }
 
-// Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: Todos - todos"))
-}
+// TestSub is the resolver for the testSub field.
+func (r *subscriptionResolver) TestSub(ctx context.Context) (<-chan string, error) {
+	outCh := make(chan string)
 
-// Mutation returns MutationResolver implementation.
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+
+	Loop:
+		for {
+			select {
+			case <-ctx.Done():
+				break Loop
+			case <-ticker.C:
+				outCh <- time.Now().Format(time.RFC3339Nano)
+			}
+		}
+
+		ticker.Stop()
+		close(outCh)
+	}()
+
+	return outCh, nil
+}
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
