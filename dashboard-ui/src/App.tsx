@@ -1,4 +1,4 @@
-import { myString } from "@/lib/x";
+import { myString } from '@/lib/x';
 
 function App() {
   return (
