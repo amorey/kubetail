@@ -5,6 +5,8 @@ import { createBrowserRouter, createRoutesFromElements, RouterProvider } from 'r
 import { getBasename } from '@/lib/util';
 import { routes } from './routes';
 
+import './index.css';
+
 const router = createBrowserRouter(createRoutesFromElements(routes), { basename: getBasename() });
 
 createRoot(document.getElementById('root')!).render(
