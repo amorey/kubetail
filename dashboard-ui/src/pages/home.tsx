@@ -14,6 +14,6 @@
 
 export default function Page() {
   return (
-    <div className="text-green-500">Home</div>
+    <div className="text-red-500">Home</div>
   );
 }
