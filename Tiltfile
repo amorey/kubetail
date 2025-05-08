@@ -53,7 +53,7 @@ local_resource(
 )
 
 local_resource(
-  'build-rgkl',
+  'rgkl-compile',
   '''
   cd crates/rgkl
 
