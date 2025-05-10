@@ -431,6 +431,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
   // define handler api
   useImperativeHandle(ref, () => {
     const scrollTo = (pos: 'first' | 'last', callback?: () => void) => {
+      /*
       // update autoscroll
       if (pos === 'last') isAutoScrollRef.current = true;
       else isAutoScrollRef.current = false;
@@ -438,6 +439,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
       scrollToRef.current = pos;
       scrollToCallbackRef.current = callback;
       setScrollToTrigger(Math.random());
+      */
     };
 
     return {
@@ -585,10 +587,30 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     return () => listOuterEl.removeEventListener('scroll', handleContentScrollX as any);
   }, [isListReady]);
 
+  // listen to inner resize events (new data)
+  useEffect(() => {
+    const listInnerEl = listInnerRef.current;
+    if (!listInnerEl) return;
+    console.log('attach resize observer', listInnerEl);
+    const observer = new ResizeObserver(() => {
+      // Exit if not auto-scrolling
+      if (!isAutoScrollRef.current) return;
+
+      // Scroll to bottom
+      listRef.current?.scrollToItem(Infinity, 'end');
+      setTimeout(() => {
+        infiniteLoaderRef.current?.resetloadMoreItemsCache(true);
+      }, 0);
+    });
+    observer.observe(listInnerEl);
+    return () => observer.disconnect();
+  }, [isListReady]);
+
   // -------------------------------------------------------------------------------------
   // Miscellaneous
   // -------------------------------------------------------------------------------------
 
+  /*
   useEffect(() => {
     if (scrollToRef.current) {
       isProgrammaticScrollRef.current = true;
@@ -612,6 +634,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
       }, 0);
     }
   }, [scrollToTrigger]);
+  */
 
   // ------------------------------------------------------------------------------------
   // Renderer
