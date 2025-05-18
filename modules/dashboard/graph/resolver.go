@@ -19,7 +19,8 @@ import (
 	"sync"
 	"time"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"golang.org/x/sync/errgroup"
+	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,21 +81,7 @@ func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespa
 	// Execute requests
 	list, err := func() (*unstructured.UnstructuredList, error) {
 		if len(nsList) == 1 {
-			resp, err := client.Namespace(nsList[0]).List(ctx, opts)
-
-			// Handle cluster scope forbidden error
-			if nsList[0] == "" && k8serrors.IsForbidden(err) {
-				// Get permitted namespaces
-				permittedNamespaces, err := r.getPermittedNamespaces(ctx, kubeContext)
-				if err != nil {
-					return nil, err
-				}
-
-				// Execute query for each namespace
-				return listResourceMulti(ctx, client, permittedNamespaces, opts)
-			}
-
-			return resp, err
+			return client.Namespace(nsList[0]).List(ctx, opts)
 		} else {
 			return listResourceMulti(ctx, client, nsList, opts)
 		}
@@ -212,15 +199,15 @@ func (r *Resolver) kubernetesAPIHealthzGet(ctx context.Context, kubeContext stri
 	return resp
 }
 
-// getPermittedNamespaces retrieves all namespaces from the Kubernetes cluster
-func (r *Resolver) getPermittedNamespaces(ctx context.Context, kubeContext string) ([]string, error) {
+// getPermittedNamespaces retrieves the namespaces that the user has access to
+func (r *Resolver) getPermittedNamespaces(ctx context.Context, kubeContext string, verb string, gvr schema.GroupVersionResource) ([]string, error) {
 	// Get client
 	clientset, err := r.cm.GetOrCreateClientset(kubeContext)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get available namespaces
+	// Get available namespaces (cross-check with `allowedNamespaces` setting)
 	availableNamespaces := r.allowedNamespaces
 	if len(availableNamespaces) == 0 {
 		// Get all namespaces from API
@@ -234,5 +221,57 @@ func (r *Resolver) getPermittedNamespaces(ctx context.Context, kubeContext strin
 		}
 	}
 
-	// TODO
+	// Define method to do self subject access review
+	doSAR := func(namespace string) (bool, error) {
+		sar := &authv1.SelfSubjectAccessReview{
+			Spec: authv1.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: &authv1.ResourceAttributes{
+					Namespace: namespace,
+					Group:     gvr.Group,
+					Verb:      verb,
+					Resource:  gvr.Resource,
+				},
+			},
+		}
+
+		result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		return result.Status.Allowed, nil
+	}
+
+	// Make individual requests in an error group
+	g, ctx := errgroup.WithContext(ctx)
+
+	ch := make(chan string, len(availableNamespaces))
+	defer close(ch)
+
+	for _, namespace := range availableNamespaces {
+		g.Go(func() error {
+			allowed, err := doSAR(namespace)
+			if err != nil {
+				return err
+			}
+
+			if allowed {
+				ch <- namespace
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// gather responses
+	permittedNamespaces := []string{}
+	for namespace := range ch {
+		permittedNamespaces = append(permittedNamespaces, namespace)
+	}
+
+	return permittedNamespaces, nil
 }
