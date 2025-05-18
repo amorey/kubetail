@@ -555,9 +555,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-testuser
 rules:
-- apiGroups: ["", apps, batch]
-  resources: [cronjobs, daemonsets, deployments, jobs, namespaces, nodes, pods, pods/log, replicasets, statefulsets]
-  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [namespaces, nodes]
+  verbs: [list, watch]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -576,17 +576,20 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-testuser
-  namespace: kubetail-system
+  namespace: default
 rules:
-- apiGroups: [discovery.k8s.io]
-  resources: [endpointslices]
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods/log]
   verbs: [list, watch]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-testuser
-  namespace: kubetail-system
+  namespace: default
 roleRef:
   kind: Role
   name: kubetail-testuser

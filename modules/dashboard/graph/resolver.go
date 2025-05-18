@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,10 +77,24 @@ func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespa
 	// Deref options
 	opts := ptr.Deref(options, metav1.ListOptions{})
 
-	// execute requests
+	// Execute requests
 	list, err := func() (*unstructured.UnstructuredList, error) {
 		if len(nsList) == 1 {
-			return client.Namespace(nsList[0]).List(ctx, opts)
+			resp, err := client.Namespace(nsList[0]).List(ctx, opts)
+
+			// Handle cluster scope forbidden error
+			if nsList[0] == "" && k8serrors.IsForbidden(err) {
+				// Get permitted namespaces
+				permittedNamespaces, err := r.getPermittedNamespaces(ctx, kubeContext)
+				if err != nil {
+					return nil, err
+				}
+
+				// Execute query for each namespace
+				return listResourceMulti(ctx, client, permittedNamespaces, opts)
+			}
+
+			return resp, err
 		} else {
 			return listResourceMulti(ctx, client, nsList, opts)
 		}
@@ -195,4 +210,29 @@ func (r *Resolver) kubernetesAPIHealthzGet(ctx context.Context, kubeContext stri
 
 	resp.Status = model.HealthCheckStatusSuccess
 	return resp
+}
+
+// getPermittedNamespaces retrieves all namespaces from the Kubernetes cluster
+func (r *Resolver) getPermittedNamespaces(ctx context.Context, kubeContext string) ([]string, error) {
+	// Get client
+	clientset, err := r.cm.GetOrCreateClientset(kubeContext)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get available namespaces
+	availableNamespaces := r.allowedNamespaces
+	if len(availableNamespaces) == 0 {
+		// Get all namespaces from API
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ns := range namespaceList.Items {
+			availableNamespaces = append(availableNamespaces, ns.Name)
+		}
+	}
+
+	// TODO
 }
