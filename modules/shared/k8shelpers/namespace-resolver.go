@@ -16,7 +16,10 @@ package k8shelpers
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"sync"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	authv1 "k8s.io/api/authorization/v1"
@@ -131,15 +134,51 @@ type permittedNamespacesProvider interface {
 type defaultPermittedNamespacesProvider struct {
 	cm                ConnectionManager
 	allowedNamespaces []string
+	cache             sync.Map
+	locks             sync.Map
+	cacheTTL          time.Duration
+}
+
+// Cache entry with expiration
+type cacheEntry struct {
+	data       []string
+	expiration time.Time
 }
 
 // Returns new instance of permitted namespaces provider
 func newPermittedNamespacesProvider(cm ConnectionManager, allowedNamespaces []string) permittedNamespacesProvider {
-	return &defaultPermittedNamespacesProvider{cm: cm, allowedNamespaces: allowedNamespaces}
+	return &defaultPermittedNamespacesProvider{
+		cm:                cm,
+		allowedNamespaces: allowedNamespaces,
+		cacheTTL:          5 * time.Minute, // Default TTL of 5 minutes
+	}
 }
 
 // Executes request, returns list
 func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeContext string) ([]string, error) {
+	// Get token (if available) for cache key
+	token, ok := ctx.Value(K8STokenCtxKey).(string)
+	if !ok {
+		token = ""
+	}
+	cacheKey := fmt.Sprintf("%s/%s", kubeContext, token)
+
+	// Get lock
+	lock, _ := p.locks.LoadOrStore(cacheKey, &sync.Mutex{})
+	mu := lock.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Check cache
+	if val, ok := p.cache.Load(cacheKey); ok {
+		entry := val.(cacheEntry)
+		if time.Now().Before(entry.expiration) {
+			return entry.data, nil
+		}
+		// Cache expired, remove it
+		p.cache.Delete(cacheKey)
+	}
+
 	// Get client
 	clientset, err := p.cm.GetOrCreateClientset(kubeContext)
 	if err != nil {
@@ -205,6 +244,12 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 	for namespace := range ch {
 		permittedNamespaces = append(permittedNamespaces, namespace)
 	}
+
+	// Store in cache
+	p.cache.Store(cacheKey, cacheEntry{
+		data:       permittedNamespaces,
+		expiration: time.Now().Add(p.cacheTTL),
+	})
 
 	return permittedNamespaces, nil
 }
