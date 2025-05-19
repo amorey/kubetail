@@ -19,8 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -198,81 +196,4 @@ func (r *Resolver) kubernetesAPIHealthzGet(ctx context.Context, kubeContext stri
 
 	resp.Status = model.HealthCheckStatusSuccess
 	return resp
-}
-
-// getPermittedNamespaces retrieves the namespaces that the user has access to
-func (r *Resolver) getPermittedNamespaces(ctx context.Context, kubeContext string, verb string, gvr schema.GroupVersionResource) ([]string, error) {
-	// Get client
-	clientset, err := r.cm.GetOrCreateClientset(kubeContext)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get available namespaces (cross-check with `allowedNamespaces` setting)
-	availableNamespaces := r.allowedNamespaces
-	if len(availableNamespaces) == 0 {
-		// Get all namespaces from API
-		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, ns := range namespaceList.Items {
-			availableNamespaces = append(availableNamespaces, ns.Name)
-		}
-	}
-
-	// Define method to do self subject access review
-	doSAR := func(namespace string) (bool, error) {
-		sar := &authv1.SelfSubjectAccessReview{
-			Spec: authv1.SelfSubjectAccessReviewSpec{
-				ResourceAttributes: &authv1.ResourceAttributes{
-					Namespace: namespace,
-					Group:     gvr.Group,
-					Verb:      verb,
-					Resource:  gvr.Resource,
-				},
-			},
-		}
-
-		result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		return result.Status.Allowed, nil
-	}
-
-	// Make individual requests in an error group
-	g, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan string, len(availableNamespaces))
-	defer close(ch)
-
-	for _, namespace := range availableNamespaces {
-		g.Go(func() error {
-			allowed, err := doSAR(namespace)
-			if err != nil {
-				return err
-			}
-
-			if allowed {
-				ch <- namespace
-			}
-
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	// gather responses
-	permittedNamespaces := []string{}
-	for namespace := range ch {
-		permittedNamespaces = append(permittedNamespaces, namespace)
-	}
-
-	return permittedNamespaces, nil
 }

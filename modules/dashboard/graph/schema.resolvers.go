@@ -366,14 +366,20 @@ func (r *queryResolver) CoreV1NamespacesList(ctx context.Context, kubeContext *s
 
 	response, err := clientset.CoreV1().Namespaces().List(ctx, opts)
 	if err != nil {
-		return response, nil
+		return nil, err
 	}
 
-	// apply app namespace filter
-	if len(r.allowedNamespaces) > 0 {
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaceList(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cross-reference response with permitted namespace list
+	if !slices.Equal(permittedNamespaces, []string{""}) {
 		items := []corev1.Namespace{}
 		for _, item := range response.Items {
-			if slices.Contains(r.allowedNamespaces, item.Name) {
+			if slices.Contains(permittedNamespaces, item.Name) {
 				items = append(items, item)
 			}
 		}

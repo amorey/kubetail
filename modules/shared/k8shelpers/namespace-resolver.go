@@ -43,6 +43,7 @@ var BypassNamespaceCheck = ptr.To("")
 type NamespaceResolver interface {
 	DerefNamespace(ctx context.Context, kubeContext string, namespace *string) (string, error)
 	DerefNamespaceToList(ctx context.Context, kubeContext string, namespace *string) ([]string, error)
+	GetPermittedNamespaceList(ctx context.Context, kubeContext string) ([]string, error)
 }
 
 // Represents DefaultNamespaceResolver struct
@@ -123,6 +124,11 @@ func (r *DefaultNamespaceResolver) DerefNamespaceToList(ctx context.Context, kub
 	}
 
 	return []string{ns}, nil
+}
+
+// Return list of permitted namespaces
+func (r *DefaultNamespaceResolver) GetPermittedNamespaceList(ctx context.Context, kubeContext string) ([]string, error) {
+	return r.nsProvider.GetList(ctx, kubeContext)
 }
 
 // Represents permittedNamespacesProvider interface
@@ -212,7 +218,7 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 			availableNamespaces = append(availableNamespaces, ns.Name)
 		}
 	}
-	fmt.Println("availableNamespaces", availableNamespaces)
+
 	// Make individual requests in an error group
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -221,7 +227,6 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 		namespace := namespace
 		g.Go(func() error {
 			allowed, err := p.doSSAR(ctx, clientset, namespace)
-			fmt.Println("namespace", namespace, "allowed", allowed)
 			if err != nil {
 				return err
 			}
