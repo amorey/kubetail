@@ -212,7 +212,7 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 			availableNamespaces = append(availableNamespaces, ns.Name)
 		}
 	}
-
+	fmt.Println("availableNamespaces", availableNamespaces)
 	// Make individual requests in an error group
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -221,6 +221,7 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 		namespace := namespace
 		g.Go(func() error {
 			allowed, err := p.doSSAR(ctx, clientset, namespace)
+			fmt.Println("namespace", namespace, "allowed", allowed)
 			if err != nil {
 				return err
 			}
