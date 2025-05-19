@@ -18,6 +18,7 @@ import (
 	"context"
 	"slices"
 
+	"golang.org/x/sync/errgroup"
 	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -201,27 +202,6 @@ func (r *DefaultNamespaceResolver) GetPermittedNamespaces(ctx context.Context, k
 	return AllNamespacesList, nil
 }
 
-// Execute self-subject-access-review
-func (r *DefaultNamespaceResolver) doSAR(ctx context.Context, clientset kubernetes.Interface, namespace string) (bool, error) {
-	sar := &authv1.SelfSubjectAccessReview{
-		Spec: authv1.SelfSubjectAccessReviewSpec{
-			ResourceAttributes: &authv1.ResourceAttributes{
-				Namespace: namespace,
-				Group:     "",
-				Verb:      "list",
-				Resource:  "pods",
-			},
-		},
-	}
-
-	result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	return result.Status.Allowed, nil
-}
-
 // Represents permittedNamespacesProvider interface
 type permittedNamespacesProvider interface {
 	GetList(ctx context.Context, kubeContext string) ([]string, error)
@@ -240,5 +220,93 @@ func newPermittedNamespacesProvider(cm ConnectionManager, allowedNamespaces []st
 
 // Executes request, returns list
 func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeContext string) ([]string, error) {
-	panic("not implemented")
+	// Get client
+	clientset, err := p.cm.GetOrCreateClientset(kubeContext)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user has access to cluster scope
+	clusterScopeAllowed, err := p.doSSAR(ctx, clientset, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// If user has access to cluster scope, return allowed namespaces
+	if clusterScopeAllowed {
+		if len(p.allowedNamespaces) != 0 {
+			return p.allowedNamespaces, nil
+		}
+		return AllNamespacesList, nil
+	}
+
+	// Otherwise, check individual namespaces
+	availableNamespaces := p.allowedNamespaces
+	if len(availableNamespaces) == 0 {
+		// Get all namespaces from API
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ns := range namespaceList.Items {
+			availableNamespaces = append(availableNamespaces, ns.Name)
+		}
+	}
+
+	// Make individual requests in an error group
+	g, ctx := errgroup.WithContext(ctx)
+
+	ch := make(chan string, len(availableNamespaces))
+	for _, namespace := range availableNamespaces {
+		namespace := namespace
+		g.Go(func() error {
+			allowed, err := p.doSSAR(ctx, clientset, namespace)
+			if err != nil {
+				return err
+			}
+
+			if allowed {
+				ch <- namespace
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		close(ch)
+		return nil, err
+	}
+	close(ch)
+
+	// gather responses
+	permittedNamespaces := []string{}
+	for namespace := range ch {
+		permittedNamespaces = append(permittedNamespaces, namespace)
+	}
+
+	return permittedNamespaces, nil
+
+}
+
+// Execute self-subject-access-review
+func (r *defaultPermittedNamespacesProvider) doSSAR(ctx context.Context, clientset kubernetes.Interface, namespace string) (bool, error) {
+	sar := &authv1.SelfSubjectAccessReview{
+		Spec: authv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authv1.ResourceAttributes{
+				Namespace: namespace,
+				Group:     "",
+				Verb:      "list",
+				Resource:  "pods",
+			},
+		},
+	}
+
+	result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return result.Status.Allowed, nil
 }
