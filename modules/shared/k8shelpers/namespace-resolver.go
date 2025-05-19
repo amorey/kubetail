@@ -29,8 +29,8 @@ import (
 
 // Represents all namespaces
 var (
-	AllNamespaces     = ""
-	AllNamespacesList = []string{""}
+	allNamespaces     = ""
+	allNamespacesList = []string{""}
 )
 
 // Use this ptr to bypass namespace checks in tests
@@ -64,7 +64,7 @@ func NewNamespaceResolver(cm ConnectionManager, allowedNamespaces []string) Name
 func (r *DefaultNamespaceResolver) DerefNamespace(ctx context.Context, kubeContext string, namespace *string) (string, error) {
 	// Bypass auth
 	if namespace == BypassNamespaceCheck {
-		return AllNamespaces, nil
+		return allNamespaces, nil
 	}
 
 	// Deref
@@ -77,7 +77,7 @@ func (r *DefaultNamespaceResolver) DerefNamespace(ctx context.Context, kubeConte
 	}
 
 	// Perform auth
-	if !slices.Equal(permittedNamespaces, AllNamespacesList) && !slices.Contains(permittedNamespaces, ns) {
+	if !slices.Equal(permittedNamespaces, allNamespacesList) && !slices.Contains(permittedNamespaces, ns) {
 		return "", errors.ErrForbidden
 	}
 
@@ -92,7 +92,7 @@ func (r *DefaultNamespaceResolver) DerefNamespace(ctx context.Context, kubeConte
 func (r *DefaultNamespaceResolver) DerefNamespaceToList(ctx context.Context, kubeContext string, namespace *string) ([]string, error) {
 	// Bypass auth
 	if namespace == BypassNamespaceCheck {
-		return AllNamespacesList, nil
+		return allNamespacesList, nil
 	}
 
 	// Deref
@@ -110,96 +110,16 @@ func (r *DefaultNamespaceResolver) DerefNamespaceToList(ctx context.Context, kub
 	}
 
 	// Handle request for all namespaces
-	if ns == AllNamespaces {
+	if ns == allNamespaces {
 		return permittedNamespaces, nil
 	}
 
 	// Perform auth
-	if !slices.Equal(permittedNamespaces, AllNamespacesList) && !slices.Contains(permittedNamespaces, ns) {
+	if !slices.Equal(permittedNamespaces, allNamespacesList) && !slices.Contains(permittedNamespaces, ns) {
 		return nil, errors.ErrForbidden
 	}
 
 	return []string{ns}, nil
-}
-
-// Returns list of permitted namespaces
-func (r *DefaultNamespaceResolver) GetPermittedNamespaces(ctx context.Context, kubeContext string) ([]string, error) {
-	/*
-		// Get bearer token (if any)
-		//token, ok := ctx.Value(K8STokenCtxKey).(string)
-		//if !ok {
-		//	token = ""
-		//}
-
-		// Get client
-		clientset, err := r.cm.GetOrCreateClientset(kubeContext)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if user has access to cluster scope
-		clusterScopeAllowed, err := r.doSAR(ctx, clientset, "")
-		if err != nil {
-			return nil, err
-		}
-
-		// If user has access to cluster scope, return allowed namespaces
-		if clusterScopeAllowed {
-			if len(allowedNamespaces) != 0 {
-				return allowedNamespaces, nil
-			}
-			return []string{""}, nil
-		}
-
-		// Otherwise, check individual namespaces
-		availableNamespaces := allowedNamespaces
-		if len(availableNamespaces) == 0 {
-			// Get all namespaces from API
-			namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-			if err != nil {
-				return nil, err
-			}
-
-			for _, ns := range namespaceList.Items {
-				availableNamespaces = append(availableNamespaces, ns.Name)
-			}
-		}
-
-		// Make individual requests in an error group
-		g, ctx := errgroup.WithContext(ctx)
-
-		ch := make(chan string, len(availableNamespaces))
-		for _, namespace := range availableNamespaces {
-			namespace := namespace
-			g.Go(func() error {
-				allowed, err := r.doSAR(ctx, clientset, namespace)
-				if err != nil {
-					return err
-				}
-
-				if allowed {
-					ch <- namespace
-				}
-
-				return nil
-			})
-		}
-
-		if err := g.Wait(); err != nil {
-			close(ch)
-			return nil, err
-		}
-		close(ch)
-
-		// gather responses
-		permittedNamespaces := []string{}
-		for namespace := range ch {
-			permittedNamespaces = append(permittedNamespaces, namespace)
-		}
-
-		return permittedNamespaces, nil
-	*/
-	return AllNamespacesList, nil
 }
 
 // Represents permittedNamespacesProvider interface
@@ -237,7 +157,7 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 		if len(p.allowedNamespaces) != 0 {
 			return p.allowedNamespaces, nil
 		}
-		return AllNamespacesList, nil
+		return allNamespacesList, nil
 	}
 
 	// Otherwise, check individual namespaces
@@ -287,7 +207,6 @@ func (p *defaultPermittedNamespacesProvider) GetList(ctx context.Context, kubeCo
 	}
 
 	return permittedNamespaces, nil
-
 }
 
 // Execute self-subject-access-review
