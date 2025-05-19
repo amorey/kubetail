@@ -33,10 +33,14 @@ func TestAllowedNamespacesGetQueries(t *testing.T) {
 	cm.On("GetDefaultNamespace", mock.Anything).Return("default")
 	cm.On("DerefKubeContext", mock.Anything).Return("")
 
+	// Init namespace resolver
+	nr := &k8shelpersmock.MockNamespaceResolver{}
+	nr.On("DerefNamespace", mock.Anything, mock.Anything, mock.Anything).Return("", errors.ErrForbidden)
+
 	// Init resolver
 	r := &queryResolver{&Resolver{
-		allowedNamespaces: []string{"ns1", "ns2"},
-		cm:                cm,
+		cm: cm,
+		nr: nr,
 	}}
 
 	// Table-driven tests
@@ -52,34 +56,38 @@ func TestAllowedNamespacesGetQueries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := r.AppsV1DaemonSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1DeploymentsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1ReplicaSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1StatefulSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.BatchV1CronJobsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.BatchV1JobsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.CoreV1PodsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespace", mock.Anything, "", tt.setNamespace)
+
 		})
 	}
+
+	// Check total number of calls
+	nr.AssertNumberOfCalls(t, "DerefNamespace", 21)
 }
 
 func TestAllowedNamespacesListQueries(t *testing.T) {
@@ -88,10 +96,14 @@ func TestAllowedNamespacesListQueries(t *testing.T) {
 	cm.On("GetDefaultNamespace", mock.Anything).Return("default")
 	cm.On("DerefKubeContext", mock.Anything).Return("")
 
+	// Init namespace resolver
+	nr := &k8shelpersmock.MockNamespaceResolver{}
+	nr.On("DerefNamespaceToList", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.ErrForbidden)
+
 	// Init resolver
 	r := &queryResolver{&Resolver{
-		allowedNamespaces: []string{"ns1", "ns2"},
-		cm:                cm,
+		cm: cm,
+		nr: nr,
 	}}
 
 	// Table-driven tests
@@ -105,36 +117,38 @@ func TestAllowedNamespacesListQueries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			_, err := r.AppsV1DaemonSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1DeploymentsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1ReplicaSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.AppsV1StatefulSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.BatchV1CronJobsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.BatchV1JobsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 
 			_, err = r.CoreV1PodsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
+			nr.AssertCalled(t, "DerefNamespaceToList", mock.Anything, "", tt.setNamespace)
 		})
 	}
+
+	// Check total number of calls
+	nr.AssertNumberOfCalls(t, "DerefNamespaceToList", 14)
 }
 
 func TestDesktopOnlyRequests(t *testing.T) {

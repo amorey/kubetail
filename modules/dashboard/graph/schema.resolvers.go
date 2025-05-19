@@ -743,6 +743,13 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, kubeCo
 		return nil, err
 	}
 
+	// Get permitted namespaces
+	// TODO: this should be handled inside the watch method
+	permittedNamespaces, err := r.nr.GetPermittedNamespaceList(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
 	// Wrap proxy channel to remove namespaces that aren't allowed
 	outCh := make(chan *watch.Event)
 	go func() {
@@ -754,7 +761,7 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, kubeCo
 			}
 
 			// filter out non-authorized namespaces
-			if len(r.allowedNamespaces) == 0 || (len(r.allowedNamespaces) > 0 && slices.Contains(r.allowedNamespaces, ns.Name)) {
+			if slices.Equal(permittedNamespaces, []string{""}) || slices.Contains(permittedNamespaces, ns.Name) {
 				outCh <- ev
 			}
 		}
