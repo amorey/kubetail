@@ -28,6 +28,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/sosodev/duration"
 	appsv1 "k8s.io/api/apps/v1"
+	authv1 "k8s.io/api/authorization/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
 	gqlerrors "github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
@@ -454,4 +456,25 @@ func healthCheckStatusFromClusterAPIHealthStatus(statusIn clusterapi.HealthStatu
 	default:
 		panic("not implemented")
 	}
+}
+
+// hasAccess checks if the user has access to given (namespace, verb, resource)
+func hasAccess(ctx context.Context, clientset *kubernetes.Clientset, namespace string, verb string, gvr schema.GroupVersionResource) (bool, error) {
+	sar := &authv1.SelfSubjectAccessReview{
+		Spec: authv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authv1.ResourceAttributes{
+				Namespace: namespace,
+				Group:     gvr.Group,
+				Verb:      verb,
+				Resource:  gvr.Resource,
+			},
+		},
+	}
+
+	result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return result.Status.Allowed, nil
 }

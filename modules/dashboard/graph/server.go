@@ -49,6 +49,9 @@ type Server struct {
 
 // Create new Server instance
 func NewServer(config *config.Config, cm k8shelpers.ConnectionManager, csrfProtectMiddleware func(http.Handler) http.Handler) *Server {
+	// Init namespace resolver
+	nr := k8shelpers.NewNamespaceResolver(cm, config.AllowedNamespaces)
+
 	// Init health monitor
 	hm := clusterapi.NewHealthMonitor(config, cm)
 
@@ -56,6 +59,7 @@ func NewServer(config *config.Config, cm k8shelpers.ConnectionManager, csrfProte
 	r := &Resolver{
 		config:            config,
 		cm:                cm,
+		nr:                nr,
 		hm:                hm,
 		environment:       config.Dashboard.Environment,
 		allowedNamespaces: config.AllowedNamespaces,

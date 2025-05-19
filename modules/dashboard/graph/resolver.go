@@ -44,6 +44,7 @@ import (
 type Resolver struct {
 	config            *config.Config
 	cm                k8shelpers.ConnectionManager
+	nr                k8shelpers.NamespaceResolver
 	hm                clusterapi.HealthMonitor
 	environment       config.Environment
 	allowedNamespaces []string
@@ -57,7 +58,7 @@ func (r *Resolver) Teardown() {
 // listResource
 func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespace *string, options *metav1.ListOptions, modelPtr runtime.Object) error {
 	// Deref namespace
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContext))
+	nsList, err := r.nr.DerefNamespaceToList(ctx, kubeContext, namespace)
 	if err != nil {
 		return err
 	}
@@ -97,7 +98,7 @@ func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespa
 // watchResourceMulti
 func (r *Resolver) watchResourceMulti(ctx context.Context, kubeContext string, namespace *string, options *metav1.ListOptions, gvr schema.GroupVersionResource) (<-chan *watch.Event, error) {
 	// Deref namespace
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContext))
+	nsList, err := r.nr.DerefNamespaceToList(ctx, kubeContext, namespace)
 	if err != nil {
 		return nil, err
 	}
