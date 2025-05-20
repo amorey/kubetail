@@ -146,7 +146,7 @@ func (r *queryResolver) AppsV1DaemonSetsGet(ctx context.Context, kubeContext *st
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (r *queryResolver) AppsV1DeploymentsGet(ctx context.Context, kubeContext *s
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (r *queryResolver) AppsV1ReplicaSetsGet(ctx context.Context, kubeContext *s
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (r *queryResolver) AppsV1StatefulSetsGet(ctx context.Context, kubeContext *
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (r *queryResolver) BatchV1CronJobsGet(ctx context.Context, kubeContext *str
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func (r *queryResolver) BatchV1JobsGet(ctx context.Context, kubeContext *string,
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (r *queryResolver) CoreV1PodsGet(ctx context.Context, kubeContext *string, 
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +440,7 @@ func (r *queryResolver) CoreV1ServicesGet(ctx context.Context, kubeContext *stri
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := k8shelpers.DerefNamespace(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContextVal))
+	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}

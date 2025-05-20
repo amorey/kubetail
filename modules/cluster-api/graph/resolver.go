@@ -32,6 +32,7 @@ import (
 
 type Resolver struct {
 	cm                k8shelpers.ConnectionManager
+	pnp               k8shelpers.PermittedNamespacesProvider
 	grpcDispatcher    *grpcdispatcher.Dispatcher
 	allowedNamespaces []string
 }
