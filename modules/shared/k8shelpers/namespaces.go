@@ -16,19 +16,34 @@ package k8shelpers
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"sync"
+	"time"
 
+	"golang.org/x/sync/errgroup"
+	authv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/ptr"
 
-	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
+)
+
+// Represent permissions
+var (
+	AllNamespacesPermittedList = []string{""}
 )
 
 // Use this ptr to bypass namespace checks
 var BypassNamespaceCheck = ptr.To("")
 
-// Dereference `namespace` argument and check that it is allowed
-func DerefNamespace(allowedNamespaces []string, namespace *string, defaultNamespace string) (string, error) {
+// Permissions-aware namespace pointer dereferencer:
+//   - If namespace pointer is nil, will use given default namepace
+//   - Before returning value, will cross-reference with permitted namespaces
+//   - If all namespaces is requested ("") but user does not have cluster scope permission, will
+//     return permission error
+func DerefNamespace(permittedNamespaces []string, namespace *string, defaultNamespace string) (string, error) {
 	ns := ptr.Deref(namespace, defaultNamespace)
 
 	// bypass auth
@@ -37,33 +52,49 @@ func DerefNamespace(allowedNamespaces []string, namespace *string, defaultNamesp
 	}
 
 	// perform auth
-	if len(allowedNamespaces) > 0 && !slices.Contains(allowedNamespaces, ns) {
+	if !slices.Equal(permittedNamespaces, AllNamespacesPermittedList) && !slices.Contains(permittedNamespaces, ns) {
 		return "", errors.ErrForbidden
 	}
 
 	return ns, nil
 }
 
-// Dereference `namespace` argument, check if it's allowed, if equal to "" then return allowedNamespaes
-func DerefNamespaceToList(allowedNamespaces []string, namespace *string, defaultNamespace string) ([]string, error) {
+// Permissions-aware namespace pointer dereferencer to list:
+//   - If pointer is nil, will use given default namepace
+//   - Before returning values, will cross-reference with permitted namespaces
+//   - If all namespaces is requested ("") but user does not have cluster scope permission, will
+//     return list of permitted namespaces or permission error if none
+func DerefNamespaceToList(permittedNamespaces []string, namespace *string, defaultNamespace string) ([]string, error) {
 	ns := ptr.Deref(namespace, defaultNamespace)
 
-	// bypass auth
+	// Bypass auth
 	if namespace == BypassNamespaceCheck {
-		return []string{""}, nil
+		return AllNamespacesPermittedList, nil
 	}
 
-	// perform auth
-	if ns != "" && len(allowedNamespaces) > 0 && !slices.Contains(allowedNamespaces, ns) {
+	// If any namespace allowed, listify input and return
+	if slices.Equal(permittedNamespaces, AllNamespacesPermittedList) {
+		return []string{ns}, nil
+	}
+
+	// If user requests all namespaces, return explicit list of permitted namespaces
+	if ns == "" {
+		return permittedNamespaces, nil
+	}
+
+	// If namespace is forbidden, return error
+	if !slices.Contains(permittedNamespaces, ns) {
 		return nil, errors.ErrForbidden
 	}
 
-	// listify
-	if ns == "" && len(allowedNamespaces) > 0 {
-		return allowedNamespaces, nil
-	}
-
+	// Listify
 	return []string{ns}, nil
+}
+
+// Cache entry with expiration
+type pnpCacheEntry struct {
+	data       []string
+	expiration time.Time
 }
 
 // Represents PermittedNamespacesProvider interface
@@ -71,72 +102,144 @@ type PermittedNamespacesProvider interface {
 	List(ctx context.Context, kubeContext string) ([]string, error)
 }
 
-// Represents DesktopPermittedNamespacesProvider
-type DesktopPermittedNamespacesProvider struct {
-	cm ConnectionManager
-}
-
-// Initalize new DesktopPermittedNamespacesProvider
-func NewDesktopPermittedNamespacesProvider(cm ConnectionManager, options ...PermittedNamespacesProviderOption) *DesktopPermittedNamespacesProvider {
-	pnp := &DesktopPermittedNamespacesProvider{cm}
-
-	// Apply options
-	for _, option := range options {
-		option(pnp)
-	}
-
-	return pnp
-}
-
-// Returns list of permitted namespaces
-func (p *DesktopPermittedNamespacesProvider) List(ctx context.Context, kubeContext string) ([]string, error) {
-	panic("not implemented")
-}
-
-// Represents InClusterPermittedNamespacesProvider
-type InClusterPermittedNamespacesProvider struct {
+// Represents DefaultPermittedNamespacesProvider
+type DefaultPermittedNamespacesProvider struct {
 	cm                ConnectionManager
 	allowedNamespaces []string
+	cache             sync.Map
+	locks             sync.Map
+	cacheTTL          time.Duration
+}
+
+// Initalize new DefaultPermittedNamespacesProvider
+func NewPermittedNamespacesProvider(cm ConnectionManager, allowedNamespaces []string) *DefaultPermittedNamespacesProvider {
+	return &DefaultPermittedNamespacesProvider{
+		cm:                cm,
+		allowedNamespaces: allowedNamespaces,
+		cacheTTL:          5 * time.Minute, // Default TTL of 5 minutes
+	}
 }
 
 // Returns list of permitted namespaces
-func (p *InClusterPermittedNamespacesProvider) List(ctx context.Context, kubeContext string) ([]string, error) {
-	panic("not implemented")
-}
-
-// Initalize new InClusterPermittedNamespacesProvider
-func NewInClusterPermittedNamespacesProvider(cm ConnectionManager, options ...PermittedNamespacesProviderOption) *InClusterPermittedNamespacesProvider {
-	pnp := &InClusterPermittedNamespacesProvider{cm: cm}
-
-	// Apply options
-	for _, option := range options {
-		option(pnp)
+func (p *DefaultPermittedNamespacesProvider) List(ctx context.Context, kubeContext string) ([]string, error) {
+	// Get token (if available) for cache key
+	token, ok := ctx.Value(K8STokenCtxKey).(string)
+	if !ok {
+		token = ""
 	}
+	cacheKey := fmt.Sprintf("%s/%s", kubeContext, token)
 
-	return pnp
-}
+	// Get lock
+	lock, _ := p.locks.LoadOrStore(cacheKey, &sync.Mutex{})
+	mu := lock.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
 
-// Returns new PermittedNamespacesProvider instance
-func NewPermittedNamespacesProvider(env config.Environment, cm ConnectionManager, options ...PermittedNamespacesProviderOption) PermittedNamespacesProvider {
-	switch env {
-	case config.EnvironmentDesktop:
-		return NewDesktopPermittedNamespacesProvider(cm, options...)
-	case config.EnvironmentCluster:
-		return NewInClusterPermittedNamespacesProvider(cm, options...)
-	default:
-		panic("not supported")
-	}
-}
-
-// Represents variadic option for PermittedNamespacesProvider
-type PermittedNamespacesProviderOption func(pnp PermittedNamespacesProvider)
-
-// WithAllowedNamespaces places top-level restrictions on namespaces (cluster-only)
-func WithAllowedNamespaces(allowedNamespaces []string) PermittedNamespacesProviderOption {
-	return func(pnp PermittedNamespacesProvider) {
-		switch t := pnp.(type) {
-		case *InClusterPermittedNamespacesProvider:
-			t.allowedNamespaces = allowedNamespaces
+	// Check cache
+	if val, ok := p.cache.Load(cacheKey); ok {
+		entry := val.(pnpCacheEntry)
+		if time.Now().Before(entry.expiration) {
+			return entry.data, nil
 		}
+		// Cache expired, remove it
+		p.cache.Delete(cacheKey)
 	}
+
+	// Get clientset
+	clientset, err := p.cm.GetOrCreateClientset(kubeContext)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user has access to cluster scope
+	clusterScopeAllowed, err := p.doSSAR(ctx, clientset, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// If user has access to cluster scope, return allowed namespaces
+	if clusterScopeAllowed {
+		if len(p.allowedNamespaces) != 0 {
+			return p.allowedNamespaces, nil
+		}
+		return AllNamespacesPermittedList, nil
+	}
+
+	// Otherwise, check individual namespaces
+	var availableNamespaces []string
+	if len(p.allowedNamespaces) == 0 {
+		// Get all namespaces from API
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		availableNamespaces = make([]string, len(namespaceList.Items))
+		for i, ns := range namespaceList.Items {
+			availableNamespaces[i] = ns.Name
+		}
+	} else {
+		availableNamespaces = p.allowedNamespaces
+	}
+
+	// Make individual requests in an error group
+	g, ctx := errgroup.WithContext(ctx)
+
+	ch := make(chan string, len(availableNamespaces))
+	for _, namespace := range availableNamespaces {
+		namespace := namespace
+		g.Go(func() error {
+			allowed, err := p.doSSAR(ctx, clientset, namespace)
+			if err != nil {
+				return err
+			}
+
+			if allowed {
+				ch <- namespace
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		close(ch)
+		return nil, err
+	}
+	close(ch)
+
+	// gather responses
+	permittedNamespaces := []string{}
+	for namespace := range ch {
+		permittedNamespaces = append(permittedNamespaces, namespace)
+	}
+
+	// Store in cache
+	p.cache.Store(cacheKey, pnpCacheEntry{
+		data:       permittedNamespaces,
+		expiration: time.Now().Add(p.cacheTTL),
+	})
+
+	return permittedNamespaces, nil
+}
+
+// PermittedNamespacesProvider self-subject-access-review helper func
+func (*DefaultPermittedNamespacesProvider) doSSAR(ctx context.Context, clientset kubernetes.Interface, namespace string) (bool, error) {
+	sar := &authv1.SelfSubjectAccessReview{
+		Spec: authv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authv1.ResourceAttributes{
+				Namespace: namespace,
+				Group:     "",
+				Verb:      "list",
+				Resource:  "pods",
+			},
+		},
+	}
+
+	result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return result.Status.Allowed, nil
 }
