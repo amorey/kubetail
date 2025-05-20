@@ -15,10 +15,12 @@
 package k8shelpers
 
 import (
+	"context"
 	"slices"
 
 	"k8s.io/utils/ptr"
 
+	"github.com/kubetail-org/kubetail/modules/shared/config"
 	"github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
 )
 
@@ -62,4 +64,79 @@ func DerefNamespaceToList(allowedNamespaces []string, namespace *string, default
 	}
 
 	return []string{ns}, nil
+}
+
+// Represents PermittedNamespacesProvider interface
+type PermittedNamespacesProvider interface {
+	List(ctx context.Context, kubeContext string) ([]string, error)
+}
+
+// Represents DesktopPermittedNamespacesProvider
+type DesktopPermittedNamespacesProvider struct {
+	cm ConnectionManager
+}
+
+// Initalize new DesktopPermittedNamespacesProvider
+func NewDesktopPermittedNamespacesProvider(cm ConnectionManager, options ...PermittedNamespacesProviderOption) *DesktopPermittedNamespacesProvider {
+	pnp := &DesktopPermittedNamespacesProvider{cm}
+
+	// Apply options
+	for _, option := range options {
+		option(pnp)
+	}
+
+	return pnp
+}
+
+// Returns list of permitted namespaces
+func (p *DesktopPermittedNamespacesProvider) List(ctx context.Context, kubeContext string) ([]string, error) {
+	panic("not implemented")
+}
+
+// Represents InClusterPermittedNamespacesProvider
+type InClusterPermittedNamespacesProvider struct {
+	cm                ConnectionManager
+	allowedNamespaces []string
+}
+
+// Returns list of permitted namespaces
+func (p *InClusterPermittedNamespacesProvider) List(ctx context.Context, kubeContext string) ([]string, error) {
+	panic("not implemented")
+}
+
+// Initalize new InClusterPermittedNamespacesProvider
+func NewInClusterPermittedNamespacesProvider(cm ConnectionManager, options ...PermittedNamespacesProviderOption) *InClusterPermittedNamespacesProvider {
+	pnp := &InClusterPermittedNamespacesProvider{cm: cm}
+
+	// Apply options
+	for _, option := range options {
+		option(pnp)
+	}
+
+	return pnp
+}
+
+// Returns new PermittedNamespacesProvider instance
+func NewPermittedNamespacesProvider(env config.Environment, cm ConnectionManager, options ...PermittedNamespacesProviderOption) PermittedNamespacesProvider {
+	switch env {
+	case config.EnvironmentDesktop:
+		return NewDesktopPermittedNamespacesProvider(cm, options...)
+	case config.EnvironmentCluster:
+		return NewInClusterPermittedNamespacesProvider(cm, options...)
+	default:
+		panic("not supported")
+	}
+}
+
+// Represents variadic option for PermittedNamespacesProvider
+type PermittedNamespacesProviderOption func(pnp PermittedNamespacesProvider)
+
+// WithAllowedNamespaces places top-level restrictions on namespaces (cluster-only)
+func WithAllowedNamespaces(allowedNamespaces []string) PermittedNamespacesProviderOption {
+	return func(pnp PermittedNamespacesProvider) {
+		switch t := pnp.(type) {
+		case *InClusterPermittedNamespacesProvider:
+			t.allowedNamespaces = allowedNamespaces
+		}
+	}
 }
