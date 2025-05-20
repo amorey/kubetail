@@ -40,11 +40,11 @@ import (
 //go:generate go run github.com/99designs/gqlgen generate
 
 type Resolver struct {
-	config            *config.Config
-	cm                k8shelpers.ConnectionManager
-	hm                clusterapi.HealthMonitor
-	environment       config.Environment
-	allowedNamespaces []string
+	config      *config.Config
+	cm          k8shelpers.ConnectionManager
+	np          k8shelpers.PermittedNamespacesProvider
+	hm          clusterapi.HealthMonitor
+	environment config.Environment
 }
 
 // Teardown
@@ -55,7 +55,7 @@ func (r *Resolver) Teardown() {
 // listResource
 func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespace *string, options *metav1.ListOptions, modelPtr runtime.Object) error {
 	// Deref namespace
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContext))
+	nsList, err := r.np.DerefNamespaceToList(ctx, kubeContext, namespace)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (r *Resolver) listResource(ctx context.Context, kubeContext string, namespa
 // watchResourceMulti
 func (r *Resolver) watchResourceMulti(ctx context.Context, kubeContext string, namespace *string, options *metav1.ListOptions, gvr schema.GroupVersionResource) (<-chan *watch.Event, error) {
 	// Deref namespace
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, r.cm.GetDefaultNamespace(kubeContext))
+	nsList, err := r.np.DerefNamespaceToList(ctx, kubeContext, namespace)
 	if err != nil {
 		return nil, err
 	}

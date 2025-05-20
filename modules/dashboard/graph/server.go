@@ -49,16 +49,19 @@ type Server struct {
 
 // Create new Server instance
 func NewServer(config *config.Config, cm k8shelpers.ConnectionManager, csrfProtectMiddleware func(http.Handler) http.Handler) *Server {
+	// Init permitted namespaces provider
+	np := k8shelpers.NewPermittedNamespacesProvider(cm, config.AllowedNamespaces)
+
 	// Init health monitor
 	hm := clusterapi.NewHealthMonitor(config, cm)
 
 	// Init resolver
 	r := &Resolver{
-		config:            config,
-		cm:                cm,
-		hm:                hm,
-		environment:       config.Dashboard.Environment,
-		allowedNamespaces: config.AllowedNamespaces,
+		config:      config,
+		cm:          cm,
+		np:          np,
+		hm:          hm,
+		environment: config.Dashboard.Environment,
 	}
 
 	// Setup csrf query method

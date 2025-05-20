@@ -99,6 +99,8 @@ type pnpCacheEntry struct {
 
 // Represents PermittedNamespacesProvider interface
 type PermittedNamespacesProvider interface {
+	DerefNamespace(ctx context.Context, kubeContext string, namespace *string) (string, error)
+	DerefNamespaceToList(ctx context.Context, kubeContext string, namespace *string) ([]string, error)
 	List(ctx context.Context, kubeContext string) ([]string, error)
 }
 
@@ -118,6 +120,26 @@ func NewPermittedNamespacesProvider(cm ConnectionManager, allowedNamespaces []st
 		allowedNamespaces: allowedNamespaces,
 		cacheTTL:          5 * time.Minute, // Default TTL of 5 minutes
 	}
+}
+
+// Convenience method for calling DerefNamespace()
+func (p *DefaultPermittedNamespacesProvider) DerefNamespace(ctx context.Context, kubeContext string, namespace *string) (string, error) {
+	// Get permitted namespaces
+	permittedNamespaces, err := p.List(ctx, kubeContext)
+	if err != nil {
+		return "", err
+	}
+	return DerefNamespace(permittedNamespaces, namespace, p.cm.GetDefaultNamespace(kubeContext))
+}
+
+// Convenience method for calling DerefNamespaceToList()
+func (p *DefaultPermittedNamespacesProvider) DerefNamespaceToList(ctx context.Context, kubeContext string, namespace *string) ([]string, error) {
+	// Get permitted namespaces
+	permittedNamespaces, err := p.List(ctx, kubeContext)
+	if err != nil {
+		return nil, err
+	}
+	return DerefNamespaceToList(permittedNamespaces, namespace, p.cm.GetDefaultNamespace(kubeContext))
 }
 
 // Returns list of permitted namespaces
