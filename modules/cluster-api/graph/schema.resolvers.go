@@ -29,14 +29,7 @@ import (
 // LogMetadataList is the resolver for the logMetadataList field.
 func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*clusteragentpb.LogMetadataList, error) {
 	// Deref namespace
-	var permittedNamespaces []string
-	if len(r.allowedNamespaces) > 0 {
-		permittedNamespaces = r.allowedNamespaces
-	} else {
-		permittedNamespaces = k8shelpers.AllNamespacesPermittedList
-	}
-
-	nsList, err := k8shelpers.DerefNamespaceToList(permittedNamespaces, namespace, metav1.NamespaceDefault)
+	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, metav1.NamespaceDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -174,14 +167,7 @@ func (r *queryResolver) LogRecordsFetch(ctx context.Context, kubeContext *string
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
 func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *clusteragentpb.LogMetadataWatchEvent, error) {
 	// Deref namespaces
-	var permittedNamespaces []string
-	if len(r.allowedNamespaces) > 0 {
-		permittedNamespaces = r.allowedNamespaces
-	} else {
-		permittedNamespaces = k8shelpers.AllNamespacesPermittedList
-	}
-
-	nsList, err := k8shelpers.DerefNamespaceToList(permittedNamespaces, namespace, metav1.NamespaceDefault)
+	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, metav1.NamespaceDefault)
 	if err != nil {
 		return nil, err
 	}
