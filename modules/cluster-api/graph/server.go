@@ -47,8 +47,11 @@ type Server struct {
 
 // Create new Server instance
 func NewServer(cm k8shelpers.ConnectionManager, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string, csrfProtectMiddleware func(http.Handler) http.Handler) *Server {
+	// Init namespace resolver
+	nr := k8shelpers.NewNamespaceResolver(cm, allowedNamespaces)
+
 	// Init resolver
-	r := &Resolver{cm, grpcDispatcher, allowedNamespaces}
+	r := &Resolver{cm, nr, grpcDispatcher}
 
 	// Setup csrf query method
 	var csrfProtect http.Handler
