@@ -22,6 +22,7 @@ import (
 
 	evbus "github.com/asaskevich/EventBus"
 	zlog "github.com/rs/zerolog/log"
+	authzv1 "k8s.io/api/authorization/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -152,17 +153,41 @@ func (hm *DesktopHealthMonitor) getOrCreateWorker(ctx context.Context, kubeConte
 			return nil, err
 		}
 
-		// Check if the Kubernetes API supports EndpointSlices
-		resources, err := clientset.Discovery().ServerResourcesForGroupVersion("discovery.k8s.io/v1")
-		if err != nil || resources == nil {
-			// EndpointSlices not supported, initialize NoopHealthMonitor
-			worker = newNoopHealthMonitorWorker()
-		} else {
-			// EndpointSlices supported, initialize EndpointSlicesHealthMonitor
-			worker, err = newEndpointSlicesHealthMonitorWorker(clientset, namespace, serviceName)
+		worker, err = func() (healthMonitorWorker, error) {
+			// Check if the Kubernetes API supports EndpointSlices
+			resources, err := clientset.Discovery().ServerResourcesForGroupVersion("discovery.k8s.io/v1")
+			if err != nil || resources == nil {
+				// EndpointSlices not supported, initialize NoopHealthMonitor
+				return newNoopHealthMonitorWorker(), nil
+			}
+
+			// Check tokenrequests permissions
+			ssar := &authzv1.SelfSubjectAccessReview{
+				Spec: authzv1.SelfSubjectAccessReviewSpec{
+					ResourceAttributes: &authzv1.ResourceAttributes{
+						Namespace: namespace,
+						Verb:      "create",
+						Group:     "authentication.k8s.io",
+						Resource:  "tokenrequests",
+					},
+				},
+			}
+
+			result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, ssar, metav1.CreateOptions{})
 			if err != nil {
 				return nil, err
 			}
+
+			// If not tokenrequests not allowed, return noop
+			if !result.Status.Allowed {
+				return newNoopHealthMonitorWorker(), nil
+			}
+
+			// EndpointSlices supported and permissions ok. Initialize EndpointSlicesHealthMonitor
+			return newEndpointSlicesHealthMonitorWorker(clientset, namespace, serviceName)
+		}()
+		if err != nil {
+			return nil, err
 		}
 
 		// Add to cache
