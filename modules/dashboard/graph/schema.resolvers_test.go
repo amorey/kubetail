@@ -27,17 +27,13 @@ import (
 	k8shelpersmock "github.com/kubetail-org/kubetail/modules/shared/k8shelpers/mock"
 )
 
-func TestAllowedNamespacesGetQueries(t *testing.T) {
+func TestPermittedNamespacesGetQueries(t *testing.T) {
+	const kubeContext = "my-kube-context"
+
 	// Init connection manager
 	cm := &k8shelpersmock.MockConnectionManager{}
 	cm.On("GetDefaultNamespace", mock.Anything).Return("default")
-	cm.On("DerefKubeContext", mock.Anything).Return("")
-
-	// Init resolver
-	r := &queryResolver{&Resolver{
-		allowedNamespaces: []string{"ns1", "ns2"},
-		cm:                cm,
-	}}
+	cm.On("DerefKubeContext", mock.Anything).Return(kubeContext)
 
 	// Table-driven tests
 	tests := []struct {
@@ -51,48 +47,47 @@ func TestAllowedNamespacesGetQueries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Init namespace resolver
+			nr := &k8shelpersmock.MockNamespaceResolver{}
+			nr.On("DerefNamespace", mock.Anything, kubeContext, tt.setNamespace).Return("", errors.ErrForbidden)
+
+			// Init resolver
+			r := &queryResolver{&Resolver{
+				cm: cm,
+				nr: nr,
+			}}
+
 			_, err := r.AppsV1DaemonSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1DeploymentsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1ReplicaSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1StatefulSetsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.BatchV1CronJobsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.BatchV1JobsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.CoreV1PodsGet(context.Background(), nil, tt.setNamespace, "", nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 		})
 	}
 }
 
 func TestAllowedNamespacesListQueries(t *testing.T) {
+	const kubeContext = "my-kube-context"
+
 	// Init connection manager
 	cm := &k8shelpersmock.MockConnectionManager{}
 	cm.On("GetDefaultNamespace", mock.Anything).Return("default")
-	cm.On("DerefKubeContext", mock.Anything).Return("")
-
-	// Init resolver
-	r := &queryResolver{&Resolver{
-		allowedNamespaces: []string{"ns1", "ns2"},
-		cm:                cm,
-	}}
+	cm.On("DerefKubeContext", mock.Anything).Return(kubeContext)
 
 	// Table-driven tests
 	tests := []struct {
@@ -105,34 +100,36 @@ func TestAllowedNamespacesListQueries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Init namespace resolver
+			nr := &k8shelpersmock.MockNamespaceResolver{}
+			nr.On("DerefNamespaceToList", mock.Anything, kubeContext, tt.setNamespace).Return(nil, errors.ErrForbidden)
+
+			// Init resolver
+			r := &queryResolver{&Resolver{
+				cm: cm,
+				nr: nr,
+			}}
 
 			_, err := r.AppsV1DaemonSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1DeploymentsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1ReplicaSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.AppsV1StatefulSetsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.BatchV1CronJobsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.BatchV1JobsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 
 			_, err = r.CoreV1PodsList(context.Background(), nil, tt.setNamespace, nil)
-			assert.NotNil(t, err)
-			assert.Equal(t, err, errors.ErrForbidden)
+			assert.Error(t, errors.ErrForbidden, err)
 		})
 	}
 }

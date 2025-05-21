@@ -15,21 +15,19 @@ import (
 	"github.com/kubetail-org/kubetail/modules/cluster-api/graph/model"
 	"github.com/kubetail-org/kubetail/modules/shared/clusteragentpb"
 	gqlerrors "github.com/kubetail-org/kubetail/modules/shared/graphql/errors"
-	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 	"github.com/kubetail-org/kubetail/modules/shared/logs"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 )
 
 // LogMetadataList is the resolver for the logMetadataList field.
 func (r *queryResolver) LogMetadataList(ctx context.Context, namespace *string) (*clusteragentpb.LogMetadataList, error) {
 	// Deref namespace
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, metav1.NamespaceDefault)
+	nsList, err := r.nr.DerefNamespaceToList(ctx, "", namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +105,18 @@ func (r *queryResolver) LogRecordsFetch(ctx context.Context, kubeContext *string
 		untilTime = beforeTime.Add(-1 * time.Nanosecond)
 	}
 
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
 	// Init stream
 	sourceFilterVal := ptr.Deref(sourceFilter, model.LogSourceFilter{})
 
 	streamOpts := []logs.Option{
 		logs.WithBearerToken(token),
-		logs.WithAllowedNamespaces(r.allowedNamespaces),
+		logs.WithPermittedNamespaces(permittedNamespaces),
 		logs.WithLogFetcher(logs.NewAgentLogFetcher(r.grpcDispatcher)),
 		logs.WithSince(sinceTime),
 		logs.WithUntil(untilTime),
@@ -167,7 +171,7 @@ func (r *queryResolver) LogRecordsFetch(ctx context.Context, kubeContext *string
 // LogMetadataWatch is the resolver for the logMetadataWatch field.
 func (r *subscriptionResolver) LogMetadataWatch(ctx context.Context, namespace *string) (<-chan *clusteragentpb.LogMetadataWatchEvent, error) {
 	// Deref namespaces
-	nsList, err := k8shelpers.DerefNamespaceToList(r.allowedNamespaces, namespace, metav1.NamespaceDefault)
+	nsList, err := r.nr.DerefNamespaceToList(ctx, "", namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -258,12 +262,18 @@ func (r *subscriptionResolver) LogRecordsFollow(ctx context.Context, kubeContext
 		sinceTime = afterTime.Add(1 * time.Nanosecond)
 	}
 
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
 	// Init stream
 	sourceFilterVal := ptr.Deref(sourceFilter, model.LogSourceFilter{})
 
 	streamOpts := []logs.Option{
 		logs.WithBearerToken(token),
-		logs.WithAllowedNamespaces(r.allowedNamespaces),
+		logs.WithPermittedNamespaces(permittedNamespaces),
 		logs.WithLogFetcher(logs.NewAgentLogFetcher(r.grpcDispatcher)),
 		logs.WithAll(),
 		logs.WithFollow(true),

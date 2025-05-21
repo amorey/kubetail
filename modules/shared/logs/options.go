@@ -17,8 +17,11 @@ package logs
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
 type Option func(target any) error
@@ -231,6 +234,24 @@ func WithAllowedNamespaces(allowedNamespaces []string) Option {
 		case *sourceWatcher:
 			t.allowedNamespaces = allowedNamespaces
 		}
+		return nil
+	}
+}
+
+// WithPermittedNamespaces restricts the allowed namespaces
+func WithPermittedNamespaces(permittedNamespaces []string) Option {
+	return func(target any) error {
+		// Convert to allowed namespaces
+		var allowedNamespaces []string
+		if !slices.Equal(permittedNamespaces, k8shelpers.AllNamespacesPermittedList) {
+			allowedNamespaces = permittedNamespaces
+		}
+
+		switch t := target.(type) {
+		case *sourceWatcher:
+			t.allowedNamespaces = allowedNamespaces
+		}
+
 		return nil
 	}
 }

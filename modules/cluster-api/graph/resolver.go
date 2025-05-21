@@ -31,10 +31,9 @@ import (
 //go:generate go run github.com/99designs/gqlgen generate
 
 type Resolver struct {
-	cm                k8shelpers.ConnectionManager
-	pnp               k8shelpers.PermittedNamespacesProvider
-	grpcDispatcher    *grpcdispatcher.Dispatcher
-	allowedNamespaces []string
+	cm             k8shelpers.ConnectionManager
+	nr             k8shelpers.NamespaceResolver
+	grpcDispatcher *grpcdispatcher.Dispatcher
 }
 
 func (r *Resolver) getBearerTokenRequired(ctx context.Context) (string, error) {

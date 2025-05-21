@@ -146,7 +146,7 @@ func (r *queryResolver) AppsV1DaemonSetsGet(ctx context.Context, kubeContext *st
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (r *queryResolver) AppsV1DeploymentsGet(ctx context.Context, kubeContext *s
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (r *queryResolver) AppsV1ReplicaSetsGet(ctx context.Context, kubeContext *s
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (r *queryResolver) AppsV1StatefulSetsGet(ctx context.Context, kubeContext *
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (r *queryResolver) BatchV1CronJobsGet(ctx context.Context, kubeContext *str
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func (r *queryResolver) BatchV1JobsGet(ctx context.Context, kubeContext *string,
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -369,11 +369,17 @@ func (r *queryResolver) CoreV1NamespacesList(ctx context.Context, kubeContext *s
 		return response, nil
 	}
 
-	// apply app namespace filter
-	if len(r.allowedNamespaces) > 0 {
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply filter
+	if !slices.Equal(permittedNamespaces, k8shelpers.AllNamespacesPermittedList) {
 		items := []corev1.Namespace{}
 		for _, item := range response.Items {
-			if slices.Contains(r.allowedNamespaces, item.Name) {
+			if slices.Contains(permittedNamespaces, item.Name) {
 				items = append(items, item)
 			}
 		}
@@ -405,7 +411,7 @@ func (r *queryResolver) CoreV1PodsGet(ctx context.Context, kubeContext *string, 
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +446,7 @@ func (r *queryResolver) CoreV1ServicesGet(ctx context.Context, kubeContext *stri
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
 	// Deref namespace
-	ns, err := r.np.DerefNamespace(ctx, kubeContextVal, namespace)
+	ns, err := r.nr.DerefNamespace(ctx, kubeContextVal, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -619,13 +625,19 @@ func (r *queryResolver) LogRecordsFetch(ctx context.Context, kubeContext *string
 		token = tokenValue
 	}
 
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
 	// Init stream
 	sourceFilterVal := ptr.Deref(sourceFilter, model.LogSourceFilter{})
 
 	streamOpts := []logs.Option{
 		logs.WithKubeContext(kubeContextVal),
 		logs.WithBearerToken(token),
-		logs.WithAllowedNamespaces(r.allowedNamespaces),
+		logs.WithPermittedNamespaces(permittedNamespaces),
 		logs.WithSince(sinceTime),
 		logs.WithUntil(untilTime),
 		logs.WithGrep(ptr.Deref(grep, "")),
@@ -728,6 +740,13 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, kubeCo
 		return nil, err
 	}
 
+	// Get permitted namespaces
+	// TODO: this should be integrated more tightly with the watcher
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
 	// Deref options
 	opts := ptr.Deref(options, metav1.ListOptions{})
 
@@ -747,8 +766,8 @@ func (r *subscriptionResolver) CoreV1NamespacesWatch(ctx context.Context, kubeCo
 				break
 			}
 
-			// filter out non-authorized namespaces
-			if len(r.allowedNamespaces) == 0 || (len(r.allowedNamespaces) > 0 && slices.Contains(r.allowedNamespaces, ns.Name)) {
+			// Filter out non-authorized namespaces
+			if slices.Equal(permittedNamespaces, k8shelpers.AllNamespacesPermittedList) || slices.Contains(permittedNamespaces, ns.Name) {
 				outCh <- ev
 			}
 		}
@@ -1013,13 +1032,19 @@ func (r *subscriptionResolver) LogRecordsFollow(ctx context.Context, kubeContext
 		token = tokenValue
 	}
 
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
 	// Init stream
 	sourceFilterVal := ptr.Deref(sourceFilter, model.LogSourceFilter{})
 
 	streamOpts := []logs.Option{
 		logs.WithKubeContext(kubeContextVal),
 		logs.WithBearerToken(token),
-		logs.WithAllowedNamespaces(r.allowedNamespaces),
+		logs.WithPermittedNamespaces(permittedNamespaces),
 		logs.WithAll(),
 		logs.WithFollow(true),
 		logs.WithSince(sinceTime),
@@ -1072,7 +1097,17 @@ func (r *subscriptionResolver) LogRecordsFollow(ctx context.Context, kubeContext
 func (r *subscriptionResolver) LogSourcesWatch(ctx context.Context, kubeContext *string, sources []string) (<-chan *model.LogSourceWatchEvent, error) {
 	kubeContextVal := r.cm.DerefKubeContext(kubeContext)
 
-	sw, err := logs.NewSourceWatcher(r.cm, sources, logs.WithKubeContext(kubeContextVal))
+	// Get permitted namespaces
+	permittedNamespaces, err := r.nr.GetPermittedNamespaces(ctx, kubeContextVal)
+	if err != nil {
+		return nil, err
+	}
+
+	// Init source watcher
+	sw, err := logs.NewSourceWatcher(r.cm, sources,
+		logs.WithKubeContext(kubeContextVal),
+		logs.WithPermittedNamespaces(permittedNamespaces),
+	)
 	if err != nil {
 		return nil, err
 	}
