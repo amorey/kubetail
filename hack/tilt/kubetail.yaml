@@ -16,7 +16,7 @@ data:
       environment: cluster
       gin-mode: debug
       ui:
-        cluster-api-enabled: true
+        cluster-api-enabled: false
       session:
         secret: REPLACEME
         cookie:
@@ -594,4 +594,80 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubetail-testuser
+  namespace: default
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kubetail-scopeduser
+  namespace: default
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+rules:
+- apiGroups: [""]
+  resources: [namespaces]
+  verbs: [list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-scopeduser
+subjects:
+- kind: ServiceAccount
+  name: kubetail-scopeduser
+  namespace: default
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+  namespace: default
+rules:
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, nodes, pods, pods/log, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+  namespace: default
+roleRef:
+  kind: Role
+  name: default
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: kubetail-scopeduser
+  namespace: default
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+  namespace: kubetail-system
+rules:
+- apiGroups: [discovery.k8s.io]
+  resources: [endpointslices]
+  verbs: [list, watch]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-scopeduser
+  namespace: kubetail-system
+roleRef:
+  kind: Role
+  name: kubetail-scopeduser
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: kubetail-scopeduser
   namespace: default
