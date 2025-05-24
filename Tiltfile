@@ -184,6 +184,13 @@ k8s_resource(
     'kubetail-testuser:clusterrole',
     'kubetail-testuser:rolebinding',
     'kubetail-testuser:clusterrolebinding',
+    'kubetail-scopeduser:serviceaccount',
+    'kubetail-scopeduser:role:default',
+    'kubetail-scopeduser:role:kubetail-system',
+    'kubetail-scopeduser:clusterrole',
+    'kubetail-scopeduser:rolebinding:default',
+    'kubetail-scopeduser:rolebinding:kubetail-system',
+    'kubetail-scopeduser:clusterrolebinding',
   ],
   new_name='kubetail-shared',
 )

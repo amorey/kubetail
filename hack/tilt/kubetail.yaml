@@ -16,7 +16,7 @@ data:
       environment: cluster
       gin-mode: debug
       ui:
-        cluster-api-enabled: false
+        cluster-api-enabled: true
       session:
         secret: REPLACEME
         cookie:
@@ -608,7 +608,7 @@ metadata:
   name: kubetail-scopeduser
 rules:
 - apiGroups: [""]
-  resources: [namespaces]
+  resources: [namespaces, nodes]
   verbs: [list, watch]
 ---
 kind: ClusterRoleBinding
@@ -641,7 +641,7 @@ metadata:
   namespace: default
 roleRef:
   kind: Role
-  name: default
+  name: kubetail-scopeduser
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
