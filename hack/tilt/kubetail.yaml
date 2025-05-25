@@ -401,7 +401,8 @@ spec:
   group: api.kubetail.com
   version: v1
   groupPriorityMinimum: 100
-  versionPriority: 20  
+  versionPriority: 20
+  insecureSkipTLSVerify: true
 ---
 kind: ServiceAccount
 apiVersion: v1
