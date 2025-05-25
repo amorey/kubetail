@@ -161,14 +161,16 @@ func (hm *DesktopHealthMonitor) getOrCreateWorker(ctx context.Context, kubeConte
 				return newNoopHealthMonitorWorker(), nil
 			}
 
-			// Check tokenrequests permissions
+			// Check if user can create a token for the "kubetail-cli" serviceaccount
 			ssar := &authzv1.SelfSubjectAccessReview{
 				Spec: authzv1.SelfSubjectAccessReviewSpec{
 					ResourceAttributes: &authzv1.ResourceAttributes{
-						Namespace: namespace,
-						Verb:      "create",
-						Group:     "authentication.k8s.io",
-						Resource:  "tokenrequests",
+						Namespace:   namespace,
+						Verb:        "create",
+						Group:       "",
+						Resource:    "serviceaccounts",
+						Subresource: "token",
+						Name:        "kubetail-cli",
 					},
 				},
 			}

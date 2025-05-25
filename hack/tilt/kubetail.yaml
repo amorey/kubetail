@@ -657,6 +657,16 @@ rules:
 - apiGroups: [discovery.k8s.io]
   resources: [endpointslices]
   verbs: [list, watch]
+- apiGroups: [""]
+  resources: [services/proxy]
+  verbs: [get, create]
+  resourceNames:
+  - kubetail-cluster-api:http
+- apiGroups: [""]
+  resources: [serviceaccounts/token]
+  verbs: [create]
+  resourceNames:
+  - kubetail-cli
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
