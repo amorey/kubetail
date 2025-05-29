@@ -1,0 +1,19 @@
+basePath: /apis/api.kubetail.com/v1
+info:
+  contact: {}
+  title: Kubetail Cluster API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: returns status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+swagger: "2.0"

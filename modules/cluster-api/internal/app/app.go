@@ -26,6 +26,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
 	adapter "github.com/gwatts/gin-adapter"
+	swaggerfiles "github.com/swaggo/files"
+	ginswagger "github.com/swaggo/gin-swagger"
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 
@@ -34,6 +36,7 @@ import (
 	"github.com/kubetail-org/kubetail/modules/shared/middleware"
 
 	clusterapi "github.com/kubetail-org/kubetail/modules/cluster-api"
+	_ "github.com/kubetail-org/kubetail/modules/cluster-api/docs"
 	"github.com/kubetail-org/kubetail/modules/cluster-api/graph"
 )
 
@@ -91,7 +94,10 @@ func NewApp(cfg *config.Config) (*App, error) {
 	}
 
 	// Gzip middleware
-	app.Use(gzip.Gzip(gzip.DefaultCompression))
+	app.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{
+		"/openapi/v2",
+		"/apis/api.kubetail.com/v1",
+	})))
 
 	// Routes
 	root := app.Group(cfg.ClusterAPI.BasePath)
@@ -156,11 +162,16 @@ func NewApp(cfg *config.Config) (*App, error) {
 	})
 
 	// Health endpoint
-	root.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	root.GET("/healthz", healthzHandler)
+
+	// Raw OpenAPI V2 for the kube-aggregator
+	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
+
+	// Discovery endpoint for kube-apiserver
+	root.GET("/apis/api.kubetail.com/v1", discoveryHandler)
+
+	// Swagger endpoint
+	root.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler))
 
 	// Init staticFS
 	sub, err := fs.Sub(clusterapi.StaticEmbedFS, "static")

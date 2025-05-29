@@ -39,6 +39,9 @@ type CLI struct {
 	Config string `validate:"omitempty,file"`
 }
 
+// @title    Kubetail Cluster API
+// @version  1.0
+// @BasePath /apis/api.kubetail.com/v1
 func main() {
 	var cli CLI
 	var params []string

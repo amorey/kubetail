@@ -18,3 +18,6 @@ import "embed"
 
 //go:embed static/*
 var StaticEmbedFS embed.FS
+
+//go:embed docs/swagger.json
+var DocsEmbedFS embed.FS

@@ -50,67 +50,6 @@ data:
         cert-file:
         key-file:
 ---
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kubetail-cluster-api
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cluster-api
-data:
-  config.yaml: |
-    allowed-namespaces: []
-    cluster-api:
-      addr: :8080
-      base-path: /
-      gin-mode: debug
-      agent-dispatch-url: kubernetes://kubetail-cluster-agent:50051
-      csrf:
-        enabled: true
-        secret: REPLACEME
-        field-name: csrf_token
-        cookie:
-          name: kubetail_cluster_api_csrf
-          path: /
-          max-age: 43200
-          secure: false
-          http-only: true
-          same-site: strict
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-        access-log:
-          enabled: true
-          hide-health-checks: true
-      tls:
-        enabled: true
-        cert-file: /etc/tls/tls.crt
-        key-file: /etc/tls/tls.key
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kubetail-cluster-agent
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cluster-agent
-data:
-  config.yaml: |
-    allowed-namespaces: []
-    cluster-agent:
-      addr: :50051
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-      tls:
-        enabled: false
-        cert-file:
-        key-file:
----
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -263,6 +202,45 @@ spec:
     port: 8080
     targetPort: http
     appProtocol: http
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: cluster-api
+data:
+  config.yaml: |
+    allowed-namespaces: []
+    cluster-api:
+      addr: :8080
+      base-path: /
+      gin-mode: debug
+      agent-dispatch-url: kubernetes://kubetail-cluster-agent:50051
+      csrf:
+        enabled: true
+        secret: REPLACEME
+        field-name: csrf_token
+        cookie:
+          name: kubetail_cluster_api_csrf
+          path: /
+          max-age: 43200
+          secure: false
+          http-only: true
+          same-site: strict
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+        access-log:
+          enabled: true
+          hide-health-checks: true
+      tls:
+        enabled: true
+        cert-file: /etc/tls/tls.crt
+        key-file: /etc/tls/tls.key
 ---    
 kind: ServiceAccount
 apiVersion: v1
@@ -444,6 +422,28 @@ spec:
   caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lVTFYvRWNrTUx5SGdrOGs1dDF6aFVSMFp0MUZRd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xhM1ZpWlhSaGFXd3RZMkV3SUJjTk1qVXdOVEk1TVRNd05ESXlXaGdQTWpFeQpOVEExTURVeE16QTBNakphTUJZeEZEQVNCZ05WQkFNTUMydDFZbVYwWVdsc0xXTmhNSUlCSWpBTkJna3Foa2lHCjl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0alRJVFQyN1AwTDg1aU9qcktySnl5L1dVRm1VcW9WSXNwM2cKUnZpVitzUmRuVFVDOG54clQxOElGcUM1K3dhWkNCM2RZYi9wNUdGOVNWLzNQcDByZ1ROSlI1M3pRbkNtMVh1MwpOZ1J1bVViR3ZISVpNaWc5L1k1S0tseDNXWFBuWFY0ZTUvVmE4dHJaYmVFTURFTG5QTitZbU9Hemhud1hZR3gxCnI2YjBkbkU1aVlxWnkrUFo3eVdFeTZWMjRRcjlTSkdpdE1wUGc3ZTZKVCtTVFY0T1JWN3B6YTRVLzl4bUtvWUQKSG1nbGxpcHYyZXZkbjhwOHpIdTJkdFo0VWVXLzAyOXcyTWlHRmxOY3AreXI0bHlPVzRwSTAzSjIwTnB4VVRpdQp6dlIvTzB6Y3hmYTdwaERaK2JnWTNwdW8yN3BBS3ptc0JWdU5tR09VeGpjRkJyb0t3d0lEQVFBQm8xTXdVVEFkCkJnTlZIUTRFRmdRVWN4TWw5Zjk5SXlGS0thQlEvMjZjeUlEWXVGOHdId1lEVlIwakJCZ3dGb0FVY3hNbDlmOTkKSXlGS0thQlEvMjZjeUlEWXVGOHdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBZ3hzVUNnckl6SmZZRUFZbHY2QlJ1VXJlcXlpRlpubGVwbm9kOEdsTExWYkxzWWdhQ2orWHdOeHlqeWJICjlkWHhUbFBCR2YvRXJndUdMdG45L0d4N05uZldkaVkrOVVwNEM5VXFNR3M4YUQ1VlpiZzQvNzg1N2pIUUNyOTQKSE5QWjJGc0U3N3dFck80am9rNmQzQjlFNVZDYlE1TTMvR05zK2Z4Q2NFSTJ0a2VBUmFBWnRPd2tCSGlVRmRrKwpGdjdidjRrWGdxOWx1Rm9sYjlmUWlSZkJlcEtzK2Z4Qm5FRzFmTHhEclByT2E4WmhzdjNnS1I4WUFtRHdzbXZsCkNJNi80R0p4aXoyREk1bmtoM2RmYkFlRTlpUjlKYkJXNWZhbXF2dHdNSFJ5aXRyMmtibHFXaTNNanBLenRWODEKc0x0Q2xVeFgvWmZ6blU2Nm1zSkt2UDhNbWc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
   groupPriorityMinimum: 100
   versionPriority: 20
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: cluster-agent
+data:
+  config.yaml: |
+    allowed-namespaces: []
+    cluster-agent:
+      addr: :50051
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
 ---
 kind: ServiceAccount
 apiVersion: v1
