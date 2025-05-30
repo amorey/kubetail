@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
 	"github.com/gin-gonic/gin"
@@ -93,12 +92,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 		app.Use(middleware.LoggingMiddleware(cfg.ClusterAPI.Logging.AccessLog.HideHealthChecks))
 	}
 
-	// Gzip middleware
-	app.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{
-		"/openapi/v2",
-		"/apis/api.kubetail.com/v1",
-	})))
-
 	// Routes
 	root := app.Group(cfg.ClusterAPI.BasePath)
 
@@ -164,13 +157,18 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Health endpoint
 	root.GET("/healthz", healthzHandler)
 
-	// Raw OpenAPI V2 for the kube-aggregator
-	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
+	// Kubernetes API extension group discovery endpoint
+	root.GET("/apis", extGroupDiscoveryHandler)
 
-	// Discovery endpoint for kube-apiserver
-	// TODO: should return a metav1.APIGroup for api.kubetail.com.
-	// TODO: Rename to version discovery
-	root.GET("/apis/api.kubetail.com/v1", discoveryHandler)
+	// Kubernetes API extension version discovery endpoint
+	root.GET("/apis/api.kubetail.com/v1", extVersionDiscoveryHandler)
+
+	root.GET("/apis/api.kubetail.com/v1/dummy", dummyHandler)
+
+	// OpenAPI responses for kube-apiserver
+	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
+	root.GET("/openapi/v3", openAPIV3NilSpecHandler)
+	root.GET("/openapi/v3/apis/api.kubetail.com/v1", openAPIV3NilEndpointHandler)
 
 	// Swagger endpoint
 	root.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler))

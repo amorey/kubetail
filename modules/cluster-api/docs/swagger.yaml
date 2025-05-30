@@ -4,16 +4,16 @@ info:
   title: Kubetail Cluster API
   version: "1.0"
 paths:
-  /healthz:
+  /api.kubetail.com/v1/dummy:
     get:
       produces:
       - application/json
       responses:
         "200":
-          description: returns status
+          description: returns dummy response
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Health check
+      summary: Dummy response xxx
 swagger: "2.0"

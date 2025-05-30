@@ -15,15 +15,15 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/healthz": {
+        "/api.kubetail.com/v1/dummy": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Health check",
+                "summary": "Dummy response xxx",
                 "responses": {
                     "200": {
-                        "description": "returns status",
+                        "description": "returns dummy response",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
