@@ -168,6 +168,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
 
 	// Discovery endpoint for kube-apiserver
+	// TODO: should return a metav1.APIGroup for api.kubetail.com.
+	// TODO: Rename to version discovery
 	root.GET("/apis/api.kubetail.com/v1", discoveryHandler)
 
 	// Swagger endpoint
