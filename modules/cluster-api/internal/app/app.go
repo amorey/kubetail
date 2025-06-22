@@ -20,12 +20,13 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
 	adapter "github.com/gwatts/gin-adapter"
+	swaggerfiles "github.com/swaggo/files"
+	ginswagger "github.com/swaggo/gin-swagger"
 
 	grpcdispatcher "github.com/kubetail-org/grpc-dispatcher-go"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/kubetail-org/kubetail/modules/shared/middleware"
 
 	clusterapi "github.com/kubetail-org/kubetail/modules/cluster-api"
+	_ "github.com/kubetail-org/kubetail/modules/cluster-api/docs"
 	"github.com/kubetail-org/kubetail/modules/cluster-api/graph"
 )
 
@@ -89,9 +91,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 	if cfg.ClusterAPI.Logging.AccessLog.Enabled {
 		app.Use(middleware.LoggingMiddleware(cfg.ClusterAPI.Logging.AccessLog.HideHealthChecks))
 	}
-
-	// Gzip middleware
-	app.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	// Routes
 	root := app.Group(cfg.ClusterAPI.BasePath)
@@ -156,11 +155,23 @@ func NewApp(cfg *config.Config) (*App, error) {
 	})
 
 	// Health endpoint
-	root.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	root.GET("/healthz", healthzHandler)
+
+	// Kubernetes API extension group discovery endpoint
+	root.GET("/apis", extGroupDiscoveryHandler)
+
+	// Kubernetes API extension version discovery endpoint
+	root.GET("/apis/api.kubetail.com/v1", extVersionDiscoveryHandler)
+
+	root.GET("/apis/api.kubetail.com/v1/dummy", dummyHandler)
+
+	// OpenAPI responses for kube-apiserver
+	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
+	root.GET("/openapi/v3", openAPIV3NilSpecHandler)
+	root.GET("/openapi/v3/apis/api.kubetail.com/v1", openAPIV3NilEndpointHandler)
+
+	// Swagger endpoint
+	root.GET("/swagger/*any", ginswagger.WrapHandler(swaggerfiles.Handler))
 
 	// Init staticFS
 	sub, err := fs.Sub(clusterapi.StaticEmbedFS, "static")

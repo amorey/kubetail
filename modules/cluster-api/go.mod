@@ -12,7 +12,6 @@ replace github.com/fsnotify/fsnotify => github.com/fsnotify/fsnotify v1.8.0
 
 require (
 	github.com/99designs/gqlgen v0.17.75
-	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-contrib/requestid v1.0.5
 	github.com/gin-contrib/secure v1.1.2
 	github.com/gin-gonic/gin v1.10.1
@@ -27,6 +26,9 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
+	github.com/swaggo/files v1.0.1
+	github.com/swaggo/gin-swagger v1.6.0
+	github.com/swaggo/swag v1.16.4
 	github.com/vektah/gqlparser/v2 v2.5.28
 	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
@@ -35,6 +37,7 @@ require (
 )
 
 require (
+	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
@@ -47,10 +50,12 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
+	github.com/gin-contrib/gzip v1.2.3 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
+	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

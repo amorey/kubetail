@@ -55,71 +55,6 @@ data:
           enabled: true
           hide-health-checks: true
 ---
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kubetail-cluster-api
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cluster-api
-data:
-  config.yaml: |
-    cluster-api:
-      http:
-        addr: 0.0.0.0
-        port: 8080
-        enabled: true
-      https:
-        addr: 0.0.0.0
-        port: 8443
-        enabled: true
-        tls:
-          cert-file: /etc/ssl/certs/server.crt
-          key-file: /etc/ssl/private/server.key
-      base-path: /
-      gin-mode: debug
-      agent-dispatch-url: kubernetes://kubetail-cluster-agent:50051
-      csrf:
-        enabled: true
-        secret: REPLACEME
-        field-name: csrf_token
-        cookie:
-          name: kubetail_cluster_api_csrf
-          path: /
-          max-age: 43200
-          secure: false
-          http-only: true
-          same-site: strict
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-        access-log:
-          enabled: true
-          hide-health-checks: true
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kubetail-cluster-agent
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cluster-agent
-data:
-  config.yaml: |
-    cluster-agent:
-      addr: :50051
-      logging:
-        enabled: true
-        level: debug
-        format: pretty
-      tls:
-        enabled: false
-        cert-file:
-        key-file:
----
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -207,16 +142,6 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: kubetail-dashboard-tls
-  namespace: kubetail-system
-type: kubernetes.io/tls
-data:
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVwRENDQW93Q0NRRE50V3ZJZk1LYWREQU5CZ2txaGtpRzl3MEJBUXNGQURBVU1SSXdFQVlEVlFRRERBbHMKYjJOaGJHaHZjM1F3SGhjTk1qVXdOakV6TWpFeE1EVXdXaGNOTWpZd05qRXpNakV4TURVd1dqQVVNUkl3RUFZRApWUVFEREFsc2IyTmhiR2h2YzNRd2dnSWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUNEd0F3Z2dJS0FvSUNBUUMwCmRIMkxsMFdIRkp3S2JudnhxaDRWVTMxTDFhcVAxRXJLbnpldGhPclVoSS9yVUJVWU9yYjhZUlF2QWphTmh3cm0KTGlRbWtMb01VYzBvRHJDaFF5N3lWbC9PakxHN1RoajNtZExNRmJTWi9PbUtLUGRUNUk3SXpFbWNXV0d5SUN5Mgp0MzRlbS9hM1lwQ1ZJaC9EekZPVFNwSDJydjQ4cHpTN0p4d3hiOEhpd3NiUERqdlA5S0REQ0dnTmRFZXI2K0M0ClV2Rm93azdhazVXOVZjdUlWUjhEM1Y3R2JNQUQxTlErRllvNnUreVN6cXRVaFFwWFJVZUNJREUybmlzU0QvZ3AKeGQ5RlMveU1raFl6WFdZQkFKZUgyQVM5UWFyYkhZS29yMEhYcmh2WFJOaU4xRWMwbjJ5YVA3bGwrQlhwZURBaQpUY3J4Nlp2WjNXNElKcjZqUE1menZ0UEFnaytGYVBJQ3h5TVN6UlVkWUpSazdwK2V2Q2pHeHhRK2RqbmVQeUgzCm5xdGlKTSt2TTJjMXpwZWFTV3lpVUVzTWlDTkNlQWpKSjBQU2lGYmlWOWIwcm15a1k2SGJtc1JLVWRVYjhyQkYKVnFTWEt2TEYvOG1PcUtCVHZITFA2enA5QnFQQ0FBSEhhNU1RVE0yRFRTUDRMMFkyQk9qWktRN3g4YUFCTXRydgpLSGpiOHVidlRidFZxMEY5VU1BNXNqZjRkT1pQMi9Uc25SM1M1aUNDMWhIWmMrYXQrb2M0U052eDNiRHB5KzQ1CkJhMTN2UGdVaGJidGJxdVJvbzYzazdhV09kTHF2NmZmejU4K1JFVmIxRXJ6UlhwcUtzM1ZJZnY4WWsrblZZb08KNk1JZWoySGx3MVp2dlU1VW9HYWxpNWZpa3NEUHc1aDlzYVZhZXFOWVl3SURBUUFCTUEwR0NTcUdTSWIzRFFFQgpDd1VBQTRJQ0FRQ3VMeU9rRVB1WE53dEtaUVhyWCs2S3htMWxKeEFWUXpHaVlDNERjMUdVcjA4VzRHZ09XcU9ICnYzekxNcTZ2MngxOGgwREJTU2VYazhCdzlnZVQ2ZW85aWhmOTF5bFlKRk9iTjltdHpZTnhDZ3E2eFhmb3EzMEMKeFNIV01zM0N0TkY2Q0QxYUpMMWM3NjlvSkJUZXpiVmFxWDVMbkpBdEJZV2gxRHc2S1EzS0tmWDJyaVd4TU02egpWNFVONkRpYkZmb093OWNnblg2T0RqTVBrakUrcmo4UW5XcUlzOGZHUmtWZlhvc0s4eG1XYWN5WFBFVmlTTXhTCnB0SlJkaHZxUEhwdXA0N0NBZnVWUFJ4L0NENHBhYzJkZ21NdGNkY1ErYVd6a0NBaXBzdThvWnVobnNJdWVRSDgKRmNDVUR2cVNKR0g3aVZGTkR2UmFjNjEvYWhTVHRUY1hqWFZSeUo0WGgwQXc5eHMwaFRMQjZsZmhRU2NadWhGdwo2bG9kRGpkczl1bi9MUlNaelRJQmUvSjFJcUxENWNKK2hoZHVIdWVXa29GUzY1RGkxWkNSWGNuNVFGTDAxVDFSCnJheEtVckp6TU1OUk93RWhuNWpGWnNJQUVzcWtQd2ppVUlobGZ5ays2dHVDYUk4SERwM0lmRmt0SnJud0YwVXcKRDErYWRjWjYrU0ZKVHYxSnZNS1JKelM0Q2dMbjd3YUMxNlh6THE5UjJWZER5S3Q4UDgrVVN5Z3JWeTIvK21NRQpIUjFoWFlPNW9tMjRBRGI2aUhmN0c0VjdHdXF5K0QxTnVvcDlFOTBrRWJmalRZbE1yS05NNXY2TmN5L1o2Y1NBCk1kM2docTJFL3NOcVVGWFdUYlJ0cFlhSXczbi8wVDF1UU56ejFUYm9QcTNuZE1NU1NSRDBadz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUpRZ0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQ1N3d2dna29BZ0VBQW9JQ0FRQzBkSDJMbDBXSEZKd0sKYm52eHFoNFZVMzFMMWFxUDFFcktuemV0aE9yVWhJL3JVQlVZT3JiOFlSUXZBamFOaHdybUxpUW1rTG9NVWMwbwpEckNoUXk3eVZsL09qTEc3VGhqM21kTE1GYlNaL09tS0tQZFQ1STdJekVtY1dXR3lJQ3kydDM0ZW0vYTNZcENWCkloL0R6Rk9UU3BIMnJ2NDhwelM3Snh3eGI4SGl3c2JQRGp2UDlLRERDR2dOZEVlcjYrQzRVdkZvd2s3YWs1VzkKVmN1SVZSOEQzVjdHYk1BRDFOUStGWW82dSt5U3pxdFVoUXBYUlVlQ0lERTJuaXNTRC9ncHhkOUZTL3lNa2hZegpYV1lCQUplSDJBUzlRYXJiSFlLb3IwSFhyaHZYUk5pTjFFYzBuMnlhUDdsbCtCWHBlREFpVGNyeDZadlozVzRJCkpyNmpQTWZ6dnRQQWdrK0ZhUElDeHlNU3pSVWRZSlJrN3ArZXZDakd4eFErZGpuZVB5SDNucXRpSk0rdk0yYzEKenBlYVNXeWlVRXNNaUNOQ2VBakpKMFBTaUZiaVY5YjBybXlrWTZIYm1zUktVZFViOHJCRlZxU1hLdkxGLzhtTwpxS0JUdkhMUDZ6cDlCcVBDQUFISGE1TVFUTTJEVFNQNEwwWTJCT2paS1E3eDhhQUJNdHJ2S0hqYjh1YnZUYnRWCnEwRjlVTUE1c2pmNGRPWlAyL1RzblIzUzVpQ0MxaEhaYythdCtvYzRTTnZ4M2JEcHkrNDVCYTEzdlBnVWhiYnQKYnF1Um9vNjNrN2FXT2RMcXY2ZmZ6NTgrUkVWYjFFcnpSWHBxS3MzVklmdjhZaytuVllvTzZNSWVqMkhsdzFadgp2VTVVb0dhbGk1Zmlrc0RQdzVoOXNhVmFlcU5ZWXdJREFRQUJBb0lDQUFoRmZxdXpWMkNGdFZGVkZ5RlFwdWhiClYxYnVpRTduY0RZeGJoL3FBOG1SK2ZiVFNPUS9iTHZNeDF3UVFlZmkxTUVRUkYvd0tsYitPT1VwSnpkOUdOM0sKejhGcitZbVlYdFNhbkdyMlk3emJOdWs2VDN2czhnNktMcVdZQXo1aTh5bTg1MjhIdnh0UXpVZkl0S1FJN1p2Rwp3MElIYTJma1VpcHg5SHpmbm9lQ1hoS0htSDVEdkVxMFMvQ3g3OGNWbk10V0lmS25WVzMzYmRtcjRSUnlzbVUrCjlHVXIvdkV1QkR5RVNEM0E5MnNUUmc4dHVmZWVHVlVCbkwvZ0tDRS8waVE0Q2EvbmQ4QUp3akxBaVRocWlvZVQKZzBRWmluZFl0dkI4ZUF3bTB1ZmZJLzM4U1BkRWgzbmFpZWorb2lKOWU5ZFdzWUs5TG9PaC9yVW84WHdTQVNnNwpQOHFRUEovTTQ1WS9ZVlNQVDhUTlBFYTllQW10aExUeHMxU2Fwam83Y2tBbFZIT2ppRENaUDRBWlhwSmZpOFR4CmdJRTNvcDZJbVNCRHB4enkxSTE2RXhqSy9RMWNneDdHWU1uV2dDTWxxT3NNVXVvU1BxUEMyazhySlFISm1UU3oKdWc5Ym41Ni9XdzJwU0VSQTlyVi9Sdld6Z3FUb3hFZW9KUlBETW0zSG04WjE2TTY1MnFCRjl4SVFCcWUwcnlldQpNVy82bHRJaFZickVTOE01cUpBZzZsT1dRVkp0clJ2NUtkaW1raFQyRE1aZm5Kd1dKTGJlNDNLSm44ak9BeVNHClRXMTl5d0phdGkwaTNXVUZ1R0pRZFlaOWFBdGFsZXpqWk9nVFgxMmJ5MGkyU3FBR2tLaG1HbzQyZGVzWjl2ZXUKRVN3MVlOS3I2M3dYaFluM2N3RmhBb0lCQVFEc2RRcWNjUVRybFpseU9WcFdFNHlRUFk5cXovSzI0eSszL1lPagpsd2pMZ2pzZkRIVEtmcFYvTS9ESzFJNmhpeTlPNjRuTjQwUE5lWXBxM2xsbHdycWVVTkU5b0x4d3ZoeDNUaEVzClRSRW04MmpPcTNRM0M1OGwzYzYxWWNrZnNzQmVGeE84bURjRGxVbjRScVdNSmZ6cHo4K21NdjRZNktRcWtXa2QKZVY3dHF2NGpEY3hNOHptOXlsQW55V2xqSXA2OTN5WkMzUERJa3dNcUJudldUQnNTQU03a3pDb2JVU0RLR1lRMQpaWDM1cHNSTkR3d0pwTmlOYWtvMkYvMmZXVXVnU2Y0c2ptNkd6UUxJNHFWMThxSm9FSjhiSDVQOHpLQ2t0VFhNClMyNjRRUFBZZW5mZHJvU25CTlVGUTQ0T1YrVGJnRVI1TlNyb2lLMksvWG1haWV1dkFvSUJBUUREWG81YWhOajkKUGlXVnQwYU9mNjVpZS8zdVJRSEtHTG1mbVJjSVFPMHJxRXNGaVFkQ3o0NHBkRU04ZGdkaWYrcUxwWC85RTM3bgpROVpjVWxVdFcrSk5hcCt2QlNUVk1TL1hlNmlzc1NYcHVzRis4VzdldFRabmpOQXdQeVRPOGZsUWtVQ1V5TjZXCnNEeis1UC96Mythdi9NOWJCdWs2cEhsNWZDM0thMmg4OVhtUjdETTJ0ZFF3NUdnYXdoSkh0R25BeDJ2dDlvL08KNExYTjQraCsrV2lwbkJPMmtXeHZ5SWR6V3Z6S2ZaSDlGUGhFZHo3UGpNR2cxanNwWVVNU05qcG1lWkNlY0hJdwpvTzFNdmZoVDArb1l1ZWd5cVN5Sjd0ZW9ha1cxeEExazl1a3BPSFI3eUpva2xzYWJEbVJvUzBuNVR2eWxqd3hyCmFSOVJ6dlBoWVVlTkFvSUJBUUMwcU5mcW53ODdUNWxsaEJ4WkY2YVZyZk1ka0xQSXQ5dUZuOVFyOFFGdk81a2cKSjh3enluTStOTmtNbjBvNmNyVTZmd3RTbXdqNnZKbmMvUFVnb3A4aXhteVh3Vzg0VklnN1B4SXYzdEgwQ0pWVApFZnhBOGtndURrSVlveFdmZWxzdmlFSTBIYmdxcksxUFcrcXdJWFlTemd2QTE4VDhFd01hNHU2RTdtNXc5K3dqCnJDOGp1OUdxQ0NFbHhPVVlNU05Idm03bE54bGdwYklOTWRiNzdEbmlqMnVEczltWDlXd3YvVDdkN1NWSzBQZTYKU0h6U0FYalMweHJRS1pSRlkxdzhvMHZuandzelF2K1ZyRlR1d09zRXgyNUlzdC9HampGT3BvVHNDZFlXUU1vTgo0OFFoUTIxbWpuS1RDd0pHUXpFLzQ4aHRNd29Oa0IvSHlkSlhHSGxSQW9JQkFDdVBKWVloSUpBMkR3TTJmZEMvCnZ3M09QMnVranlXVUphN2ozekxENXgxWXhJRlRiLzhCYjl6bVF5ZHoyV21vdzQ2bk04WWxWcUlSaWZYRGxhSXIKWG1XTVpGWU5lNHpkRHFHb3ZJN2tZR09nZEF2dG9KNmZJS1l0eXkwMnB1cE5JUjFKaFhDbTZKb0lhVkVibGNXMgpJaVVTNU5pU3plVjVUbXc3dDZudUVMbnJzVk5McW8rRU11OUR2Y0paaXVIWjQ4cExyRkMrTElvZnArbGo2eTZFClJVV3J1dWwxdXd1aFZqSHVFM2JDVUk1dzRubkJiSXV5QW1udDJmcjc2SXhpOHRwdU9FUmJKZHFaeHM3WmZFaVUKY3hsWU9lRXh2dkJ5QkR0VWxuNVVXL2dxNVFsL3dOam9mUld6V0V5eUJNa01JRTRwd2tMWGhobGNzdEwycFlHVwp3dkVDZ2dFQWN1bDZ5SGJUSzBLN2pSc1dOWDZTTGM5ZVJwTmxQWkxDUCtva2Z5eWFIekFWTTczYWRpUk92OWpOCitnYWJubTJEQmlIdW1VWDVrdnhqS0hOWHhZdExBSk10MTd6ck5kaVNVTkFEdXZEWVA0RXlMdllTQ0VvYm1STEkKZldXVFVYTk8xRjJpNDJpRTJldHRqaGw4Y1dadXloeER2dTBjcmF3ZW8zUHIwaTNWOHdmVzgvdVAvRDJyc0Q1bgozK2lPMFRKa1VOWTREeFBIQStIN0l4aE0zSTd0NS80NC9TS05QNFI0TlEyeFpnZ2JMbFRORFFsdlc1dHdCWEp5ClBnOTZMYUd0dW1ENjR1Tzl2KytSVzhtNmJ4bXFFUm1SbThOV2hiNHNqbzFGRnVreC9kMCszTCtONkNsTGtnc3EKWmxVdHdSVk5ScUpjYUw1N3EvT3k4dmRWTE1UYTR3PT0KLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: kubetail-cluster-api-tls
   namespace: kubetail-system
 type: kubernetes.io/tls
 data:
@@ -314,6 +239,51 @@ spec:
       targetPort: http
       appProtocol: http
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: cluster-api
+data:
+  config.yaml: |
+    allowed-namespaces: []
+    cluster-api:
+      http:
+        addr: 0.0.0.0
+        port: 8080
+        enabled: true
+      https:
+        addr: 0.0.0.0
+        port: 8443
+        enabled: true
+        tls:
+          cert-file: /etc/ssl/certs/server.crt
+          key-file: /etc/ssl/private/server.key
+      base-path: /
+      gin-mode: debug
+      agent-dispatch-url: kubernetes://kubetail-cluster-agent:50051
+      csrf:
+        enabled: true
+        secret: REPLACEME
+        field-name: csrf_token
+        cookie:
+          name: kubetail_cluster_api_csrf
+          path: /
+          max-age: 43200
+          secure: false
+          http-only: true
+          same-site: strict
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+        access-log:
+          enabled: true
+          hide-health-checks: true
+---    
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -329,15 +299,11 @@ metadata:
   name: kubetail-cluster-api
   labels:
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cli
+    app.kubernetes.io/component: cluster-api
 rules:
-  - apiGroups: [""]
-    resources: [nodes]
-    verbs: [get, list, watch]
-  - apiGroups: ["", apps, batch]
-    resources:
-      [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
-    verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -345,7 +311,7 @@ metadata:
   name: kubetail-cluster-api
   labels:
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cli
+    app.kubernetes.io/component: cluster-api
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -385,6 +351,16 @@ subjects:
     name: kubetail-cluster-api
     namespace: kubetail-system
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubetail-cluster-api-tls
+  namespace: kubetail-system
+type: kubernetes.io/tls
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUQ0VENDQXNtZ0F3SUJBZ0lVY0psa3k1ODNlYjJxUjRqNFdsSDA2elZaa25Fd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xhM1ZpWlhSaGFXd3RZMkV3SUJjTk1qVXdOVEk1TVRReE9EQXlXaGdQTWpFeQpOVEExTURVeE5ERTRNREphTUlHSk1Rc3dDUVlEVlFRR0V3SlZVekVMTUFrR0ExVUVDQXdDVGxreEVUQVBCZ05WCkJBY01DRTVsZHlCWmIzSnJNUkV3RHdZRFZRUUtEQWhMZFdKbGRHRnBiREVVTUJJR0ExVUVDd3dMUlc1bmFXNWwKWlhKcGJtY3hNVEF2QmdOVkJBTU1LR3QxWW1WMFlXbHNMV05zZFhOMFpYSXRZWEJwTG10MVltVjBZV2xzTFhONQpjM1JsYlM1emRtTXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFDdHpYUTlDSFdGCkVQWGduWDVDVFI0NkVscG9zL0VMRkY1UEc3SEh0VGNKTWFad3hCTlV3TlRFdUpJeFRDUS93VWNsUUNsZlhLRmwKZWk4WGlWcExjTjJOeWlHWTFhQmk2YXJlOUVUM0lXSHN6YzYrdnZXdG9va0JpVXQ3bXVSSnRTYy9sUDVYWm1segp5QXE1R3JDNFVCUzJPakdxZnBBU0VYZWpSK2E1V01iR2VXMm1COGh5QmcwejFJRnVKYzJmcExCVG9PMHpqUEx2Ck85a1U2Q1htZmhqbExqU1B5N2RJSDlQZ0NLZzJMcytycjdYUFZEQ1R4VWtMZExzN0U3c3JoL0FCb0tTNk16bXgKSEtIUkVhbWFYVzU0dm14VkNkQ0xwcjI0am1FaVRKdTQ2SUQvUWVFNjZDZjh0aFR1NWxZaTRmK0wzbFR2K0RaZQpMZXltQjFUaHFXeC9BZ01CQUFHamdiQXdnYTB3YXdZRFZSMFJCR1F3WW9Jb2EzVmlaWFJoYVd3dFkyeDFjM1JsCmNpMWhjR2t1YTNWaVpYUmhhV3d0YzNsemRHVnRMbk4yWTRJMmEzVmlaWFJoYVd3dFkyeDFjM1JsY2kxaGNHa3UKYTNWaVpYUmhhV3d0YzNsemRHVnRMbk4yWXk1amJIVnpkR1Z5TG14dlkyRnNNQjBHQTFVZERnUVdCQlNaZFJCUQpjcWo1WDlUUDVwcThQMnBBejJPZUpUQWZCZ05WSFNNRUdEQVdnQlJ6RXlYMS8zMGpJVW9wb0ZEL2JweklnTmk0Clh6QU5CZ2txaGtpRzl3MEJBUXNGQUFPQ0FRRUFOWTc5QUo0Nnh1dTdTZnRBZjZhVHZ1R0E3WVNuZXo0QXlyOXcKNmx4V2Q2WlFNdU9vdGZ4ZldZbkhHN2tWM3FPdnF1Y3RwNHJjY09ZTUF6QnFhNmpFNGtZck9qR0Y5UFE5NWJvRAowVXpCc1JmUGhReGxPdllObTgwUDBLOWIyTXpJQmNtSlhxS1JxRFRhZW12cEl4YlRFNnRGa1ZRYXg0UEkwSVczCk9maGdzNWk2czRCYkhmNWZ0UkNBVS90UVoxSVBDd2dWODhlQTRGeE5uY2twTlNiSDhTWnl0SjBOaEU1MEp5dWkKTVplT3FWaVliRGpaVXpNK2Y4QjBxMnlEL3NPWmMxc245TU9SK0Z1aHlWTGhKNldmcnVpNW5NOTZES0haZm8yUgpOTjVFQis3ajZrRzV5d0xyUXZJdUdjd2p3Q2NkSXhweEIvODRhc2hNQkRJZEl1MEo5QT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRQ3R6WFE5Q0hXRkVQWGcKblg1Q1RSNDZFbHBvcy9FTEZGNVBHN0hIdFRjSk1hWnd4Qk5Vd05URXVKSXhUQ1Evd1VjbFFDbGZYS0ZsZWk4WAppVnBMY04yTnlpR1kxYUJpNmFyZTlFVDNJV0hzemM2K3Z2V3Rvb2tCaVV0N211Ukp0U2MvbFA1WFptbHp5QXE1CkdyQzRVQlMyT2pHcWZwQVNFWGVqUithNVdNYkdlVzJtQjhoeUJnMHoxSUZ1SmMyZnBMQlRvTzB6alBMdk85a1UKNkNYbWZoamxMalNQeTdkSUg5UGdDS2cyTHMrcnI3WFBWRENUeFVrTGRMczdFN3NyaC9BQm9LUzZNem14SEtIUgpFYW1hWFc1NHZteFZDZENMcHIyNGptRWlUSnU0NklEL1FlRTY2Q2Y4dGhUdTVsWWk0ZitMM2xUditEWmVMZXltCkIxVGhxV3gvQWdNQkFBRUNnZ0VBSEZpMk1oN01rck9LOC9qMmpFSytxMzJ0MEREZm4wMG0rbzVnOGErdElSWHEKSXdTS2NKZ2VFUDJzeVFIZ1VhT28xN3IrRHh4eEF3elVCeFNJVjdzNTcxNW9iMkJtNUdzSm9EWnYxR3lyUE5wRApuaTc2cStOUlVYWlQ0Tk9JNkkvMVdFbnBMUUVQaHVvNVVYKzRhSlNWdVlqYjY5dWJqTTdiZ3BQVXMzc2haR0pKCnpmU3pMN3A4aWJBUzZ4S0RpRE9xaWh5bmZ6Zkh6YkxyVDBiWkFqZUh3eStWT0NWNGQ2Q3hnUnlpczVHeXR6K1cKZUxQM1dzQ2l0RWV5dDZsc24rR2tVbHJXTWpBak43VmJUelNVN1N3eUI4ZDJNcFovSENXcVJqY3BneVhIUm03OApiTTJHV2hHOTVkYi9xcHc2amZOSGpLTENYUUIvdi9YY255QkRacWF5UlFLQmdRRFpoK21qby8yMzQzeUJyYVJHCk1VckJmZzJZTzhoWUQ0Nm5SclZzQVlBOE0zaTBpckVHWC83MlNNZUx6ZEtJKzI0OCtTcUg0WlN6OHVoam5iWnUKRXNvcUNCZlRqcWZpeGI0Y2IwZjcrdW5YbmRmZXBVNGVYSWxIRjlUL2licHVpd3RVVkEya1pOSit0aXVGZE9abQoxWUVtcXREYTlrTWlZb0JSVDNJWGd3NGV1d0tCZ1FETWlkMmdYYUpNaFJwNThVcE1HL0lmZFdRSUZqQ3EreE1DCndTbFZ0cEF0czEyQlZmQ1JYck85dnVXSG5yUzNyZEZKc2hBd3hhTTVwdVlUYVd2R3RXVzVNNHpSek5sZEdDSm8KMWZnUEJMSzh0NDNpNDJHV0o2UFlsRUp6YjNzOTg0TE9RUWl0TEN6cTdkMHdSNTk1cTZCZUFDRHZvTzlrRGI3MAo3cXgxZFlSSERRS0JnUURZa3pHeGc5ZGFtdm5lSG1SOG9oemNra1MwdVdpWkREd3FIUU1KbW1EekR3ZnhNRmhaCmtYL0Y4dVlCTWhXWDNrUitIbEVTNGl2c0VUNy8xd2pIaEp1VXgyUDVkSUdBRFFKZlN3ZnZQM3hMK05IdzBNSDcKQm9TQ3JKNmJJS1BsNVRlTmFQWUFJNFZUTk1vVjRESjRWYjkxSVFJNXpvOCtqN1ZUdnZaSHBHcU5ld0tCZ1FDbQpMMTNpN2pEdit6V0gzb1IvVWpWbldmbnNtQnJ5MFF5aE1GQmxVKy9STWVySEt3eExFS2I1aENENkQvakZSSFRICmErVzd1dGpqL3JieERyYUN2Ti9wbWZqUWZhQWVBMzN4citmY1MvVHRZRFhvSXRjbktRMzI2bjhUUzREVzFRTnkKa1dSN1Qya3ZlQlEvSmZKczZRVmpXcmRuKzFxRjhLVTJYTFhDdWJqQUFRS0JnUUNJdStFckM5d285ckRiWllnOApnTGxmRFRuR3pZRWFKdW1sVnZ6THVnRlAzQjFJSzA5VVdva0pzQVhuVjIyY2pBNCt3K2FURkl1cE53NU10dDc5CnJRL2UyUEl4YnhoRThCMU5zWDJKbStHM1doUlh4MFpLZTBiczQ1ck9WLzJIVENCQjArZ0NOdnlnRDZscElGb0cKSlNDbWFzeExTZzRmUGtQajMxWUdMWGVRRGc9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -410,52 +386,47 @@ spec:
     spec:
       serviceAccountName: kubetail-cluster-api
       containers:
-        - name: kubetail-cluster-api
-          image: kubetail-cluster-api
-          ports:
-            - name: http
-              protocol: TCP
-              containerPort: 8080
-          args:
-            - --config=/etc/kubetail/config.yaml
-          volumeMounts:
-            - name: config
-              mountPath: /etc/kubetail
-              readOnly: true
-            - name: tls
-              mountPath: /etc/ssl/certs/server.crt
-              subPath: tls.crt
-              readOnly: true
-            - name: tls
-              mountPath: /etc/ssl/private/server.key
-              subPath: tls.key
-              readOnly: true
-          readinessProbe:
-            httpGet:
-              scheme: HTTP
-              path: /healthz
-              port: http
-            initialDelaySeconds: 10
-            timeoutSeconds: 30
-            periodSeconds: 5
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              scheme: HTTP
-              path: /healthz
-              port: http
-            initialDelaySeconds: 10
-            timeoutSeconds: 30
-            periodSeconds: 5
-            failureThreshold: 3
-          resources: {}
-      volumes:
+      - name: kubetail-cluster-api
+        image: kubetail-cluster-api
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 8080
+        args:
+        - --config=/etc/kubetail/config.yaml
+        volumeMounts:
         - name: config
-          configMap:
-            name: kubetail-cluster-api
+          mountPath: /etc/kubetail
+          readOnly: true
         - name: tls
-          secret:
-            secretName: kubetail-cluster-api-tls
+          mountPath: /etc/tls
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          timeoutSeconds: 30
+          periodSeconds: 5
+          failureThreshold: 3
+        resources: {}
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail-cluster-api
+      - name: tls
+        secret:
+          secretName: kubetail-cluster-api-tls
 ---
 kind: Service
 apiVersion: v1
@@ -475,6 +446,46 @@ spec:
       port: 8080
       targetPort: http
       appProtocol: http
+---
+kind: APIService
+apiVersion: apiregistration.k8s.io/v1
+metadata:
+  name: v1.api.kubetail.com
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: cluster-api
+spec:
+  service:
+    name: kubetail-cluster-api
+    namespace: kubetail-system
+    port: 8080
+  group: api.kubetail.com
+  version: v1
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lVTFYvRWNrTUx5SGdrOGs1dDF6aFVSMFp0MUZRd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZqRVVNQklHQTFVRUF3d0xhM1ZpWlhSaGFXd3RZMkV3SUJjTk1qVXdOVEk1TVRNd05ESXlXaGdQTWpFeQpOVEExTURVeE16QTBNakphTUJZeEZEQVNCZ05WQkFNTUMydDFZbVYwWVdsc0xXTmhNSUlCSWpBTkJna3Foa2lHCjl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0alRJVFQyN1AwTDg1aU9qcktySnl5L1dVRm1VcW9WSXNwM2cKUnZpVitzUmRuVFVDOG54clQxOElGcUM1K3dhWkNCM2RZYi9wNUdGOVNWLzNQcDByZ1ROSlI1M3pRbkNtMVh1MwpOZ1J1bVViR3ZISVpNaWc5L1k1S0tseDNXWFBuWFY0ZTUvVmE4dHJaYmVFTURFTG5QTitZbU9Hemhud1hZR3gxCnI2YjBkbkU1aVlxWnkrUFo3eVdFeTZWMjRRcjlTSkdpdE1wUGc3ZTZKVCtTVFY0T1JWN3B6YTRVLzl4bUtvWUQKSG1nbGxpcHYyZXZkbjhwOHpIdTJkdFo0VWVXLzAyOXcyTWlHRmxOY3AreXI0bHlPVzRwSTAzSjIwTnB4VVRpdQp6dlIvTzB6Y3hmYTdwaERaK2JnWTNwdW8yN3BBS3ptc0JWdU5tR09VeGpjRkJyb0t3d0lEQVFBQm8xTXdVVEFkCkJnTlZIUTRFRmdRVWN4TWw5Zjk5SXlGS0thQlEvMjZjeUlEWXVGOHdId1lEVlIwakJCZ3dGb0FVY3hNbDlmOTkKSXlGS0thQlEvMjZjeUlEWXVGOHdEd1lEVlIwVEFRSC9CQVV3QXdFQi96QU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBZ3hzVUNnckl6SmZZRUFZbHY2QlJ1VXJlcXlpRlpubGVwbm9kOEdsTExWYkxzWWdhQ2orWHdOeHlqeWJICjlkWHhUbFBCR2YvRXJndUdMdG45L0d4N05uZldkaVkrOVVwNEM5VXFNR3M4YUQ1VlpiZzQvNzg1N2pIUUNyOTQKSE5QWjJGc0U3N3dFck80am9rNmQzQjlFNVZDYlE1TTMvR05zK2Z4Q2NFSTJ0a2VBUmFBWnRPd2tCSGlVRmRrKwpGdjdidjRrWGdxOWx1Rm9sYjlmUWlSZkJlcEtzK2Z4Qm5FRzFmTHhEclByT2E4WmhzdjNnS1I4WUFtRHdzbXZsCkNJNi80R0p4aXoyREk1bmtoM2RmYkFlRTlpUjlKYkJXNWZhbXF2dHdNSFJ5aXRyMmtibHFXaTNNanBLenRWODEKc0x0Q2xVeFgvWmZ6blU2Nm1zSkt2UDhNbWc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  groupPriorityMinimum: 100
+  versionPriority: 20
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/component: cluster-agent
+data:
+  config.yaml: |
+    allowed-namespaces: []
+    cluster-agent:
+      addr: :50051
+      logging:
+        enabled: true
+        level: debug
+        format: pretty
+      tls:
+        enabled: false
+        cert-file:
+        key-file:
 ---
 kind: ServiceAccount
 apiVersion: v1
@@ -587,50 +598,6 @@ spec:
             matchLabels:
               app.kubernetes.io/name: kubetail
               app.kubernetes.io/component: cluster-api
----
-kind: ServiceAccount
-apiVersion: v1
-metadata:
-  name: kubetail-cli
-  namespace: kubetail-system
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cli
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-cli
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cli
-rules:
-  - apiGroups: [""]
-    resources: [nodes]
-    verbs: [get, list, watch]
-  - apiGroups: ["", apps, batch]
-    resources:
-      [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
-    verbs: [get, list, watch]
-  - apiGroups: [""]
-    resources: [pods/log]
-    verbs: [list, watch]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-cli
-  labels:
-    app.kubernetes.io/name: kubetail
-    app.kubernetes.io/component: cli
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubetail-cli
-subjects:
-  - kind: ServiceAccount
-    name: kubetail-cli
-    namespace: kubetail-system
 ---
 kind: ServiceAccount
 apiVersion: v1

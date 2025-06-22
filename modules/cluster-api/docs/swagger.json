@@ -1,0 +1,30 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Kubetail Cluster API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/apis/api.kubetail.com/v1",
+    "paths": {
+        "/api.kubetail.com/v1/dummy": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Dummy response xxx",
+                "responses": {
+                    "200": {
+                        "description": "returns dummy response",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

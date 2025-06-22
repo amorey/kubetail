@@ -213,6 +213,7 @@ k8s_resource(
     'kubetail-cluster-api:role',
     'kubetail-cluster-api:rolebinding',
     'kubetail-cluster-api-tls:secret',
+    'v1.api.kubetail.com:apiservice'
   ],
   resource_deps=['kubetail-shared'],
 )
@@ -225,15 +226,6 @@ k8s_resource(
     'kubetail-cluster-agent:networkpolicy',
   ],
   resource_deps=['kubetail-shared'],
-)
-
-k8s_resource(
-  objects=[
-    'kubetail-cli:serviceaccount',
-    'kubetail-cli:clusterrole',
-    'kubetail-cli:clusterrolebinding',
-  ],
-  new_name='kubetail-cli',
 )
 
 k8s_resource(
