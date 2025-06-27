@@ -163,7 +163,14 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Kubernetes API extension version discovery endpoint
 	root.GET("/apis/api.kubetail.com/v1", extVersionDiscoveryHandler)
 
+	// TODO: remove
+	root.Use(authenticationMiddleware2)
 	root.GET("/apis/api.kubetail.com/v1/dummy", dummyHandler)
+
+	// TODO: improve instantiation
+	if app.graphqlServer != nil {
+		root.Any("apis/api.kubetail.com/v1/graphql", gin.WrapH(app.graphqlServer))
+	}
 
 	// OpenAPI responses for kube-apiserver
 	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))

@@ -184,6 +184,12 @@ type Config struct {
 
 				// TLS certificate key file
 				KeyFile string `mapstructure:"key-file" validate:"omitempty,file"`
+
+				// Client certificate authority file for mTLS
+				ClientCAFile string `mapstructure:"client-ca-file" validate:"omitempty,file"`
+
+				// Client authentication type for mTLS
+				ClientAuthType string `mapstructure:"client-auth-type" validate:"omitempty,oneof=none request require verify-if-given require-and-verify"`
 			}
 		}
 

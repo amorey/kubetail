@@ -67,7 +67,7 @@ func (p *DesktopProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("did not understand url: %s", origPath), http.StatusInternalServerError)
 		return
 	}
-	kubeContext, namespace, serviceName, relPath := matches[1], matches[2], matches[3], matches[4]
+	kubeContext, _, _, relPath := matches[1], matches[2], matches[3], matches[4]
 
 	// Get Kubernetes proxy handler
 	h, err := p.getOrCreateKubernetesProxyHandler(kubeContext)
@@ -77,28 +77,32 @@ func (p *DesktopProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Re-write url
-	newPath := path.Join("/api/v1/namespaces", namespace, "services", fmt.Sprintf("%s:http", serviceName), "proxy", relPath)
-	if strings.HasSuffix(newPath, "/proxy") {
-		newPath += "/"
-	}
+	/*
+		newPath := path.Join("/api/v1/namespaces", namespace, "services", fmt.Sprintf("%s:http", serviceName), "proxy", relPath)
+		if strings.HasSuffix(newPath, "/proxy") {
+			newPath += "/"
+		}
+	*/
+	newPath := path.Join("/apis/api.kubetail.com/v1", relPath)
+	fmt.Println(newPath)
 	u := *r.URL
 	u.Path = newPath
 	r.URL = &u
 
 	// Get service-account-token
-	sat, err := p.getOrCreateServiceAccountToken(r.Context(), kubeContext, namespace)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Add token to authentication header
-	token, err := sat.Token(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	r.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token))
+	// sat, err := p.getOrCreateServiceAccountToken(r.Context(), kubeContext, namespace)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	//
+	// // Add token to authentication header
+	// token, err := sat.Token(r.Context())
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// r.Header.Add("X-Forwarded-Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// Passthrough if upgrade request
 	if r.Header.Get("Upgrade") != "" {

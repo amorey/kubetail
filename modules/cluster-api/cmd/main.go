@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -132,6 +133,13 @@ func main() {
 					ReadTimeout:  5 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				}
+
+				// Configure mTLS
+				httpsServer.TLSConfig = &tls.Config{
+					ClientAuth: tls.RequestClientCert,
+					MinVersion: tls.VersionTLS12,
+				}
+
 				servers = append(servers, httpsServer)
 
 				serverWg.Add(1)
