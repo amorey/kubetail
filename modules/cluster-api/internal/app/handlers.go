@@ -15,6 +15,7 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -81,6 +82,7 @@ func openAPIV3NilEndpointHandler(c *gin.Context) {
 // @Success 200 {object} map[string]string "returns dummy response"
 // @Router  /api.kubetail.com/v1/dummy [get]
 func dummyHandler(c *gin.Context) {
+	fmt.Println("user", c.GetString("user"))
 	c.JSON(http.StatusOK, gin.H{
 		"dummy": true,
 	})

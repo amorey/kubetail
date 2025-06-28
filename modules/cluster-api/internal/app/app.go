@@ -163,8 +163,12 @@ func NewApp(cfg *config.Config) (*App, error) {
 	// Kubernetes API extension version discovery endpoint
 	root.GET("/apis/api.kubetail.com/v1", extVersionDiscoveryHandler)
 
-	// TODO: remove
-	root.Use(authenticationMiddleware2)
+	// TODO: replace
+	middleware, err := newAuthenticationMiddleware(context.TODO(), app.cm)
+	if err != nil {
+		return nil, err
+	}
+	root.Use(middleware)
 	root.GET("/apis/api.kubetail.com/v1/dummy", dummyHandler)
 
 	// TODO: improve instantiation

@@ -17,11 +17,16 @@ package app
 import (
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubetail-org/kubetail/modules/shared/grpchelpers"
 	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
@@ -111,4 +116,145 @@ func authenticationMiddleware2(c *gin.Context) {
 	fmt.Println("extra", extra)
 
 	c.Next()
+}
+
+// Initialize new authentication middleware method
+func newAuthenticationMiddleware(ctx context.Context, cm k8shelpers.ConnectionManager) (gin.HandlerFunc, error) {
+	clientset, err := cm.GetOrCreateClientset("")
+	if err != nil {
+		return nil, err
+	}
+
+	// Get configmap
+	configmap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(ctx, "extension-apiserver-authentication", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Init clientCA
+	clientCAPool := x509.NewCertPool()
+	if ok := clientCAPool.AppendCertsFromPEM([]byte(configmap.Data["client-ca-file"])); !ok {
+		return nil, fmt.Errorf("failed to parse client-ca-file PEM")
+	}
+
+	// Init proxyCA
+	proxyCAPool := x509.NewCertPool()
+	if ok := proxyCAPool.AppendCertsFromPEM([]byte(configmap.Data["requestheader-client-ca-file"])); !ok {
+		return nil, fmt.Errorf("failed to parse requestheader-client-ca-file PEM")
+	}
+
+	// Parse other args
+	var allowedNames, usernameHeaders, groupHeaders, extraHeadersPrefixes []string
+	if err := json.Unmarshal([]byte(configmap.Data["requestheader-allowed-names"]), &allowedNames); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal([]byte(configmap.Data["requestheader-username-headers"]), &usernameHeaders); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal([]byte(configmap.Data["requestheader-group-headers"]), &groupHeaders); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal([]byte(configmap.Data["requestheader-extra-headers-prefix"]), &extraHeadersPrefixes); err != nil {
+		return nil, err
+	}
+
+	return func(c *gin.Context) {
+		r := c.Request
+
+		// Reject requests that don't present client certificates
+		if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "client certificate required",
+			})
+			return
+		}
+
+		// mTLS path
+		opts1 := x509.VerifyOptions{
+			Roots:       clientCAPool,
+			CurrentTime: time.Now(),
+			KeyUsages:   []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		}
+
+		clientCert := r.TLS.PeerCertificates[0]
+		if _, err := clientCert.Verify(opts1); err == nil {
+			c.Set("user", clientCert.Subject.CommonName)
+			c.Next()
+			return
+		}
+
+		// front-proxy path
+		opts2 := x509.VerifyOptions{
+			Roots:         proxyCAPool,
+			CurrentTime:   time.Now(),
+			KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+			Intermediates: x509.NewCertPool(),
+		}
+
+		for _, cert := range r.TLS.PeerCertificates[1:] {
+			opts2.Intermediates.AddCert(cert)
+		}
+
+		var proxyCert *x509.Certificate
+		for _, cert := range r.TLS.PeerCertificates {
+			if _, err := cert.Verify(opts2); err == nil {
+				proxyCert = cert
+				break
+			}
+		}
+		if proxyCert == nil {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "no valid certificate found",
+			})
+			return
+		}
+
+		// Enforce allowed-names
+		if len(allowedNames) > 0 {
+			cn := proxyCert.Subject.CommonName
+			if !slices.Contains(allowedNames, cn) {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error": fmt.Sprintf("proxy CN %q not in allowed list", cn),
+				})
+				return
+			}
+		}
+
+		// Extract user
+		var user string
+		for _, h := range usernameHeaders {
+			if v := c.GetHeader(h); v != "" {
+				user = v
+				break
+			}
+		}
+		if user == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing user header"})
+			return
+		}
+		c.Set("user", user)
+
+		// Extract groups
+		var groups []string
+		for _, h := range groupHeaders {
+			if v := c.GetHeader(h); v != "" {
+				groups = append(groups, strings.Split(v, ",")...)
+				break
+			}
+		}
+		c.Set("groups", groups)
+
+		// Extract extras
+		extras := map[string][]string{}
+		for name, vals := range c.Request.Header {
+			for _, prefix := range extraHeadersPrefixes {
+				if after, ok := strings.CutPrefix(name, prefix); ok {
+					extras[after] = vals
+				}
+			}
+		}
+		c.Set("extras", extras)
+
+		c.Next()
+	}, nil
 }
