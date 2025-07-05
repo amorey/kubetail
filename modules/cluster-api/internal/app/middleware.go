@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -58,63 +57,6 @@ func authenticationMiddleware(c *gin.Context) {
 	}
 
 	// Continue
-	c.Next()
-}
-
-func authenticationMiddleware2(c *gin.Context) {
-	caCert, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
-	if err != nil {
-		fmt.Println("ca.crt nope")
-		c.Next()
-		return
-	}
-
-	clientCAs := x509.NewCertPool()
-	if !clientCAs.AppendCertsFromPEM(caCert) {
-		fmt.Println("asfsdf")
-		c.Next()
-		return
-	}
-
-	r := c.Request
-
-	// Check if client certificate was provided and verified
-	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
-		fmt.Println("no client certificate provided")
-		c.Next()
-		return
-	}
-
-	// Verify the client certificate is from kube-apiserver
-	clientCert := r.TLS.PeerCertificates[0]
-
-	// Check if it's signed by our trusted CA
-	opts := x509.VerifyOptions{
-		Roots: clientCAs,
-	}
-
-	if _, err := clientCert.Verify(opts); err != nil {
-		fmt.Println(err)
-		c.Next()
-		return
-	}
-
-	userHeader := c.GetHeader("X-Remote-User")
-	groupHeaders := c.Request.Header["X-Remote-Group"]
-
-	// Any extra fields you allowed?
-	extra := map[string][]string{}
-	for k, vs := range c.Request.Header {
-		if strings.HasPrefix(k, "X-Remote-Extra-") {
-			key := strings.TrimPrefix(k, "X-Remote-Extra-")
-			extra[key] = vs
-		}
-	}
-
-	fmt.Println("user", userHeader)
-	fmt.Println("group", groupHeaders)
-	fmt.Println("extra", extra)
-
 	c.Next()
 }
 

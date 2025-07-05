@@ -16,7 +16,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"slices"
 	"time"
@@ -35,10 +34,6 @@ import (
 	"github.com/kubetail-org/kubetail/modules/shared/k8shelpers"
 )
 
-type ctxKey int
-
-const cookiesCtxKey ctxKey = iota
-
 // Represents Server
 type Server struct {
 	r          *Resolver
@@ -51,15 +46,9 @@ type Server struct {
 var allowedSecFetchSite = []string{"same-origin"}
 
 // Create new Server instance
-func NewServer(cm k8shelpers.ConnectionManager, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string, csrfProtectMiddleware func(http.Handler) http.Handler) *Server {
+func NewServer(cm k8shelpers.ConnectionManager, grpcDispatcher *grpcdispatcher.Dispatcher, allowedNamespaces []string) *Server {
 	// Init resolver
 	r := &Resolver{cm, grpcDispatcher, allowedNamespaces}
-
-	// Setup csrf query method
-	var csrfProtect http.Handler
-	if csrfProtectMiddleware != nil {
-		csrfProtect = csrfProtectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	}
 
 	// Init config
 	cfg := Config{Resolvers: r}
@@ -87,8 +76,7 @@ func NewServer(cm k8shelpers.ConnectionManager, grpcDispatcher *grpcdispatcher.D
 				// Check the Sec-Fetch-Site header for an additional layer of security.
 				secFetchSite := r.Header.Get("Sec-Fetch-Site")
 
-				// If the header is absent, we fall back to the CSRF token validation
-				// in the InitFunc. This supports older browsers or non-browser clients.
+				// If header is not available, continue
 				if secFetchSite == "" {
 					return true
 				}
@@ -101,18 +89,7 @@ func NewServer(cm k8shelpers.ConnectionManager, grpcDispatcher *grpcdispatcher.D
 			WriteBufferSize: 1024,
 		},
 		KeepAlivePingInterval: 10 * time.Second,
-		// The InitFunc below handles the CSRF token validation, serving as our
-		// fallback protection when Sec-Fetch-Site is not available.
 		InitFunc: func(ctx context.Context, initPayload transport.InitPayload) (context.Context, *transport.InitPayload, error) {
-			// Check if csrf protection is disabled
-			if csrfProtectMiddleware == nil {
-				return ctx, &initPayload, nil
-			}
-
-			if err := sharedwebsocket.ValidateCSRFToken(ctx, csrfProtect, initPayload.Authorization()); err != nil {
-				return ctx, nil, fmt.Errorf("CSRF token validation failed: %w", err)
-			}
-
 			// Close websockets on shutdown signal
 			ctx, cancel := context.WithCancel(ctx)
 			go func() {

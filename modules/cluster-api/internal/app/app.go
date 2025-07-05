@@ -18,13 +18,10 @@ import (
 	"context"
 	"io/fs"
 	"net/http"
-	"path"
 
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/csrf"
-	adapter "github.com/gwatts/gin-adapter"
 	swaggerfiles "github.com/swaggo/files"
 	ginswagger "github.com/swaggo/gin-swagger"
 
@@ -96,7 +93,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 	root := app.Group(cfg.ClusterAPI.BasePath)
 
 	// Dynamic routes
-	dynamicRoutes := root.Group("/")
+	dynamicRoutes := root.Group("/apis/api.kubetail.com/v1")
 	{
 		// https://security.stackexchange.com/questions/147554/security-headers-for-a-web-api
 		// https://observatory.mozilla.org/faq/
@@ -107,44 +104,19 @@ func NewApp(cfg *config.Config) (*App, error) {
 			ContentTypeNosniff:    true,
 		}))
 
-		// Disable csrf protection for graphql endpoint (already rejects simple requests)
-		dynamicRoutes.Use(func(c *gin.Context) {
-			if c.Request.URL.Path == path.Join(cfg.ClusterAPI.BasePath, "/graphql") {
-				c.Request = csrf.UnsafeSkipCheck(c.Request)
-			}
-			c.Next()
-		})
+		// Kubernetes API extension version discovery endpoint
+		dynamicRoutes.GET("", extVersionDiscoveryHandler)
 
-		var csrfProtect func(http.Handler) http.Handler
-
-		// CSRF middleware
-		if cfg.ClusterAPI.CSRF.Enabled {
-			csrfProtect = csrf.Protect(
-				[]byte(cfg.ClusterAPI.CSRF.Secret),
-				csrf.FieldName(cfg.ClusterAPI.CSRF.FieldName),
-				csrf.CookieName(cfg.ClusterAPI.CSRF.Cookie.Name),
-				csrf.Path(cfg.ClusterAPI.CSRF.Cookie.Path),
-				csrf.Domain(cfg.ClusterAPI.CSRF.Cookie.Domain),
-				csrf.MaxAge(cfg.ClusterAPI.CSRF.Cookie.MaxAge),
-				csrf.Secure(cfg.ClusterAPI.CSRF.Cookie.Secure),
-				csrf.HttpOnly(cfg.ClusterAPI.CSRF.Cookie.HttpOnly),
-				csrf.SameSite(cfg.ClusterAPI.CSRF.Cookie.SameSite),
-			)
-
-			// Add to gin middleware
-			dynamicRoutes.Use(adapter.Wrap(csrfProtect))
-
-			// Add token fetcher helper
-			dynamicRoutes.GET("/csrf-token", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"value": csrf.Token(c.Request)})
-			})
+		// TODO: replace TODO
+		middleware, err := newAuthenticationMiddleware(context.TODO(), app.cm)
+		if err != nil {
+			return nil, err
 		}
-
-		// authentication middleware
-		dynamicRoutes.Use(authenticationMiddleware)
+		dynamicRoutes.Use(middleware)
+		dynamicRoutes.GET("dummy", dummyHandler)
 
 		// GraphQL endpoint
-		app.graphqlServer = graph.NewServer(app.cm, app.grpcDispatcher, cfg.AllowedNamespaces, csrfProtect)
+		app.graphqlServer = graph.NewServer(app.cm, app.grpcDispatcher, cfg.AllowedNamespaces)
 		dynamicRoutes.Any("/graphql", gin.WrapH(app.graphqlServer))
 	}
 	app.dynamicRoutes = dynamicRoutes // for unit tests
@@ -159,22 +131,6 @@ func NewApp(cfg *config.Config) (*App, error) {
 
 	// Kubernetes API extension group discovery endpoint
 	root.GET("/apis", extGroupDiscoveryHandler)
-
-	// Kubernetes API extension version discovery endpoint
-	root.GET("/apis/api.kubetail.com/v1", extVersionDiscoveryHandler)
-
-	// TODO: replace
-	middleware, err := newAuthenticationMiddleware(context.TODO(), app.cm)
-	if err != nil {
-		return nil, err
-	}
-	root.Use(middleware)
-	root.GET("/apis/api.kubetail.com/v1/dummy", dummyHandler)
-
-	// TODO: improve instantiation
-	if app.graphqlServer != nil {
-		root.Any("apis/api.kubetail.com/v1/graphql", gin.WrapH(app.graphqlServer))
-	}
 
 	// OpenAPI responses for kube-apiserver
 	root.StaticFileFS("/openapi/v2", "/docs/swagger.json", http.FS(clusterapi.DocsEmbedFS))
