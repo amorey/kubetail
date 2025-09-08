@@ -19,7 +19,9 @@ type State = {
 type Action =
   | { type: 'init'; pods: Pod[] }
   | { type: 'log'; event: LogMetadataEvent }
-  | { type: 'deleteContainer'; containerID: string };
+  | { type: 'bulkLog'; events: LogMetadataEvent[] }
+  | { type: 'deleteContainer'; containerID: string }
+  | { type: 'bulkDelete'; containerIDs: string[] };
 
 function toDerived(pod: Pod, containerInfo: ContainerInfoMap): PodDerived {
   let totalSize = 0;
@@ -100,6 +102,55 @@ function reducer(state: State, action: Action): State {
       const sortedUIDs = anyChanged ? sortUIDs(pods) : state.sortedUIDs;
       return { containerInfo, pods, sortedUIDs };
     }
+    case 'bulkLog': {
+      if (!action.events.length) return state;
+      const containerInfo: ContainerInfoMap = new Map(state.containerInfo);
+      const affected = new Set<string>();
+      for (const { containerID, fileInfo } of action.events) {
+        const prev = containerInfo.get(containerID);
+        containerInfo.set(containerID, {
+          size: fileInfo.size,
+          lastModifiedAt: Math.max(prev?.lastModifiedAt ?? 0, fileInfo.lastModifiedAt),
+        });
+        affected.add(containerID);
+      }
+      let anyChanged = false;
+      let pods: PodMap = state.pods;
+      for (const p of state.pods.values()) {
+        if (p.containers.some((c) => affected.has(c.id))) {
+          const derived = toDerived(p, containerInfo);
+          if (derived.totalSize !== p.totalSize || derived.lastEvent !== p.lastEvent) {
+            if (!anyChanged) pods = new Map(state.pods);
+            pods.set(p.uid, derived);
+            anyChanged = true;
+          }
+        }
+      }
+      const sortedUIDs = anyChanged ? sortUIDs(pods) : state.sortedUIDs;
+      return { containerInfo, pods, sortedUIDs };
+    }
+    case 'bulkDelete': {
+      if (!action.containerIDs.length) return state;
+      const containerInfo: ContainerInfoMap = new Map(state.containerInfo);
+      const affected = new Set<string>();
+      for (const id of action.containerIDs) {
+        if (containerInfo.delete(id)) affected.add(id);
+      }
+      let anyChanged = false;
+      let pods: PodMap = state.pods;
+      for (const p of state.pods.values()) {
+        if (p.containers.some((c) => affected.has(c.id))) {
+          const derived = toDerived(p, containerInfo);
+          if (derived.totalSize !== p.totalSize || derived.lastEvent !== p.lastEvent) {
+            if (!anyChanged) pods = new Map(state.pods);
+            pods.set(p.uid, derived);
+            anyChanged = true;
+          }
+        }
+      }
+      const sortedUIDs = anyChanged ? sortUIDs(pods) : state.sortedUIDs;
+      return { containerInfo, pods, sortedUIDs };
+    }
     default:
       return state;
   }
@@ -117,7 +168,9 @@ export function usePodsState(podsInput: Pod[]) {
   const podsInOrder: PodDerived[] = useMemo(() => state.sortedUIDs.map((uid) => state.pods.get(uid)!).filter(Boolean), [state.sortedUIDs, state.pods]);
 
   const applyEvent = useCallback((event: LogMetadataEvent) => dispatch({ type: 'log', event }), [dispatch]);
+  const applyEventsBatch = useCallback((events: LogMetadataEvent[]) => dispatch({ type: 'bulkLog', events }), [dispatch]);
   const deleteContainer = useCallback((containerID: string) => dispatch({ type: 'deleteContainer', containerID }), [dispatch]);
+  const deleteContainersBatch = useCallback((containerIDs: string[]) => dispatch({ type: 'bulkDelete', containerIDs }), [dispatch]);
 
-  return { podsInOrder, applyEvent, deleteContainer };
+  return { podsInOrder, applyEvent, applyEventsBatch, deleteContainer, deleteContainersBatch };
 }

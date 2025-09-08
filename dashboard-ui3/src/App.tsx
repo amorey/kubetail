@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PodsTable } from './components/PodsTable';
 import { usePodsState } from './state';
 import { fetchGraphQL, makeWSClient, subscribe } from './graphql';
@@ -12,7 +12,7 @@ const EMPTY_PODS: Pod[] = [];
 export default function App() {
   const [pods, setPods] = useState<Pod[] | null>(null);
   const podsInput = pods ?? EMPTY_PODS;
-  const { podsInOrder, applyEvent, deleteContainer } = usePodsState(podsInput);
+  const { podsInOrder, applyEvent, applyEventsBatch, deleteContainer, deleteContainersBatch } = usePodsState(podsInput);
 
   const [kubeContext, setKubeContext] = useState<string>('');
   const dashboardHttp = '/graphql';
@@ -67,6 +67,9 @@ export default function App() {
     if (!pods || !kubeContext) return;
     let stopReady = () => {};
     let stopWatch = () => {};
+    let flushTimer: number | null = null;
+    const upserts = new Map<string, { size: number; lastModifiedAt: number }>();
+    const deletes = new Set<string>();
     const dashClient = makeWSClient(dashboardWS);
 
     // Subscribe to readiness
@@ -89,13 +92,15 @@ export default function App() {
         const clusterApiPath = `/cluster-api-proxy/${encodeURIComponent(kubeContext)}/kubetail-system/kubetail-cluster-api/graphql`;
         const data = await fetchGraphQL<any>(clusterApiPath, LOG_METADATA_LIST_FETCH, { namespace: '' });
         const items = data?.logMetadataList?.items ?? [];
+        const initial: { containerID: string; fileInfo: { size: number; lastModifiedAt: number } }[] = [];
         for (const it of items) {
           const id = it.spec?.containerID as string;
           const sizeStr = it.fileInfo?.size ?? '0';
           const size = typeof sizeStr === 'string' ? parseInt(sizeStr, 10) : Number(sizeStr ?? 0);
           const ts = it.fileInfo?.lastModifiedAt ? new Date(it.fileInfo.lastModifiedAt).getTime() : 0;
-          if (id) applyEvent({ containerID: id, fileInfo: { size, lastModifiedAt: ts } });
+          if (id) initial.push({ containerID: id, fileInfo: { size, lastModifiedAt: ts } });
         }
+        if (initial.length) applyEventsBatch(initial);
 
         // Watch for changes
         stopWatch = subscribe<{ data?: { logMetadataWatch?: { type: string; object?: any } } }>({
@@ -108,23 +113,39 @@ export default function App() {
             const id = ev.object?.spec?.containerID;
             if (!id) return;
             if (ev.type === 'DELETED') {
-              deleteContainer(id);
+              deletes.add(id);
+              upserts.delete(id);
               return;
             }
             const sizeStr = ev.object?.fileInfo?.size ?? '0';
             const size = typeof sizeStr === 'string' ? parseInt(sizeStr, 10) : Number(sizeStr ?? 0);
             const ts = ev.object?.fileInfo?.lastModifiedAt ? new Date(ev.object.fileInfo.lastModifiedAt).getTime() : 0;
-            applyEvent({ containerID: id, fileInfo: { size, lastModifiedAt: ts } });
+            upserts.set(id, { size, lastModifiedAt: ts });
           },
         });
+
+        // Batch flush every 2 seconds
+        flushTimer = window.setInterval(() => {
+          if (deletes.size === 0 && upserts.size === 0) return;
+          if (deletes.size > 0) {
+            deleteContainersBatch(Array.from(deletes));
+            deletes.clear();
+          }
+          if (upserts.size > 0) {
+            const events = Array.from(upserts.entries()).map(([containerID, fileInfo]) => ({ containerID, fileInfo }));
+            applyEventsBatch(events);
+            upserts.clear();
+          }
+        }, 2000);
       })
       .catch((e) => console.error('cluster api readiness error', e));
 
     return () => {
       stopReady?.();
       stopWatch?.();
+      if (flushTimer !== null) window.clearInterval(flushTimer);
     };
-  }, [pods, kubeContext, dashboardWS, applyEvent, deleteContainer]);
+  }, [pods, kubeContext, dashboardWS, applyEventsBatch, deleteContainersBatch]);
 
   return (
     <div className="wrap">
