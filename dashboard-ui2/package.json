@@ -1,0 +1,22 @@
+{
+  "name": "dashboard-ui2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/solid-query": "^5.52.0",
+    "solid-js": "^1.8.18"
+  },
+  "devDependencies": {
+    "solid-devtools": "^0.34.3",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0",
+    "vite-plugin-solid": "^2.9.1"
+  },
+  "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387"
+}
