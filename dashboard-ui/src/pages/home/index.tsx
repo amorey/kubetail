@@ -21,8 +21,18 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import type { Cell, ColumnDef, Row, SortDirection, SortingState, TableMeta, TableOptions } from '@tanstack/react-table';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { ChevronDown, ChevronUp, ExternalLink, Layers3, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
+import { atom, useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
+import { selectAtom } from 'jotai/utils';
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Layers3,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Store,
+} from 'lucide-react';
 import numeral from 'numeral';
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import TimeAgo from 'react-timeago';
@@ -264,6 +274,7 @@ type DisplayWorkloadItemsProps = {
   kind: WorkloadKind;
 };
 
+/*
 const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
   const { kubeContext, workloadKindFilter } = useContext(Context);
   const isClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
@@ -448,6 +459,184 @@ const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
           </TableCell>
         </TableRow>
       </TableBody>
+    </>
+  );
+});
+*/
+
+const randomName = () => Math.random().toString(36).substring(2, 7); // random 5-letter string
+
+// Helper to generate a random number
+const randomValue = () => Math.floor(Math.random() * 1000);
+
+const ddd: Record<number, { name: string; value: number }> = {};
+
+for (let i = 0; i < 300; i += 1) {
+  ddd[i] = {
+    name: randomName(),
+    value: randomValue(),
+  };
+}
+
+type DataType = {
+  name: string;
+  value: number;
+};
+
+const dataAtom = atom<Record<number, DataType>>(ddd);
+
+const MemoizedNameCell = memo(
+  ({ row }: { row: Row<ExampleTableData> }) => {
+    const data = useAtomValue(dataAtom);
+    return <span>{data[row.original.id]?.name}</span>;
+  },
+  () => true, // never re-render
+);
+
+const MemoizedValueCell = memo(
+  ({ row }: { row: Row<ExampleTableData> }) => {
+    const rowDataAtom = useMemo(
+      () =>
+        selectAtom(
+          dataAtom,
+          (data) => data[row.original.id],
+          (a, b) => a?.value === b?.value,
+        ),
+      [row.original.id],
+    );
+    const val = useAtomValue(rowDataAtom);
+    return <span>{val.value}</span>;
+  },
+  () => true, // never re-render
+);
+
+const MemoizedTableRow = memo(
+  ({ row }: { row: Row<ExampleTableData> }) => (
+    <tr>
+      {row.getVisibleCells().map((cell) => (
+        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+      ))}
+    </tr>
+  ),
+  () => true, // never re-render
+);
+
+type ExampleTableData = {
+  id: number;
+};
+
+const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
+  const store = useStore();
+  const setData = useSetAtom(dataAtom);
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        enableSorting: true,
+        sortingFn: () => false,
+        cell: MemoizedNameCell,
+      },
+      {
+        accessorKey: 'value',
+        header: 'Value',
+        enableSorting: true,
+        sortingFn: (a: Row<ExampleTableData>, b: Row<ExampleTableData>) => {
+          const currentData = store.get(dataAtom);
+          return currentData[a.original.id].value - currentData[b.original.id].value;
+        },
+        cell: MemoizedValueCell,
+      },
+    ],
+    [store],
+  );
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const handleSorting = useCallback((updater: SortingState | ((old: SortingState) => SortingState)) => {
+    const nextSorting = typeof updater === 'function' ? updater(sorting) : updater;
+
+    if (nextSorting.length > 0) {
+      const { id, desc } = nextSorting[0];
+      console.log(id, desc);
+    } else {
+      console.log('Sorting cleared');
+    }
+
+    setSorting(nextSorting);
+  }, []);
+
+  const [renderTick, setRenderTick] = useState(0);
+
+  const tableCfg = useMemo(
+    () => ({
+      data: [...Array(300)].map((_, id) => ({ id })),
+      columns,
+      state: {
+        sorting,
+        renderTick,
+        pagination: {
+          pageIndex: 0,
+          pageSize: 10,
+        },
+      },
+      enableSortingRemoval: false,
+      onSortingChange: handleSorting,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      manualPagination: false,
+    }),
+    [columns, sorting, renderTick, handleSorting],
+  );
+
+  const table = useReactTable(tableCfg as TableOptions<ExampleTableData>);
+
+  // --------------
+  useEffect(() => {
+    const id = setInterval(() => {
+      setData((state) => {
+        const newState = { ...state };
+        Object.keys(newState).forEach((key) => {
+          newState[Number(key)] = { ...newState[Number(key)], value: Math.random() };
+        });
+        return newState;
+      });
+      setTimeout(() => {
+        setRenderTick((v) => v + 1);
+      }, 100);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [table, setData]);
+  // --------------
+
+  return (
+    <>
+      {table.getHeaderGroups().map((headerGroup) => (
+        <thead key={headerGroup.id}>
+          <tr>
+            {headerGroup.headers.map((header) => {
+              const canSort = header.column.getCanSort();
+              return (
+                <th key={header.id} onClick={canSort ? header.column.getToggleSortingHandler() : undefined}>
+                  <div className={cn('flex group', canSort && 'cursor-pointer')}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {canSort && (
+                      <SortIcon dir={header.column.getIsSorted()} descFirst={header.column.columnDef.sortDescFirst} />
+                    )}
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+      ))}
+      <tbody>
+        {table.getRowModel().rows.map((row) => (
+          <MemoizedTableRow key={row.id} row={row} />
+        ))}
+      </tbody>
     </>
   );
 });
