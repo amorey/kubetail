@@ -20,9 +20,28 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import type { Cell, ColumnDef, Row, SortDirection, SortingState, TableMeta, TableOptions } from '@tanstack/react-table';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { ChevronDown, ChevronUp, ExternalLink, Layers3, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
+import type {
+  Cell,
+  ColumnDef,
+  Row,
+  SortDirection,
+  SortingState,
+  Table as TableType,
+  TableMeta,
+  TableOptions,
+} from '@tanstack/react-table';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { atomFamily, selectAtom } from 'jotai/utils';
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Layers3,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Store,
+} from 'lucide-react';
 import numeral from 'numeral';
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import TimeAgo from 'react-timeago';
@@ -264,6 +283,7 @@ type DisplayWorkloadItemsProps = {
   kind: WorkloadKind;
 };
 
+/*
 const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
   const { kubeContext, workloadKindFilter } = useContext(Context);
   const isClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
@@ -448,6 +468,159 @@ const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
           </TableCell>
         </TableRow>
       </TableBody>
+    </>
+  );
+});
+*/
+
+const randomName = () => Math.random().toString(36).substring(2, 7); // random 5-letter string
+
+// Helper to generate a random number
+const randomValue = () => Math.floor(Math.random() * 1000);
+
+type ExampleTableData = {
+  id: number;
+  name: string;
+  value: number;
+};
+
+interface ExampleTableMeta extends TableMeta<ExampleTableData> {
+  kind: WorkloadKind;
+}
+
+const initDataDict = Object.fromEntries(
+  ALL_WORKLOAD_KINDS.map((kind) => {
+    const data: ExampleTableData[] = [];
+    for (let i = 0; i < 300; i += 1) {
+      data.push({
+        id: i,
+        name: randomName(),
+        value: randomValue(),
+      });
+    }
+    return [kind, data];
+  }),
+);
+
+const dataAtomFamily = atomFamily((kind: WorkloadKind) => atom(initDataDict[kind]));
+
+const NameCell = ({ row }: { row: Row<ExampleTableData> }) => <span>{row.original.name}</span>;
+
+const ValueCell = ({ table, row }: { table: TableType<ExampleTableData>; row: Row<ExampleTableData> }) => {
+  const meta = table.options.meta as ExampleTableMeta;
+  const rowDataAtom = useMemo(
+    () =>
+      selectAtom(
+        dataAtomFamily(meta.kind),
+        (data) => data[row.original.id],
+        (a, b) => a?.value === b?.value,
+      ),
+    [row.original.id],
+  );
+  const val = useAtomValue(rowDataAtom);
+  return <span>{val.value}</span>;
+};
+
+const MemoizedTableRow = memo(
+  ({ row }: { row: Row<ExampleTableData> }) => (
+    <tr>
+      {row.getVisibleCells().map((cell) => (
+        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+      ))}
+    </tr>
+  ),
+  () => true, // never re-render
+);
+
+MemoizedTableRow.displayName = 'MemoizedTableRow';
+
+const EXAMPLE_TABLE_COLUMNS = [
+  {
+    accessorKey: 'name',
+    header: 'Name',
+    enableSorting: true,
+    cell: NameCell,
+  },
+  {
+    accessorKey: 'value',
+    header: 'Value',
+    enableSorting: true,
+    cell: ValueCell,
+  },
+] satisfies ColumnDef<ExampleTableData>[];
+
+const DisplayWorkloadItems = memo(({ kind }: DisplayWorkloadItemsProps) => {
+  const [data, setData] = useAtom(dataAtomFamily(kind));
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const tableCfg = useMemo(
+    () => ({
+      data,
+      columns: EXAMPLE_TABLE_COLUMNS,
+      meta: {
+        kind,
+      },
+      state: {
+        sorting,
+        pagination: {
+          pageIndex: 0,
+          pageSize: 10,
+        },
+      },
+      enableSortingRemoval: false,
+      onSortingChange: setSorting,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      manualPagination: false,
+    }),
+    [kind, data, sorting, setSorting],
+  );
+
+  const table = useReactTable(tableCfg as TableOptions<ExampleTableData>);
+
+  // --------------
+  useEffect(() => {
+    const id = setInterval(() => {
+      setData((current) => {
+        const newState = [...current];
+        current.forEach((v, i) => {
+          newState[i] = { ...v, value: randomValue() };
+        });
+        return newState;
+      });
+    }, 2000);
+    return () => clearInterval(id);
+  }, [setData]);
+  // --------------
+
+  return (
+    <>
+      {table.getHeaderGroups().map((headerGroup) => (
+        <thead key={headerGroup.id}>
+          <tr>
+            {headerGroup.headers.map((header) => {
+              const canSort = header.column.getCanSort();
+              return (
+                <th key={header.id} onClick={canSort ? header.column.getToggleSortingHandler() : undefined}>
+                  <div className={cn('flex group', canSort && 'cursor-pointer')}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {canSort && (
+                      <SortIcon dir={header.column.getIsSorted()} descFirst={header.column.columnDef.sortDescFirst} />
+                    )}
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+      ))}
+      <tbody>
+        {table.getRowModel().rows.map((row) => (
+          <MemoizedTableRow key={row.id} row={row} />
+        ))}
+      </tbody>
     </>
   );
 });
