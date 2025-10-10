@@ -52,54 +52,47 @@ jobs:
           echo "amd64_sha=$AMD64_SHA" >> $GITHUB_OUTPUT
           echo "arm64_sha=$ARM64_SHA" >> $GITHUB_OUTPUT
 
-      - name: Sparse checkout only manifests
+      - name: Checkout kubetail repo
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/ci-config
+          sparse-checkout: .github/ci-config/winget
           sparse-checkout-cone-mode: false
           fetch-depth: 1
-          path: winget-manifests
+          path: kubetail
 
-      - name: Clone winget-pkgs upstream repo
+      - name: Checkout winget-pkgs repo
         uses: actions/checkout@v4
         with:
           repository: microsoft/winget-pkgs
           fetch-depth: 1
           path: winget-pkgs
 
-      - name: Download yq package
-        run: |
-          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
-          sudo chmod +x /usr/local/bin/yq
-
-      - name: Copy manifests template to winget-pkgs
-        run: |
-          NEW_FOLDER='./winget-pkgs/manifests/k/Kubetail/Kubetail/${{ steps.config.outputs.version }}'
-          mkdir -p "$NEW_FOLDER" 
-
-          cp ./winget-manifests/.github/ci-config/winget/* "$NEW_FOLDER"/
-
-      - name: Update manifests for release
-        working-directory: winget-pkgs/manifests/k/Kubetail/Kubetail/${{ steps.config.outputs.version }}
+      - name: Execute winget manifest templates
         env:
           VERSION: ${{ steps.config.outputs.version }}
-          BASE_PATH: https://github.com/kubetail-org/kubetail/releases/download
           AMD64_SHA: ${{ steps.meta.outputs.amd64_sha }}
           ARM64_SHA: ${{ steps.meta.outputs.arm64_sha }}
+          SRC_DIR: kubetail/.github/ci-config/winget
+          DST_DIR: winget-pkgs/manifests/k/Kubetail/Kubetail/${{ steps.config.outputs.version }}
         run: |
           set -euo pipefail
 
-          # update the installer yaml
-          yq e ".PackageVersion = \"$VERSION\"" -i ./Kubetail.Kubetail.installer.yaml
-          yq e ".Installers[0].InstallerUrl = \"${BASE_PATH}/cli%2Fv${VERSION}/kubetail-windows-amd64.zip\"" -i ./Kubetail.Kubetail.installer.yaml
-          yq e ".Installers[1].InstallerUrl = \"${BASE_PATH}/cli%2Fv${VERSION}/kubetail-windows-arm64.zip\"" -i ./Kubetail.Kubetail.installer.yaml
+          mkdir -p "${DST_DIR}"
 
-          yq e ".Installers[0].InstallerSha256 = \"${AMD64_SHA}\"" -i ./Kubetail.Kubetail.installer.yaml
-          yq e ".Installers[1].InstallerSha256 = \"${ARM64_SHA}\"" -i ./Kubetail.Kubetail.installer.yaml
+          # Kubetail.Kubetail.yaml
+          envsubst '${VERSION}' \
+            < "${SRC_DIR}/Kubetail.Kubetail.yaml.tmpl" \
+            > "${DST_DIR}/Kubetail.Kubetail.yaml"
 
-          # update the locale and kubetail yaml
-          yq e ".PackageVersion = \"$VERSION\"" -i ./Kubetail.Kubetail.locale.en-US.yaml
-          yq e ".PackageVersion = \"$VERSION\"" -i ./Kubetail.Kubetail.yaml
+          # Kubetail.Kubetail.locale.en-US.yaml
+          envsubst '${VERSION}' \
+            < "${SRC_DIR}/Kubetail.Kubetail.locale.en-US.yaml.tmpl" \
+            > "${DST_DIR}/Kubetail.Kubetail.locale.en-US..yaml"
+
+          # Kubetail.Kubetail.installer.yaml
+          envsubst '${VERSION} ${AMD64_SHA256} ${ARM64_SHA256}' \
+            < "${SRC_DIR}/Kubetail.Kubetail.installer.yaml.tmpl" \
+            > "${DST_DIR}/Kubetail.Kubetail.installer.yaml"
 
       - name: Commit and raise PR from forked repo
         uses: peter-evans/create-pull-request@v7.0.8
