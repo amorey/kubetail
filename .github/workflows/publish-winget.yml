@@ -94,6 +94,11 @@ jobs:
             < "${SRC_DIR}/Kubetail.Kubetail.installer.yaml.tmpl" \
             > "${DST_DIR}/Kubetail.Kubetail.installer.yaml"
 
+          if [ "${{ steps.config.outputs.dry_run }}" == "true" ]; then
+            ls -lah "${DST_DIR}"
+            cat "${DST_DIR}"/*
+          fi
+
       - name: Commit and raise PR from forked repo
         uses: peter-evans/create-pull-request@v7.0.8
         if: ${{ steps.config.outputs.dry_run != 'true' }}
