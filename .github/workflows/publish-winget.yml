@@ -17,7 +17,7 @@ on:
         description: "Dry run"
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   winget-release:
@@ -39,6 +39,7 @@ jobs:
         id: release-info
         uses: robinraju/release-downloader@v1.12
         with:
+          repository: kubetail-org/kubetail
           tag: ${{ format('cli/v{0}', steps.config.outputs.version) }}
           fileName: "kubetail-windows*zip.sha256"
 
