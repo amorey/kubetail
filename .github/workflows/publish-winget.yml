@@ -55,16 +55,19 @@ jobs:
       - name: Checkout kubetail repo
         uses: actions/checkout@v4
         with:
+          fetch-depth: 1
           sparse-checkout: .github/ci-config/winget
           sparse-checkout-cone-mode: false
-          fetch-depth: 1
           path: kubetail
 
       - name: Checkout winget-pkgs repo
         uses: actions/checkout@v4
         with:
-          repository: microsoft/winget-pkgs
+          #repository: microsoft/winget-pkgs
+          repository: kubetail-org/winget-pkgs
           fetch-depth: 1
+          sparse-checkout: manifests/k/Kubetail/Kubetail
+          sparse-checkout-cone-mode: false
           path: winget-pkgs
 
       - name: Execute winget manifest templates
@@ -87,7 +90,7 @@ jobs:
           # Kubetail.Kubetail.locale.en-US.yaml
           envsubst '${VERSION}' \
             < "${SRC_DIR}/Kubetail.Kubetail.locale.en-US.yaml.tmpl" \
-            > "${DST_DIR}/Kubetail.Kubetail.locale.en-US..yaml"
+            > "${DST_DIR}/Kubetail.Kubetail.locale.en-US.yaml"
 
           # Kubetail.Kubetail.installer.yaml
           envsubst '${VERSION} ${AMD64_SHA256} ${ARM64_SHA256}' \
@@ -110,4 +113,5 @@ jobs:
           body: "This PR adds the manifest for Kubetail.Kubetail version ${{ steps.config.outputs.version }}."
           branch: winget-release-kubetail-${{ steps.config.outputs.version }}
           base: master
-          push-to-fork: kubetail-org/winget-pkgs
+          delete-branch: true
+          #push-to-fork: kubetail-org/winget-pkgs
