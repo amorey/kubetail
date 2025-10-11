@@ -1,0 +1,39 @@
+{
+    "version": "${VERSION}",
+    "description": "Real-time logging dashboard for Kubernetes",
+    "homepage": "https://github.com/kubetail-org/kubetail",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv${VERSION}/kubetail-windows-amd64#/kubetail.exe",
+            "hash": "${AMD64_SHA256}"
+        },
+        "arm64": {
+            "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv${VERSION}/kubetail-windows-arm64#/kubetail.exe",
+            "hash": "${ARM64_SHA256}"
+        }
+    },
+    "bin": "kubetail.exe",
+    "checkver": {
+        "github": "https://github.com/kubetail-org/kubetail",
+        "regex": "cli/v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv$version/kubetail-windows-amd64#/kubetail.exe",
+                "hash": {
+                    "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv$version/kubetail-windows-amd64.sha256",
+                    "regex": "([A-Fa-f0-9]{64})"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv$version/kubetail-windows-arm64#/kubetail.exe",
+                "hash": {
+                    "url": "https://github.com/kubetail-org/kubetail/releases/download/cli%2Fv$version/kubetail-windows-arm64.sha256",
+                    "regex": "([A-Fa-f0-9]{64})"
+                }
+            }
+        }
+    }
+}
