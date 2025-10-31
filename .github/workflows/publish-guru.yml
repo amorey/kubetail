@@ -103,17 +103,24 @@ jobs:
           cat kubetail-${{ needs.config.outputs.version }}.ebuild
           cat Manifest
 
+      - name: Configure gpg
+        run: |
+          echo "${{ secrets.PGP_SIGNING_KEY }}" > signing_key.asc
+          gpg --batch --yes --pinentry-mode loopback --import signing_key.asc
+          rm -rf signing_key.asc
+
       - name: Push changes to GURU repo
         working-directory: guru
         if: ${{ needs.config.outputs.dry_run != 'true' }}
         run: |
           # Configure git
+          git config gpg.program gpg
           git config push.gpgsign 1
           git config push.gpgsign 1 
 
           git config user.name "Andres Morey"
-          git config user.email "andres@kubetail.com"
-          git config --local user.signingkey KEY-FINGERPRINT
+          git config user.email "root@andresmorey.com"
+          git config --local user.signingkey "3C59 7FB5 311E 684E 29A2  361B D939 0F72 9527 0CED"
 
           # Stage changes
           git add . --all
