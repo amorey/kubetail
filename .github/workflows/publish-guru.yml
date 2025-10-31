@@ -105,12 +105,10 @@ jobs:
 
       - name: Configure gpg
         run: |
-          echo "${{ secrets.PGP_SIGNING_KEY }}" > signing_key.asc
-          gpg --batch --yes --pinentry-mode loopback --import signing_key.asc
-          rm -rf signing_key.asc
+          echo "${{ secrets.PGP_SIGNING_KEY }}" | gpg --batch --yes --pinentry-mode loopback --import
 
           export GPG_TTY=$(tty) 
-          echo "hello" | gpg --clearsign
+          echo "hello" | gpg --batch --yes --pinentry-mode loopback --clearsign
 
       - name: Push changes to GURU repo
         working-directory: guru
