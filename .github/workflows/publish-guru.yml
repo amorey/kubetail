@@ -109,6 +109,8 @@ jobs:
           gpg --batch --yes --pinentry-mode loopback --import signing_key.asc
           rm -rf signing_key.asc
 
+          echo "hello" | gpg --clearsign
+
       - name: Push changes to GURU repo
         working-directory: guru
         if: ${{ needs.config.outputs.dry_run != 'true' }}
