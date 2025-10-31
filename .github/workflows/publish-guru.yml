@@ -107,9 +107,13 @@ jobs:
         working-directory: guru
         if: ${{ needs.config.outputs.dry_run != 'true' }}
         run: |
-          # Set name and email
+          # Configure git
+          git config push.gpgsign 1
+          git config push.gpgsign 1 
+
           git config user.name "Andres Morey"
           git config user.email "andres@kubetail.com"
+          git config --local user.signingkey KEY-FINGERPRINT
 
           # Stage changes
           git add . --all
