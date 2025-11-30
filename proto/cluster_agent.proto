@@ -124,7 +124,7 @@ message LogRecord {
 
   string message = 2;
 
-  bool is_final = 3;
+  bool has_more = 3;
 }
 
 // Controls how the stream is going to follow new entries in the logs.

@@ -213,7 +213,7 @@ func podLogsReader(podLogs io.ReadCloser, maxChunkSize int) func() (LogRecord, e
 					return LogRecord{
 						Timestamp: chunkTS,
 						Message:   string(buf[:n]),
-						IsFinal:   isFinal,
+						HasMore:   !isFinal,
 					}, nil
 				}
 

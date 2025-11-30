@@ -582,7 +582,7 @@ type LogRecord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	IsFinal       bool                   `protobuf:"varint,3,opt,name=is_final,json=isFinal,proto3" json:"is_final,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -631,9 +631,9 @@ func (x *LogRecord) GetMessage() string {
 	return ""
 }
 
-func (x *LogRecord) GetIsFinal() bool {
+func (x *LogRecord) GetHasMore() bool {
 	if x != nil {
-		return x.IsFinal
+		return x.HasMore
 	}
 	return false
 }
@@ -683,7 +683,7 @@ const file_cluster_agent_proto_rawDesc = "" +
 	"\tLogRecord\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x19\n" +
-	"\bis_final\x18\x03 \x01(\bR\aisFinal*,\n" +
+	"\bhas_more\x18\x03 \x01(\bR\ahasMore*,\n" +
 	"\n" +
 	"FollowFrom\x12\b\n" +
 	"\x04NOOP\x10\x00\x12\v\n" +

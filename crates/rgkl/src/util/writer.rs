@@ -110,7 +110,7 @@ pub fn process_output(
                                         Timestamp::from_str(time_str).unwrap_or_default(),
                                     ),
                                     message: log_msg.trim_end().to_string(),
-                                    is_final: true,
+                                    has_more: false,
                                 };
 
                                 let result =
@@ -133,7 +133,7 @@ pub fn process_output(
                             let record = LogRecord {
                                 timestamp: Some(Timestamp::from_str(first).unwrap()),
                                 message: rest[9..].trim_end().to_string(),
-                                is_final: rest.as_bytes()[8] == b'F',
+                                has_more: rest.as_bytes()[8] != b'F',
                             };
 
                             let result = task::block_in_place(|| sender.blocking_send(Ok(record)));

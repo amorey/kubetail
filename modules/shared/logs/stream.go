@@ -34,7 +34,7 @@ type LogRecord struct {
 	Timestamp time.Time
 	Message   string
 	Source    LogSource
-	IsFinal   bool
+	HasMore   bool
 	err       error // for use internally
 }
 
@@ -343,7 +343,11 @@ func (s *Stream) startHead_UNSAFE() error {
 			case s.pastCh <- record:
 			}
 
-			count += 1
+			// Increment counter
+			if !record.HasMore {
+				count += 1
+			}
+
 			// Exit loop if we have enough records
 			if s.mode != streamModeAll && count >= N {
 				break
@@ -400,7 +404,11 @@ func (s *Stream) startTail_UNSAFE() error {
 			}
 
 			tailRecords = append(tailRecords, record)
-			count += 1
+
+			// Increment counter
+			if !record.HasMore {
+				count += 1
+			}
 
 			if count >= N {
 				break

@@ -41,7 +41,7 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 
 	type expectedRecord struct {
 		message string
-		isFinal bool
+		hasMore bool
 	}
 
 	tests := []struct {
@@ -55,7 +55,7 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     "hello world\n",
 			maxChunk: 64,
 			expected: []expectedRecord{
-				{message: "hello world", isFinal: true},
+				{message: "hello world", hasMore: false},
 			},
 		},
 		{
@@ -63,9 +63,9 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     strings.Repeat("a", 12) + "\n",
 			maxChunk: 5,
 			expected: []expectedRecord{
-				{message: strings.Repeat("a", 5), isFinal: false},
-				{message: strings.Repeat("a", 5), isFinal: false},
-				{message: strings.Repeat("a", 2), isFinal: true},
+				{message: strings.Repeat("a", 5), hasMore: true},
+				{message: strings.Repeat("a", 5), hasMore: true},
+				{message: strings.Repeat("a", 2), hasMore: false},
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     "hello\n",
 			maxChunk: 5,
 			expected: []expectedRecord{
-				{message: "hello", isFinal: true},
+				{message: "hello", hasMore: false},
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     "trailing data without newline",
 			maxChunk: 64,
 			expected: []expectedRecord{
-				{message: "trailing data without newline", isFinal: true},
+				{message: "trailing data without newline", hasMore: false},
 			},
 		},
 		{
@@ -89,9 +89,9 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     "abc💡def\n",
 			maxChunk: 6,
 			expected: []expectedRecord{
-				{message: "abc", isFinal: false},
-				{message: "💡de", isFinal: false},
-				{message: "f", isFinal: true},
+				{message: "abc", hasMore: true},
+				{message: "💡de", hasMore: true},
+				{message: "f", hasMore: false},
 			},
 		},
 		{
@@ -99,8 +99,8 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 			body:     strings.Repeat("x", 5*1024),
 			maxChunk: 4 * 1024,
 			expected: []expectedRecord{
-				{message: strings.Repeat("x", 4*1024), isFinal: false},
-				{message: strings.Repeat("x", 1*1024), isFinal: true},
+				{message: strings.Repeat("x", 4*1024), hasMore: true},
+				{message: strings.Repeat("x", 1*1024), hasMore: false},
 			},
 		},
 	}
@@ -119,7 +119,7 @@ func TestPodLogsReaderSuccess(t *testing.T) {
 				require.NoError(t, err, "record %d", i)
 				assert.Equal(t, baseTS, record.Timestamp, "record %d", i)
 				assert.Equal(t, expected.message, record.Message, "record %d", i)
-				assert.Equal(t, expected.isFinal, record.IsFinal, "record %d", i)
+				assert.Equal(t, expected.hasMore, record.HasMore, "record %d", i)
 			}
 
 			_, err := next()
@@ -176,11 +176,11 @@ func TestPodLogsReaderErrBufferFullChunking(t *testing.T) {
 
 	expected := []struct {
 		message string
-		isFinal bool
+		hasMore bool
 	}{
-		{message: longBody[:maxChunk], isFinal: false},
-		{message: longBody[maxChunk : 2*maxChunk], isFinal: false},
-		{message: longBody[2*maxChunk:], isFinal: true},
+		{message: longBody[:maxChunk], hasMore: true},
+		{message: longBody[maxChunk : 2*maxChunk], hasMore: true},
+		{message: longBody[2*maxChunk:], hasMore: false},
 	}
 
 	for i, exp := range expected {
@@ -188,7 +188,7 @@ func TestPodLogsReaderErrBufferFullChunking(t *testing.T) {
 		require.NoError(t, err, "record %d", i)
 		assert.Equal(t, baseTS, record.Timestamp, "record %d", i)
 		assert.Equal(t, exp.message, record.Message, "record %d", i)
-		assert.Equal(t, exp.isFinal, record.IsFinal, "record %d", i)
+		assert.Equal(t, exp.hasMore, record.HasMore, "record %d", i)
 	}
 
 	_, err := next()
