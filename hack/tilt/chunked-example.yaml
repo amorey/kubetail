@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chunked-example
+  namespace: default
+  labels:
+    app.kubernetes.io/name: chunked-example
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chunked-example
+  replicas: 3
+  revisionHistoryLimit: 10
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chunked-example
+    spec:
+      containers:
+        - name: alpine
+          image: alpine:3.22.0
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "Starting random message generator"
+              trap "echo 'Received SIGTERM, exiting'; exit 0" TERM
+
+              while true; do
+                # Generate a random message > 16 KB (16384 bytes)
+                # Each iteration prints ~20KB of random data
+                for i in $(seq 1 100); do
+                  head -c 200 /dev/urandom | base64
+                done
+                echo "--- End of message batch $(date +%s) ---"
+                sleep 3 & wait $!
+              done

@@ -376,13 +376,23 @@ var logsCmd = &cobra.Command{
 
 		// Write rows
 		var firstRecord, lastRecord *logs.LogRecord
+		var messageBuffer strings.Builder
+
 		for record := range stream.Records() {
 			if firstRecord == nil {
 				firstRecord = &record
 			}
 			lastRecord = &record
 
-			// Prepare row data
+			// Accumulate message chunks
+			messageBuffer.WriteString(record.Message)
+
+			// If there's more to come, continue accumulating
+			if record.HasMore {
+				continue
+			}
+
+			// This is the last chunk (or a non-chunked message), write the complete row
 			row := []string{}
 			if withTs {
 				row = append(row, record.Timestamp.Format(time.RFC3339Nano))
@@ -417,11 +427,14 @@ var logsCmd = &cobra.Command{
 			if withContainer {
 				row = append(row, orDefault(record.Source.ContainerName, "-"))
 			}
-			row = append(row, record.Message)
+			row = append(row, messageBuffer.String())
 
 			// Add row to table
 			tw.WriteRow(row)
 			writer.Flush()
+
+			// Reset message buffer for next record
+			messageBuffer.Reset()
 		}
 
 		// Exit early if user issued SIGTERM
