@@ -152,87 +152,54 @@ func parseWorkloadType(workloadStr string) WorkloadType {
 
 // podLogsReader reads from podLogs and splits messages into chunks of max length maxChunkSize
 func podLogsReader(podLogs io.ReadCloser) func() (LogRecord, error) {
-	reader := bufio.NewReader(podLogs)
-
 	var zero LogRecord
-	var err error
-	var newline = []byte{'\n'}
+
+	reader := bufio.NewReader(podLogs)
 
 	// Generator function
 	return func() (LogRecord, error) {
 		// Read all bytes until next newline
-		fragments := make([][]byte, 0, 1)
-		tot := 0
-
-	Loop:
-		for {
-			var fragment []byte
-			fragment, err = reader.ReadBytes('\n')
-
-			// Save fragment
-			if len(fragment) > 0 {
-				fragments = append(fragments, fragment)
-				tot += len(fragment)
-			}
-
-			// Handle errors
-			switch err {
-			case nil, io.EOF:
-				break Loop
-			case bufio.ErrBufferFull:
-				continue
-			default:
-				return zero, err
-			}
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			return zero, err
 		}
-
-		var record LogRecord
 
 		// Parse timestamp
-		if len(fragments) > 0 {
-			pos, ts, err := extractTimestampFromBytes(fragments[0])
-			if err != nil {
-				return zero, err
-			}
-
-			// Consume timestamp
-			pos += 1
-			fragments[0] = fragments[0][pos:]
-
-			// Remove newline
-			last := len(fragments) - 1
-			fragments[last] = bytes.TrimSuffix(fragments[last], newline)
-
-			// Build message
-			var msg strings.Builder
-			msg.Grow(tot - pos)
-
-			for _, frag := range fragments {
-				msg.Write(frag)
-			}
-
-			// Update record
-			record.Timestamp = ts
-			record.Message = msg.String()
+		pos, ts, err := extractTimestampFromBytes(line)
+		if err != nil {
+			return zero, err
 		}
 
-		return record, err
+		// Consume timestamp and remove newline
+		start, end := pos+1, len(line)-1
+		if start >= end {
+			line = nil
+		} else {
+			line = line[start:end]
+		}
+
+		// Return record
+		return LogRecord{
+			Timestamp: ts,
+			Message:   string(line),
+		}, nil
 	}
 }
 
 // extractTimestampFromBytes reads and parses the timestamp prefix from a byte array
-func extractTimestampFromBytes(fragment []byte) (int, time.Time, error) {
+func extractTimestampFromBytes(line []byte) (int, time.Time, error) {
 	var zero time.Time
 
 	// Only search for delimiter within the maximum RFC3339Nano timestamp length
-	searchLen := min(len(fragment), TIMESTAMP_MAX_SEARCH_LEN)
+	searchLen := min(len(line), TIMESTAMP_MAX_SEARCH_LEN)
 
-	pos := bytes.IndexByte(fragment[:searchLen], ' ')
+	pos := bytes.IndexByte(line[:searchLen], ' ')
 	if pos < 0 {
+		fmt.Println(string(line))
 		return 0, zero, ErrDelimiterNotFound
 	}
 
-	ts, err := time.Parse(time.RFC3339Nano, string(fragment[:pos]))
+	ts, err := time.Parse(time.RFC3339Nano, string(line[:pos]))
 	if err != nil {
 		return 0, zero, err
 	}

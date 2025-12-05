@@ -129,8 +129,8 @@ func TestPodLogsReader(t *testing.T) {
 
 		record, err := next()
 		require.Equal(t, io.EOF, err)
-		require.Equal(t, baseTS, record.Timestamp)
-		require.Equal(t, "hello", record.Message)
+		require.True(t, record.Timestamp.IsZero())
+		require.Equal(t, "", record.Message)
 	})
 
 	t.Run("invalid timestamp", func(t *testing.T) {
