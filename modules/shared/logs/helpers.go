@@ -24,9 +24,7 @@ import (
 	"io"
 	"strings"
 	"time"
-	"unicode/utf8"
 
-	"github.com/smallnest/ringbuffer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -151,180 +149,90 @@ func parseWorkloadType(workloadStr string) WorkloadType {
 }
 
 // podLogsReader reads from podLogs and splits messages into chunks of max length maxChunkSize
-func podLogsReader(podLogs io.ReadCloser, maxChunkSize int) func() (LogRecord, error) {
+func podLogsReader(podLogs io.ReadCloser) func() (LogRecord, error) {
 	reader := bufio.NewReader(podLogs)
-	ring := ringbuffer.New(maxChunkSize + bufio.MaxScanTokenSize)
 
-	var err error
 	var zero LogRecord
-	var chunkTS time.Time
-	var hasChunkTS bool
-	var hasNewLine bool
-	var isEOF bool
-
-	// Reusable buffer to avoid allocations in the hot path
-	buf := make([]byte, max(maxChunkSize+utf8.UTFMax, EXTRACT_TIMESTAMP_BUFFER_SIZE_MIN))
+	var err error
+	var newline = []byte{'\n'}
 
 	// Generator function
 	return func() (LogRecord, error) {
+		// Read all bytes until next newline
+		fragments := make([][]byte, 0, 1)
+		tot := 0
+
+	Loop:
 		for {
-			if ring.Length() > 0 {
-				// Parse timestamp if we don't have one yet
-				if !hasChunkTS {
-					chunkTS, err = extractTimestampFromRing(ring, buf)
-					if err != nil {
-						return zero, err
-					} else if ring.Length() == 0 {
-						return zero, ErrExpectedData
-					}
-					hasChunkTS = true
-				}
+			var fragment []byte
+			fragment, err = reader.ReadBytes('\n')
 
-				// Send record (if possible)
-				if isEOF || hasNewLine || ring.Length() >= maxChunkSize {
-					chunkLen, err := runeSafeChunkLenFromRing(ring, maxChunkSize, buf)
-					if err != nil {
-						return zero, err
-					}
-
-					// Read the chunk from ring buffer
-					n, err := ring.Read(buf[:chunkLen])
-					if err != nil {
-						return zero, err
-					}
-
-					// Handle newlines
-					var isFinal bool
-					if buf[n-1] == '\n' {
-						isFinal = true
-						n -= 1
-					} else if ring.Length() == 1 && hasNewLine {
-						isFinal = true
-						ring.Reset()
-					} else if isEOF && ring.Length() == 0 {
-						isFinal = true
-					}
-
-					if isFinal {
-						hasChunkTS = false
-						hasNewLine = false
-					}
-
-					return LogRecord{
-						Timestamp: chunkTS,
-						Message:   string(buf[:n]),
-						IsFinal:   isFinal,
-					}, nil
-				}
-
+			// Save fragment
+			if len(fragment) > 0 {
+				fragments = append(fragments, fragment)
+				tot += len(fragment)
 			}
 
-			// Read more data from source
-			part, err := reader.ReadSlice('\n')
+			// Handle errors
+			switch err {
+			case nil, io.EOF:
+				break Loop
+			case bufio.ErrBufferFull:
+				continue
+			default:
+				return zero, err
+			}
+		}
 
-			if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+		var record LogRecord
+
+		// Parse timestamp
+		if len(fragments) > 0 {
+			pos, ts, err := extractTimestampFromBytes(fragments[0])
+			if err != nil {
 				return zero, err
 			}
 
-			if len(part) > 0 {
-				ring.Write(part)
+			// Consume timestamp
+			pos += 1
+			fragments[0] = fragments[0][pos:]
 
-				if part[len(part)-1] == '\n' {
-					hasNewLine = true
-				}
+			// Remove newline
+			last := len(fragments) - 1
+			fragments[last] = bytes.TrimSuffix(fragments[last], newline)
+
+			// Build message
+			var msg strings.Builder
+			msg.Grow(tot - pos)
+
+			for _, frag := range fragments {
+				msg.Write(frag)
 			}
 
-			if err == io.EOF {
-				if ring.Length() == 0 {
-					return zero, io.EOF
-				}
-				isEOF = true
-			}
+			// Update record
+			record.Timestamp = ts
+			record.Message = msg.String()
 		}
+
+		return record, err
 	}
 }
 
-// extractTimestampFromRing reads and parses the timestamp prefix from the ring buffer
-func extractTimestampFromRing(ring *ringbuffer.RingBuffer, buf []byte) (time.Time, error) {
+// extractTimestampFromBytes reads and parses the timestamp prefix from a byte array
+func extractTimestampFromBytes(fragment []byte) (int, time.Time, error) {
 	var zero time.Time
 
-	// RFC3339Nano is ~35 chars max plus space
-	if cap(buf) < EXTRACT_TIMESTAMP_BUFFER_SIZE_MIN {
-		return zero, ErrBufCapacity
+	pos := bytes.IndexByte(fragment, ' ')
+	if pos < 0 {
+		return 0, zero, ErrDelimiterNotFound
 	}
 
-	// Peek to find the space delimiter
-	n, err := ring.Peek(buf[:EXTRACT_TIMESTAMP_BUFFER_SIZE_MIN])
+	ts, err := time.Parse(time.RFC3339Nano, string(fragment[:pos]))
 	if err != nil {
-		return zero, err
-	} else if n == 0 {
-		return zero, ErrExpectedData
+		return 0, zero, err
 	}
 
-	i := bytes.IndexByte(buf[:n], ' ')
-	if i < 0 {
-		return zero, ErrDelimiterNotFound
-	}
-
-	ts, err := time.Parse(time.RFC3339Nano, string(buf[:i]))
-	if err != nil {
-		return zero, err
-	}
-
-	// Now actually consume the timestamp + space
-	if _, err = ring.Read(buf[:i+1]); err != nil {
-		return zero, err
-	}
-
-	return ts, nil
-}
-
-// runeSafeChunkLenFromRing determines safe chunk length from ring buffer
-func runeSafeChunkLenFromRing(ring *ringbuffer.RingBuffer, maxChunkSize int, buf []byte) (int, error) {
-	length := ring.Length()
-	if length == 0 {
-		return 0, nil
-	}
-
-	if maxChunkSize <= 0 || maxChunkSize >= length {
-		return length, nil
-	}
-
-	// Check buffer
-	wantLen := min(length, maxChunkSize+utf8.UTFMax)
-	if cap(buf) < wantLen {
-		return 0, ErrBufCapacity
-	}
-
-	n, err := ring.Peek(buf[:wantLen])
-	if err != nil {
-		return 0, err
-	}
-
-	chunkLen := min(maxChunkSize, n)
-
-	// Fast path: trim from the end until last rune is complete
-	for chunkLen > 0 {
-		r, size := utf8.DecodeLastRune(buf[:chunkLen])
-
-		// size == 0 shouldn't happen here; but guard anyway.
-		if size == 0 {
-			break
-		}
-
-		// Invalid encoding at the end => trim one byte and try again.
-		if r == utf8.RuneError && size == 1 {
-			chunkLen--
-			continue
-		}
-
-		// Got a complete rune at the end -> everything up to here is fine
-		return chunkLen, nil
-	}
-
-	// No rune fits inside maxChunkSize; return the first rune in full.
-	_, size := utf8.DecodeRune(buf[:n])
-	return size, nil
+	return pos, ts, nil
 }
 
 // mergeLogStreams merges multiple ordered log streams into a single channel
