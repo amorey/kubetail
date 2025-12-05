@@ -393,7 +393,6 @@ func (f *AgentLogFetcher) StreamForward(ctx context.Context, source LogSource, o
 				Message:   ev.Message,
 				Timestamp: ev.Timestamp.AsTime(),
 				Source:    source,
-				IsFinal:   ev.IsFinal,
 			}
 		}
 	})
@@ -462,7 +461,6 @@ func (f *AgentLogFetcher) StreamBackward(ctx context.Context, source LogSource, 
 				Message:   ev.Message,
 				Timestamp: ev.Timestamp.AsTime(),
 				Source:    source,
-				IsFinal:   ev.IsFinal,
 			}
 		}
 	})

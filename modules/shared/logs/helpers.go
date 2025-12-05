@@ -32,7 +32,9 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-const EXTRACT_TIMESTAMP_BUFFER_SIZE_MIN = 36
+// RFC3339Nano max length is 35 bytes (e.g., "2006-01-02T15:04:05.999999999Z07:00")
+// We add 1 for the space delimiter
+const TIMESTAMP_MAX_SEARCH_LEN = 36
 
 var (
 	ErrExpectedData      = errors.New("expected data")
@@ -222,7 +224,10 @@ func podLogsReader(podLogs io.ReadCloser) func() (LogRecord, error) {
 func extractTimestampFromBytes(fragment []byte) (int, time.Time, error) {
 	var zero time.Time
 
-	pos := bytes.IndexByte(fragment, ' ')
+	// Only search for delimiter within the maximum RFC3339Nano timestamp length
+	searchLen := min(len(fragment), TIMESTAMP_MAX_SEARCH_LEN)
+
+	pos := bytes.IndexByte(fragment[:searchLen], ' ')
 	if pos < 0 {
 		return 0, zero, ErrDelimiterNotFound
 	}
