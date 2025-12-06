@@ -169,8 +169,8 @@ func podLogsReader(podLogs io.ReadCloser) func() (LogRecord, error) {
 			// Parse timestamp
 			pos, ts, err := extractTimestampFromBytes(line)
 			if err != nil {
-				// This is to handle an edge case where the podLogs API returns lines
-				// without timestamps or with invalid timestamps when following chunked logs
+				// This is to handle an edge case where the podLogs API returns lines without
+				// timestamps or with invalid timestamps when following chunked logs
 				continue
 			}
 

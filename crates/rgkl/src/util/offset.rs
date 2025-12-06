@@ -531,6 +531,29 @@ mod tests_find_nearest_offset_since {
 
         Ok(())
     }
+
+    #[test]
+    fn test_partials() -> IoResult<()> {
+        let lines = [
+            "2024-10-01T05:40:57.041413876Z stdout F linenum 1",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 2",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 3",
+            "2024-10-01T05:40:58.197779961Z stdout F linenum 4",
+            "2024-10-01T05:40:59.103901461Z stdout F linenum 5",
+        ];
+        let (tmpfile, offsets) = common::create_temp_log(&lines)?;
+
+        let file = tmpfile.into_file();
+        let max_offset = file.metadata()?.len();
+
+        let target_time = DateTime::parse_from_rfc3339("2024-10-01T05:40:58.197779961Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let offset = find_nearest_offset_since(&file, target_time, 0, max_offset, FileFormat::CRI)?;
+        assert_eq!(offset.as_ref(), Some(&offsets[1]));
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -765,6 +788,50 @@ mod tests_find_nearest_offset_until {
                 find_nearest_offset_until(&file, target_time, 0, max_offset, FileFormat::CRI)?;
             assert_eq!(offset.as_ref(), expected, "target: {}", target_str);
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_partials_finished() -> IoResult<()> {
+        let lines = [
+            "2024-10-01T05:40:57.041413876Z stdout F linenum 1",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 2",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 3",
+            "2024-10-01T05:40:58.197779961Z stdout F linenum 4",
+        ];
+        let (tmpfile, offsets) = common::create_temp_log(&lines)?;
+
+        let file = tmpfile.into_file();
+        let max_offset = file.metadata()?.len();
+
+        let target_time = DateTime::parse_from_rfc3339("2024-10-01T05:40:58.197779961Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let offset = find_nearest_offset_until(&file, target_time, 0, max_offset, FileFormat::CRI)?;
+        assert_eq!(offset.as_ref(), Some(&offsets[3]));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_partials_unfinished() -> IoResult<()> {
+        let lines = [
+            "2024-10-01T05:40:57.041413876Z stdout F linenum 1",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 2",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 3",
+            "2024-10-01T05:40:58.197779961Z stdout P linenum 4",
+        ];
+        let (tmpfile, offsets) = common::create_temp_log(&lines)?;
+
+        let file = tmpfile.into_file();
+        let max_offset = file.metadata()?.len();
+
+        let target_time = DateTime::parse_from_rfc3339("2024-10-01T05:40:58.197779961Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        let offset = find_nearest_offset_until(&file, target_time, 0, max_offset, FileFormat::CRI)?;
+        assert_eq!(offset.as_ref(), Some(&offsets[0]));
 
         Ok(())
     }
