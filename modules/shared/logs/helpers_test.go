@@ -92,6 +92,32 @@ func TestPodLogsReader(t *testing.T) {
 		require.Equal(t, "world", r2.Message)
 	})
 
+	t.Run("ignores partial lines", func(t *testing.T) {
+		ts := baseTS.Format(time.RFC3339Nano)
+		rc := io.NopCloser(strings.NewReader(fmt.Sprintf("partial\n%s hello\n", ts)))
+		defer rc.Close()
+
+		next := podLogsReader(rc)
+
+		record, err := next()
+		require.NoError(t, err)
+		require.Equal(t, baseTS, record.Timestamp)
+		require.Equal(t, "hello", record.Message)
+	})
+
+	t.Run("ignores bad timestamps", func(t *testing.T) {
+		ts := baseTS.Format(time.RFC3339Nano)
+		rc := io.NopCloser(strings.NewReader(fmt.Sprintf("bad timestamp\n%s hello\n", ts)))
+		defer rc.Close()
+
+		next := podLogsReader(rc)
+
+		record, err := next()
+		require.NoError(t, err)
+		require.Equal(t, baseTS, record.Timestamp)
+		require.Equal(t, "hello", record.Message)
+	})
+
 	t.Run("line exceeds 4KB buffer size", func(t *testing.T) {
 		msg := strings.Repeat("x", 5*1024)
 
@@ -140,8 +166,7 @@ func TestPodLogsReader(t *testing.T) {
 		next := podLogsReader(rc)
 
 		_, err := next()
-		var parseErr *time.ParseError
-		require.ErrorAs(t, err, &parseErr)
+		require.Equal(t, io.EOF, err)
 	})
 }
 

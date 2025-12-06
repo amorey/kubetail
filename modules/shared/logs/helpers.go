@@ -155,34 +155,41 @@ func podLogsReader(podLogs io.ReadCloser) func() (LogRecord, error) {
 	var zero LogRecord
 
 	reader := bufio.NewReader(podLogs)
+	n := 0
 
 	// Generator function
 	return func() (LogRecord, error) {
-		// Read all bytes until next newline
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			return zero, err
-		}
+		for {
+			// Read all bytes until next newline
+			line, err := reader.ReadBytes('\n')
+			if err != nil {
+				return zero, err
+			}
 
-		// Parse timestamp
-		pos, ts, err := extractTimestampFromBytes(line)
-		if err != nil {
-			return zero, err
-		}
+			// Parse timestamp
+			pos, ts, err := extractTimestampFromBytes(line)
+			if err != nil {
+				// This is to handle an edge case where the podLogs API returns lines
+				// without timestamps or with invalid timestamps when following chunked logs
+				continue
+			}
 
-		// Consume timestamp and remove newline
-		start, end := pos+1, len(line)-1
-		if start >= end {
-			line = nil
-		} else {
-			line = line[start:end]
-		}
+			// Consume timestamp and remove newline
+			start, end := pos+1, len(line)-1
+			if start >= end {
+				line = nil
+			} else {
+				line = line[start:end]
+			}
 
-		// Return record
-		return LogRecord{
-			Timestamp: ts,
-			Message:   string(line),
-		}, nil
+			n += 1
+
+			// Return record
+			return LogRecord{
+				Timestamp: ts,
+				Message:   string(line),
+			}, nil
+		}
 	}
 }
 
@@ -195,7 +202,6 @@ func extractTimestampFromBytes(line []byte) (int, time.Time, error) {
 
 	pos := bytes.IndexByte(line[:searchLen], ' ')
 	if pos < 0 {
-		fmt.Println(string(line))
 		return 0, zero, ErrDelimiterNotFound
 	}
 
