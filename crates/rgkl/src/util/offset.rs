@@ -98,7 +98,8 @@ fn find_nearest_offset(
         reader.seek(SeekFrom::Start(mid as u64))?;
 
         // Scan for the next valid timestamp.
-        let (new_mid, res_opt) = scan_timestamp(&mut reader, right, mid, format)?;
+        let scan_final_only = matches!(mode, FindMode::Until);
+        let (new_mid, res_opt) = scan_timestamp(&mut reader, right, mid, format, scan_final_only)?;
 
         match res_opt {
             Some((ts, line_length)) => {
@@ -149,6 +150,7 @@ fn scan_timestamp(
     right: i64,
     start_pos: i64,
     format: FileFormat,
+    require_final_line: bool,
 ) -> IoResult<(i64, Option<ScanResultTuple>)> {
     let mut pos = start_pos;
     while pos <= right {
@@ -161,7 +163,7 @@ fn scan_timestamp(
             return Ok((start_pos, None));
         }
 
-        if let Ok(ts) = parse_timestamp(&line, format) {
+        if let Ok(ts) = parse_timestamp(&line, format, require_final_line) {
             return Ok((pos, Some((ts, line.len()))));
         }
 
@@ -177,6 +179,7 @@ fn scan_timestamp(
 fn parse_timestamp(
     line: &str,
     format: FileFormat,
+    require_final_line: bool,
 ) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
     match format {
         FileFormat::Docker => {
@@ -193,9 +196,12 @@ fn parse_timestamp(
         }
         FileFormat::CRI => {
             // Original CRI format parsing
-            let parts: Vec<&str> = line.splitn(2, ' ').collect();
+            let parts: Vec<&str> = line.splitn(4, ' ').collect();
             if parts.len() < 2 {
                 return Err(format!("invalid log line: {line}").into());
+            }
+            if require_final_line && parts.get(2) != Some(&"F") {
+                return Err(format!("not a final log line: {line}").into());
             }
             let ts = DateTime::parse_from_rfc3339(parts[0])?.with_timezone(&Utc);
             Ok(ts)
