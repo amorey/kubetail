@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { ChevronDownIcon } from 'lucide-react';
+import { Bell, ChevronDownIcon } from 'lucide-react';
 
 import {
   Select,
@@ -28,6 +28,7 @@ import ServerStatus from '@/components/widgets/ServerStatus';
 import { useTheme, UserPreference } from '@/lib/theme';
 import EnvironmentControl from './EnvironmentControl';
 
+/*
 export default function Footer() {
   const { userPreference, setUserPreference } = useTheme();
 
@@ -55,6 +56,21 @@ export default function Footer() {
       </Select>
       <div className="flex">
         {import.meta.env.MODE === 'development' && <EnvironmentControl />}
+        <ServerStatus />
+      </div>
+    </div>
+  );
+}
+*/
+
+export default function Footer() {
+  return (
+    <div className="h-[24px] bg-chrome-100 border-t border-chrome-divider text-sm flex justify-end items-center pr-[20px]">
+      <div className="h-[24px] cursor-pointer hover:bg-chrome-200">Settings</div>
+      <div className="h-[24px] w-[24px] bg-red-100 p-[4px]">
+        <Bell className="h-[16px] w-[16px]" />
+      </div>
+      <div className="h-[24px] w-[24px] bg-red-100 p-[4px]">
         <ServerStatus />
       </div>
     </div>

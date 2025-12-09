@@ -62,7 +62,7 @@ const HealthDot = ({ status }: { status: Status }) => {
 
   return (
     <div
-      className={cn('inline-block w-[8px] h-[8px] rounded-full', {
+      className={cn('inline-block w-[16px] h-[16px] rounded-full', {
         'bg-chrome-300': color === 'chrome',
         'bg-red-500': color === 'red',
         'bg-green-500': color === 'green',
@@ -237,7 +237,6 @@ const ServerStatusWidget = ({ className }: ServerStatusWidgetProps) => {
             type="button"
             className={cn('px-2 rounded-tl-sm flex items-center space-x-1 cursor-pointer', className)}
           >
-            <div className="text-sm">status:</div>
             <HealthDot status={overallStatus} />
           </button>
         </DialogTrigger>
