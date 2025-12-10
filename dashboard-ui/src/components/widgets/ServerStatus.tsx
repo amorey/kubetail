@@ -62,7 +62,7 @@ const HealthDot = ({ status }: { status: Status }) => {
 
   return (
     <div
-      className={cn('inline-block w-[16px] h-[16px] rounded-full', {
+      className={cn('inline-block w-4 h-4 rounded-full', {
         'bg-chrome-300': color === 'chrome',
         'bg-red-500': color === 'red',
         'bg-green-500': color === 'green',
@@ -194,7 +194,7 @@ const ClusterAPIServerStatusRow = ({ kubeContext, dashboardServerStatus }: Serve
 };
 
 const StatusTable = ({ children }: React.PropsWithChildren) => (
-  <div className="rounded-md border-1 shadow-xs">
+  <div className="rounded-md border shadow-xs">
     <Table>
       <TableBody>{children}</TableBody>
     </Table>

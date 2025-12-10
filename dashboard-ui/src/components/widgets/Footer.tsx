@@ -65,14 +65,16 @@ export default function Footer() {
 
 export default function Footer() {
   return (
-    <div className="h-[24px] bg-chrome-100 border-t border-chrome-divider text-sm flex justify-end items-center pr-[20px]">
-      <div className="h-[24px] cursor-pointer hover:bg-chrome-200">Settings</div>
-      <div className="h-[24px] w-[24px] bg-red-100 p-[4px]">
-        <Bell className="h-[16px] w-[16px]" />
-      </div>
-      <div className="h-[24px] w-[24px] bg-red-100 p-[4px]">
-        <ServerStatus />
-      </div>
+    <div className="h-6 bg-chrome-100 border-t border-chrome-divider flex justify-end items-center px-6 space-x-2">
+      <button type="button" className="h-full hover:bg-chrome-200 px-1 text-xs">
+        Settings
+      </button>
+      <button type="button" className="h-full hover:bg-chrome-200 px-1">
+        <Bell className="h-4 w-4" />
+      </button>
+      <button type="button" className="h-full hover:bg-chrome-200 p-1" aria-label="Status">
+        <div className="w-3 h-3 rounded-full bg-green-500" />
+      </button>
     </div>
   );
 }
