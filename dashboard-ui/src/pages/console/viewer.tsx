@@ -63,6 +63,18 @@ import {
 } from './state';
 
 /**
+ * Constants
+ */
+
+const CONSTANTS = {
+  ROW_HEIGHT: 24,
+  OVERSCAN_COUNT: 20,
+  SCROLL_TOLERANCE: 10,
+  LOAD_MORE_THRESHOLD: 20,
+  DEBOUNCE_DELAY_MS: 20,
+} as const;
+
+/**
  * Shared variables and types
  */
 
@@ -377,10 +389,10 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
   const handleItemSize = useCallback(
     (index: number) => {
       const sizerEl = sizerElRef.current;
-      if (!isWrap || !sizerEl) return 24;
+      if (!isWrap || !sizerEl) return CONSTANTS.ROW_HEIGHT;
 
       // placeholder rows
-      if (index === 0 || index === items.length + 1) return 24;
+      if (index === 0 || index === items.length + 1) return CONSTANTS.ROW_HEIGHT;
 
       const record = items[index - 1];
       sizerEl.textContent = stripAnsi(record.message); // strip out ansi
@@ -398,7 +410,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     count: itemCount,
     getScrollElement: () => listOuterRef.current,
     estimateSize: (index) => handleItemSize(index),
-    overscan: 20,
+    overscan: CONSTANTS.OVERSCAN_COUNT,
     measureElement: isWrap ? (element) => element?.getBoundingClientRect().height || 0 : undefined,
   });
 
@@ -460,7 +472,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
 
     const firstItem = virtualItems[0];
     const lastItem = virtualItems[virtualItems.length - 1];
-    const threshold = 20;
+    const threshold = CONSTANTS.LOAD_MORE_THRESHOLD;
 
     if (hasMoreBefore && firstItem.index <= threshold) loadMoreItems(0).catch(() => {});
     if (hasMoreAfter && lastItem.index >= itemCount - 1 - threshold) loadMoreItems(itemCount - 1).catch(() => {});
@@ -489,7 +501,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     if (!msgHeaderColEl || !isWrap) return;
 
     setMsgColWidth(msgHeaderColEl.clientWidth);
-  }, 20);
+  }, CONSTANTS.DEBOUNCE_DELAY_MS);
 
   // listen to content window dimension changes
   useEffect(() => {
@@ -570,7 +582,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     }
 
     // If scrolled to bottom, turn on auto-scroll
-    const tolerance = 10;
+    const tolerance = CONSTANTS.SCROLL_TOLERANCE;
     if (!isAutoScrollEnabledRef.current && Math.abs(scrollTop + clientHeight - scrollHeight) <= tolerance)
       isAutoScrollEnabledRef.current = true;
   }, []);
