@@ -28,8 +28,7 @@ import {
   useState,
 } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { VariableSizeList, areEqual } from 'react-window';
-import InfiniteLoader from 'react-window-infinite-loader';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDebounceCallback } from 'usehooks-ts';
 
 import { Spinner } from '@kubetail/ui/elements/spinner';
@@ -232,10 +231,13 @@ type RowData = {
 };
 
 type RowProps = {
-  index: any;
-  style: any;
+  index: number;
+  style: React.CSSProperties;
   data: RowData;
 };
+
+const areRowPropsEqual = (prev: RowProps, next: RowProps) =>
+  prev.index === next.index && prev.data === next.data && prev.style?.height === next.style?.height;
 
 const Row = memo(({ index, style, data }: RowProps) => {
   const { items, hasMoreBefore, visibleCols, isWrap } = data;
@@ -322,7 +324,7 @@ const Row = memo(({ index, style, data }: RowProps) => {
       {els}
     </div>
   );
-}, areEqual);
+}, areRowPropsEqual);
 
 /**
  * Content component
@@ -357,14 +359,10 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
   const headerOuterElRef = useRef<HTMLDivElement>(null);
   const headerInnerElRef = useRef<HTMLDivElement>(null);
 
-  const listRef = useRef<VariableSizeList<LogRecord>>(null);
   const listOuterRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
-  const infiniteLoaderRef = useRef<InfiniteLoader>(null);
   const msgHeaderColElRef = useRef<HTMLDivElement>(null);
   const sizerElRef = useRef<HTMLDivElement>(null);
-
-  const [isListReady, setIsListReady] = useState(false);
 
   const isAutoScrollEnabledRef = useRef(false);
   const lastScrollTopRef = useRef(0);
@@ -376,19 +374,46 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
   let itemCount = items.length + 1; // always add extra row before
   if (hasMoreAfter) itemCount += 1; // only add extra row if more are hidden
 
+  const handleItemSize = useCallback(
+    (index: number) => {
+      const sizerEl = sizerElRef.current;
+      if (!isWrap || !sizerEl) return 24;
+
+      // placeholder rows
+      if (index === 0 || index === items.length + 1) return 24;
+
+      const record = items[index - 1];
+      sizerEl.textContent = stripAnsi(record.message); // strip out ansi
+      return sizerEl.clientHeight;
+    },
+    [isWrap, items],
+  );
+
+  const rowData = useMemo(
+    () => ({ items, hasMoreBefore, hasMoreAfter, visibleCols, isWrap }),
+    [items, hasMoreBefore, hasMoreAfter, visibleCols, isWrap],
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: itemCount,
+    getScrollElement: () => listOuterRef.current,
+    estimateSize: (index) => handleItemSize(index),
+    overscan: 20,
+    measureElement: isWrap ? (element) => element?.getBoundingClientRect().height || 0 : undefined,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+
   // define handler api
   useImperativeHandle(ref, () => {
     const scrollTo = (pos: 'first' | 'last') => {
       if (pos === 'last') {
         isAutoScrollEnabledRef.current = true;
-        listRef.current?.scrollToItem(Infinity, 'end');
+        rowVirtualizer.scrollToIndex(itemCount - 1, { align: 'end' });
       } else {
         isAutoScrollEnabledRef.current = false;
-        listRef.current?.scrollToItem(0, 'end');
+        rowVirtualizer.scrollToIndex(0, { align: 'start' });
       }
-
-      // Reset load cache
-      infiniteLoaderRef.current?.resetloadMoreItemsCache(true);
     };
 
     const autoScroll = () => {
@@ -396,67 +421,59 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     };
 
     return { scrollTo, autoScroll };
-  }, [isListReady]);
+  }, [itemCount, rowVirtualizer]);
 
   // -------------------------------------------------------------------------------------
   // Loading logic
   // -------------------------------------------------------------------------------------
 
-  // loaded-item cache logic
-  const isItemLoaded = (index: number) => {
-    if (index === 0 && hasMoreBefore) return false;
-    if (index === itemCount - 1 && hasMoreAfter) return false;
-    return true;
-  };
-
   // load more logic
-  const loadMoreItems = async (startIndex: number) => {
-    if (isLoading) return;
-    setIsLoading(true);
+  const loadMoreItems = useCallback(
+    async (startIndex: number) => {
+      if (isLoading) return;
+      setIsLoading(true);
 
-    // get current scrollPos
-    const origScrollHeight = listOuterRef.current?.scrollHeight || 0;
+      // get current scrollPos
+      const origScrollHeight = listOuterRef.current?.scrollHeight || 0;
 
-    // load data
-    if (startIndex === 0) await loadMoreBefore();
-    else await loadMoreAfter();
+      // load data
+      if (startIndex === 0) await loadMoreBefore();
+      else await loadMoreAfter();
 
-    nextTick(() => {
-      // maintain scroll position
-      if (startIndex === 0 && listOuterRef.current) {
-        // Scroll
-        const { scrollTop, scrollHeight } = listOuterRef.current;
-        listOuterRef.current.scrollTo({ top: scrollTop + (scrollHeight - origScrollHeight), behavior: 'instant' });
-      }
+      nextTick(() => {
+        // maintain scroll position
+        if (startIndex === 0 && listOuterRef.current) {
+          // Scroll
+          const { scrollTop, scrollHeight } = listOuterRef.current;
+          listOuterRef.current.scrollTo({ top: scrollTop + (scrollHeight - origScrollHeight), behavior: 'instant' });
+        }
 
-      // reset load cache for loadMoreBefore()
-      if (startIndex === 0) infiniteLoaderRef.current?.resetloadMoreItemsCache(true);
+        // stop loading
+        setIsLoading(false);
+      });
+    },
+    [isLoading, loadMoreAfter, loadMoreBefore, nextTick, setIsLoading],
+  );
 
-      // stop loading
-      setIsLoading(false);
-    });
-  };
+  useEffect(() => {
+    if (!virtualItems.length) return;
+
+    const firstItem = virtualItems[0];
+    const lastItem = virtualItems[virtualItems.length - 1];
+    const threshold = 20;
+
+    if (hasMoreBefore && firstItem.index <= threshold) loadMoreItems(0).catch(() => {});
+    if (hasMoreAfter && lastItem.index >= itemCount - 1 - threshold) loadMoreItems(itemCount - 1).catch(() => {});
+  }, [virtualItems, hasMoreBefore, hasMoreAfter, loadMoreItems, itemCount]);
 
   // -------------------------------------------------------------------------------------
   // Sizing logic
   // -------------------------------------------------------------------------------------
 
-  const handleItemSize = (index: number) => {
-    const sizerEl = sizerElRef.current;
-    if (!isWrap || !sizerEl) return 24;
-
-    // placeholder rows
-    if (index === 0 || index === items.length + 1) return 24;
-
-    const record = items[index - 1];
-    sizerEl.textContent = stripAnsi(record.message); // strip out ansi
-    return sizerEl.clientHeight;
-  };
-
   // trigger resize on `msgColWidth` changes
   useEffect(() => {
-    listRef.current?.resetAfterIndex(0);
-  }, [msgColWidth]);
+    rowVirtualizer.measure();
+  }, [msgColWidth, rowVirtualizer]);
 
   // recalculate `msgColWidth` on `isWrap` and `visibleCols` changes
   useEffect(() => {
@@ -468,13 +485,10 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
 
   // handle content window dimension changes
   const debouncedHandleResize = useDebounceCallback(() => {
-    const listOuterEl = listOuterRef.current;
-    const listInnerEl = listInnerRef.current;
     const msgHeaderColEl = msgHeaderColElRef.current;
-    if (!listOuterEl || !listInnerEl || !msgHeaderColEl) return;
+    if (!msgHeaderColEl || !isWrap) return;
 
-    if (isWrap) setMsgColWidth(msgHeaderColEl.clientWidth);
-    else listInnerEl.style.width = `${Math.max(listOuterEl.clientWidth, maxRowWidth)}px`;
+    setMsgColWidth(msgHeaderColEl.clientWidth);
   }, 20);
 
   // listen to content window dimension changes
@@ -488,14 +502,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
       resizeObserver.unobserve(listOuterEl);
       resizeObserver.disconnect();
     };
-  }, [isWrap, maxRowWidth]);
-
-  // update width of inner wrapper element when `maxRowWidth` changes
-  useEffect(() => {
-    const listInnerEl = listInnerRef.current;
-    if (!listInnerEl) return;
-    listInnerEl.style.width = isWrap || !maxRowWidth ? '100%' : `${maxRowWidth}px`;
-  }, [isWrap, maxRowWidth]);
+  }, [debouncedHandleResize, isWrap]);
 
   // -------------------------------------------------------------------------------------
   // Scrolling logic
@@ -579,14 +586,6 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     }
   }, [handleContentScrollY]);
 
-  // attach scroll event listeners
-  useEffect(() => {
-    const listOuterEl = listOuterRef.current;
-    if (!listOuterEl) return;
-    listOuterEl.addEventListener('scroll', handleContentScrollXThrottled as any);
-    return () => listOuterEl.removeEventListener('scroll', handleContentScrollXThrottled as any);
-  }, [isListReady]);
-
   // ------------------------------------------------------------------------------------
   // Renderer
   // ------------------------------------------------------------------------------------
@@ -624,46 +623,54 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
       </div>
       <div className="grow relative">
         <AutoSizer>
-          {({ height, width }) => (
-            <>
-              <InfiniteLoader
-                ref={infiniteLoaderRef}
-                isItemLoaded={isItemLoaded}
-                itemCount={itemCount}
-                loadMoreItems={loadMoreItems}
-                threshold={20}
-              >
-                {({ onItemsRendered, ref: thisRef }) => (
-                  <VariableSizeList
-                    ref={(list) => {
-                      thisRef(list);
-                      // @ts-expect-error Cannot assign to 'current' because it is a read-only property.
-                      listRef.current = list;
+          {({ height, width }) => {
+            const innerWidth = isWrap ? width : Math.max(width, maxRowWidth || 0);
+
+            return (
+              <>
+                <div
+                  ref={listOuterRef}
+                  className="font-mono overflow-auto"
+                  style={{ height, width }}
+                  onScroll={(ev) => {
+                    handleContentScrollXThrottled(ev);
+                    handleContentScrollYThrottled();
+                  }}
+                >
+                  <div
+                    ref={listInnerRef}
+                    style={{
+                      height: rowVirtualizer.getTotalSize(),
+                      width: innerWidth,
+                      position: 'relative',
                     }}
-                    className="font-mono"
-                    onItemsRendered={(args) => {
-                      onItemsRendered(args);
-                      if (!isListReady) setIsListReady(true);
-                      if (isWrap) setTimeout(() => listRef.current?.resetAfterIndex(0), 0);
-                    }}
-                    onScroll={handleContentScrollYThrottled}
-                    height={height}
-                    width={width}
-                    itemCount={itemCount}
-                    estimatedItemSize={24}
-                    itemSize={handleItemSize}
-                    outerRef={listOuterRef}
-                    innerRef={listInnerRef}
-                    overscanCount={20}
-                    itemData={{ items, hasMoreBefore, hasMoreAfter, visibleCols, isWrap }}
                   >
-                    {Row}
-                  </VariableSizeList>
-                )}
-              </InfiniteLoader>
-              {isLoading && <LoadingOverlay height={height} width={width} />}
-            </>
-          )}
+                    {virtualItems.map((virtualRow) => (
+                      <div
+                        key={virtualRow.key}
+                        ref={isWrap ? rowVirtualizer.measureElement : undefined}
+                        data-index={virtualRow.index}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        <Row
+                          index={virtualRow.index}
+                          style={isWrap ? {} : { height: virtualRow.size }}
+                          data={rowData}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {isLoading && <LoadingOverlay height={height} width={width} />}
+              </>
+            );
+          }}
         </AutoSizer>
       </div>
     </div>
