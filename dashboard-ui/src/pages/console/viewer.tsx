@@ -251,6 +251,15 @@ type RowProps = {
 const areRowPropsEqual = (prev: RowProps, next: RowProps) =>
   prev.index === next.index && prev.data === next.data && prev.style?.height === next.style?.height;
 
+const isFirstRow = (index: number) => index === 0;
+const isLastRow = (index: number, itemsLength: number) => index === itemsLength + 1;
+
+const renderPlaceholderRow = (message: string, style: React.CSSProperties) => (
+  <div className="px-2 leading-6" style={style}>
+    {message}
+  </div>
+);
+
 const Row = memo(({ index, style, data }: RowProps) => {
   const { items, hasMoreBefore, visibleCols, isWrap } = data;
 
@@ -287,23 +296,13 @@ const Row = memo(({ index, style, data }: RowProps) => {
     setMaxRowWidth((currVal) => Math.max(currVal, rowEl.scrollWidth));
   }, [visibleCols, setColWidths, setMaxRowWidth]);
 
-  // first row
-  if (index === 0) {
+  if (isFirstRow(index)) {
     const msg = hasMoreBefore ? 'Loading...' : 'Beginning of feed';
-    return (
-      <div className="px-2 leading-6" style={style}>
-        {msg}
-      </div>
-    );
+    return renderPlaceholderRow(msg, style);
   }
 
-  // last row (only present when hasMoreAter === true)
-  if (index === items.length + 1) {
-    return (
-      <div className="px-2 leading-6" style={style}>
-        Loading...
-      </div>
-    );
+  if (isLastRow(index, items.length)) {
+    return renderPlaceholderRow('Loading...', style);
   }
 
   const record = items[index - 1];
