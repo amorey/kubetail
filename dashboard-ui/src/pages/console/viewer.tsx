@@ -44,7 +44,7 @@ import {
   WatchEventType,
 } from '@/lib/graphql/dashboard/__generated__/graphql';
 import { CONSOLE_NODES_LIST_FETCH, CONSOLE_NODES_LIST_WATCH, LOG_SOURCES_WATCH } from '@/lib/graphql/dashboard/ops';
-import { useIsClusterAPIEnabled, useListQueryWithSubscription, useNextTick } from '@/lib/hooks';
+import { useIsClusterAPIEnabled, useListQueryWithSubscription, useNextTick, useRafThrottle } from '@/lib/hooks';
 import { Counter, cn, cssEncode } from '@/lib/util';
 
 import { LogRecordsFetcher } from './log-records-fetcher';
@@ -527,19 +527,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     listOuterEl.scrollTo({ left: headerOuterEl.scrollLeft, behavior: 'instant' });
   }, []);
 
-  const rafIdRefHeaderX = useRef<number | null>(null);
-
-  const handleHeaderScrollXThrottled = useCallback(
-    (ev: React.UIEvent<HTMLDivElement>) => {
-      if (!rafIdRefHeaderX.current) {
-        rafIdRefHeaderX.current = requestAnimationFrame(() => {
-          handleHeaderScrollX(ev);
-          rafIdRefHeaderX.current = null;
-        });
-      }
-    },
-    [handleHeaderScrollX],
-  );
+  const handleHeaderScrollXThrottled = useRafThrottle(handleHeaderScrollX);
 
   // handle horizontal scroll on content
   const handleContentScrollX = useCallback((ev: React.UIEvent<HTMLDivElement>) => {
@@ -549,19 +537,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
     headerOuterEl.scrollTo({ left: listOuterEl.scrollLeft, behavior: 'instant' });
   }, []);
 
-  const rafIdRefContentX = useRef<number | null>(null);
-
-  const handleContentScrollXThrottled = useCallback(
-    (ev: React.UIEvent<HTMLDivElement>) => {
-      if (!rafIdRefContentX.current) {
-        rafIdRefContentX.current = requestAnimationFrame(() => {
-          handleContentScrollX(ev);
-          rafIdRefContentX.current = null;
-        });
-      }
-    },
-    [handleContentScrollX],
-  );
+  const handleContentScrollXThrottled = useRafThrottle(handleContentScrollX);
 
   // handle vertical scroll on content
   const handleContentScrollY = useCallback(() => {
@@ -586,16 +562,7 @@ const ContentImpl: React.ForwardRefRenderFunction<ContentHandle, ContentProps> =
       isAutoScrollEnabledRef.current = true;
   }, []);
 
-  const rafIdRefY = useRef<number | null>(null);
-
-  const handleContentScrollYThrottled = useCallback(() => {
-    if (!rafIdRefY.current) {
-      rafIdRefY.current = requestAnimationFrame(() => {
-        handleContentScrollY();
-        rafIdRefY.current = null;
-      });
-    }
-  }, [handleContentScrollY]);
+  const handleContentScrollYThrottled = useRafThrottle(handleContentScrollY);
 
   // ------------------------------------------------------------------------------------
   // Renderer
