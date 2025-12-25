@@ -99,29 +99,35 @@ type LogViewerRuntimeConfig = {
   readonly estimatedSize: number;
 };
 
+type LogViewerRuntimeState = {
+  readonly count: number;
+  readonly hasMoreBefore: boolean;
+  readonly hasMoreAfter: boolean;
+  readonly isLoading: boolean;
+};
+
+type LogViewerRuntimeRefs = {
+  records: React.RefObject<DoubleTailedArray<LogRecord>>;
+  scrollEl: React.RefObject<HTMLDivElement | null>;
+  isAutoScrollEnabled: React.RefObject<boolean>;
+  isLoadingBefore: React.RefObject<boolean>;
+  isLoadingAfter: React.RefObject<boolean>;
+  isRefreshing: React.RefObject<boolean>;
+};
+
+type LogViewerRuntimeActions = {
+  setCount: React.Dispatch<React.SetStateAction<number>>;
+  setHasMoreBefore: React.Dispatch<React.SetStateAction<boolean>>;
+  setHasMoreAfter: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
 type LogViewerRuntime = {
   client: Client;
   config: LogViewerRuntimeConfig;
-  state: {
-    readonly count: number;
-    readonly hasMoreBefore: boolean;
-    readonly hasMoreAfter: boolean;
-    readonly isLoading: boolean;
-  };
-  refs: {
-    records: React.RefObject<DoubleTailedArray<LogRecord>>;
-    scrollEl: React.RefObject<HTMLDivElement | null>;
-    isAutoScrollEnabled: React.RefObject<boolean>;
-    isLoadingBefore: React.RefObject<boolean>;
-    isLoadingAfter: React.RefObject<boolean>;
-    isRefreshing: React.RefObject<boolean>;
-  };
-  actions: {
-    setCount: React.Dispatch<React.SetStateAction<number>>;
-    setHasMoreBefore: React.Dispatch<React.SetStateAction<boolean>>;
-    setHasMoreAfter: React.Dispatch<React.SetStateAction<boolean>>;
-    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  };
+  state: LogViewerRuntimeState;
+  refs: LogViewerRuntimeRefs;
+  actions: LogViewerRuntimeActions;
   services: {
     virtualizer: Virtualizer<HTMLDivElement, Element>;
     beforePaint: BeforePaintSubscribe;
@@ -522,28 +528,17 @@ const useAutoScroll = ({ config, state, refs }: LogViewerRuntime) => {
 
 type LogViewerInnerProps = {
   className?: string;
-  client: Client;
-  config: LogViewerRuntimeConfig;
-  isLoading: boolean;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  isLoadingBeforeRef: React.RefObject<boolean>;
-  isLoadingAfterRef: React.RefObject<boolean>;
-  isRefreshingRef: React.RefObject<boolean>;
+  partialRuntime: {
+    client: Client;
+    config: LogViewerRuntimeConfig;
+    state: Pick<LogViewerRuntimeState, 'isLoading'>;
+    refs: Pick<LogViewerRuntimeRefs, 'isLoadingBefore' | 'isLoadingAfter' | 'isRefreshing'>;
+    actions: Pick<LogViewerRuntimeActions, 'setIsLoading'>;
+  };
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
 
-const LogViewerInner = ({
-  className = '',
-  client,
-  config,
-  isLoading,
-  setIsLoading,
-  isLoadingBeforeRef,
-  isLoadingAfterRef,
-  isRefreshingRef,
-  children,
-  ...other
-}: LogViewerInnerProps) => {
+const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: LogViewerInnerProps) => {
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
   const recordsRef = useRef(new DoubleTailedArray<LogRecord>());
@@ -555,6 +550,8 @@ const LogViewerInner = ({
   const beforePaint = useBeforePaint(count);
   const isAutoScrollEnabledRef = useRef(false);
 
+  const { config } = partialRuntime;
+
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollElementRef.current,
@@ -565,20 +562,18 @@ const LogViewerInner = ({
   });
 
   const runtime = {
-    client,
-    config,
-    state: { count, hasMoreBefore, hasMoreAfter, isLoading },
+    client: partialRuntime.client,
+    config: partialRuntime.config,
+    state: { count, hasMoreBefore, hasMoreAfter, ...partialRuntime.state },
     refs: {
       records: recordsRef,
       scrollEl: scrollElementRef,
       isAutoScrollEnabled: isAutoScrollEnabledRef,
-      isLoadingBefore: isLoadingBeforeRef,
-      isLoadingAfter: isLoadingAfterRef,
-      isRefreshing: isRefreshingRef,
+      ...partialRuntime.refs,
     },
-    actions: { setCount, setHasMoreBefore, setHasMoreAfter, setIsLoading },
+    actions: { setCount, setHasMoreBefore, setHasMoreAfter, ...partialRuntime.actions },
     services: { virtualizer, beforePaint },
-  };
+  } satisfies LogViewerRuntime;
 
   useInit(runtime);
   useLoadMore(runtime);
@@ -588,10 +583,10 @@ const LogViewerInner = ({
 
   const v = useMemo(
     () => ({
-      isLoading,
-      isLoadingBefore: isLoadingBeforeRef.current,
-      isLoadingAfter: isLoadingAfterRef.current,
-      isRefreshing: isRefreshingRef.current,
+      isLoading: runtime.state.isLoading,
+      isLoadingBefore: runtime.refs.isLoadingBefore.current,
+      isLoadingAfter: runtime.refs.isLoadingAfter.current,
+      isRefreshing: runtime.refs.isRefreshing.current,
       hasMoreBefore,
       hasMoreAfter,
       getTotalSize: () => {
@@ -612,7 +607,7 @@ const LogViewerInner = ({
           };
         }),
     }),
-    [virtualizer, config.estimatedSize, isLoading, hasMoreBefore, hasMoreAfter],
+    [virtualizer, config.estimatedSize, runtime.state.isLoading, hasMoreBefore, hasMoreAfter],
   );
 
   return (
@@ -710,29 +705,34 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       prevClientRef.current = client;
     }, [client]);
 
-    const config = {
-      initialPosition,
-      follow,
-      estimatedSize,
-      overscan,
-      batchSizeInitial,
-      batchSizeRegular,
-      loadMoreThreshold,
-      pinToBottomTolerance,
-    } satisfies LogViewerRuntimeConfig;
+    // Partial runtime
+    const partialRuntime = {
+      client,
+      config: {
+        initialPosition,
+        follow,
+        estimatedSize,
+        overscan,
+        batchSizeInitial,
+        batchSizeRegular,
+        loadMoreThreshold,
+        pinToBottomTolerance,
+      },
+      state: {
+        isLoading,
+      },
+      refs: {
+        isLoadingBefore: isLoadingBeforeRef,
+        isLoadingAfter: isLoadingAfterRef,
+        isRefreshing: isRefreshingRef,
+      },
+      actions: {
+        setIsLoading,
+      },
+    };
 
     return (
-      <LogViewerInner
-        key={keyID}
-        client={client}
-        config={config}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-        isLoadingBeforeRef={isLoadingBeforeRef}
-        isLoadingAfterRef={isLoadingAfterRef}
-        isRefreshingRef={isRefreshingRef}
-        {...other}
-      >
+      <LogViewerInner key={keyID} partialRuntime={partialRuntime} {...other}>
         {children}
       </LogViewerInner>
     );
