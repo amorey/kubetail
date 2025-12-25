@@ -54,7 +54,18 @@ export function Main() {
               position: 'relative',
             }}
           >
-            {virtualizer.hasMoreBefore && <div>Has more before</div>}
+            {virtualizer.hasMoreBefore && (
+              <div
+                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                style={{
+                  height: `${ESTIMATED_SIZE}px`,
+                  lineHeight: `${ESTIMATED_SIZE}px`,
+                  transform: 'translateY(0px)',
+                }}
+              >
+                Loading...
+              </div>
+            )}
             {virtualizer.getVirtualRows().map((virtualRow) => {
               const { record } = virtualRow;
               return (
@@ -71,7 +82,18 @@ export function Main() {
                 </div>
               );
             })}
-            {virtualizer.hasMoreBefore && <div>Has more after</div>}
+            {(virtualizer.hasMoreAfter || virtualizer.isRefreshing) && (
+              <div
+                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                style={{
+                  height: `${ESTIMATED_SIZE}px`,
+                  lineHeight: `${ESTIMATED_SIZE}px`,
+                  transform: `translateY(${virtualizer.hasMoreAfterStart}px)`,
+                }}
+              >
+                {virtualizer.isRefreshing ? 'Refreshing' : 'Loading...'} {virtualizer.hasMoreAfterStart}
+              </div>
+            )}
           </div>
         </>
       )}

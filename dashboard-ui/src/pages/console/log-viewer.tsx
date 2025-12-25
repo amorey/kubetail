@@ -84,6 +84,7 @@ export type LogViewerVirtualizer = {
   readonly isRefreshing: boolean;
   hasMoreBefore: boolean;
   hasMoreAfter: boolean;
+  hasMoreAfterStart: number;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
 };
@@ -589,6 +590,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
       isRefreshing: runtime.refs.isRefreshing.current,
       hasMoreBefore,
       hasMoreAfter,
+      hasMoreAfterStart: virtualizer.getTotalSize() + config.estimatedSize,
       getTotalSize: () => {
         let size = virtualizer.getTotalSize();
         if (hasMoreBefore) size += config.estimatedSize;
