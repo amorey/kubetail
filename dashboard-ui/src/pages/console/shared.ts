@@ -14,7 +14,13 @@
 
 import { createContext } from 'react';
 
-export type { LogRecordsFragmentFragment as LogRecord } from '@/lib/graphql/dashboard/__generated__/graphql';
+import type { LogViewerHandle } from './log-viewer';
+
+// export type { LogRecordsFragmentFragment as LogRecord } from '@/lib/graphql/dashboard/__generated__/graphql';
+export type LogRecord = {
+  timestamp: number;
+  message: string;
+};
 
 /**
  * Page context
@@ -23,6 +29,7 @@ export type { LogRecordsFragmentFragment as LogRecord } from '@/lib/graphql/dash
 type PageContextType = {
   isSidebarOpen: boolean;
   setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  logViewerRef: React.RefObject<LogViewerHandle | null>;
 };
 
 export const PageContext = createContext({} as PageContextType);

@@ -12,12 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { cssEncode } from '@/lib/util';
+import { useContext, useRef } from 'react';
+
+import { LogViewer } from './log-viewer';
+import { PageContext } from './shared';
+
+const ESTIMATED_SIZE = 24;
 
 /**
- * cssID
+ * Main component
  */
 
-export function cssID(namespace: string, podName: string, containerName: string) {
-  return cssEncode(`${namespace}/${podName}/${containerName}`);
+export function Main() {
+  const { logViewerRef } = useContext(PageContext);
+
+  return (
+    <LogViewer ref={logViewerRef} defaultFollow>
+      {(virtualizer) => (
+        <div
+          style={{
+            height: virtualizer.getTotalSize(),
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          hello
+        </div>
+      )}
+    </LogViewer>
+  );
 }
