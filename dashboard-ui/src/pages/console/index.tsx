@@ -95,7 +95,7 @@ const InnerLayout = ({ sidebar, header, main }: InnerLayoutProps) => {
         style={{ marginLeft: `${isSidebarOpen ? sidebarWidth + 4 : 0}px` }}
       >
         <div className="bg-chrome-100 border-b border-chrome-divider">{header}</div>
-        <div className="grow">{main}</div>
+        <div className="grow min-h-0">{main}</div>
       </main>
     </div>
   );

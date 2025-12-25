@@ -16,13 +16,15 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
 
 export type BeforePaintCallback = () => void | Promise<void>;
 
+export type BeforePaintSubscribe = (callback: BeforePaintCallback) => Promise<void>;
+
 type BeforePaintQueueItem = {
   callback: BeforePaintCallback;
   resolve: () => void;
   reject: (error: unknown) => void;
 };
 
-export function useBeforePaint(trigger: any) {
+export function useBeforePaint(trigger: any): BeforePaintSubscribe {
   const beforePaintQueueRef = useRef<BeforePaintQueueItem[]>([]);
 
   useLayoutEffect(() => {

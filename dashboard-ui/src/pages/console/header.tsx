@@ -22,7 +22,7 @@ import { PageContext } from './shared';
 
 export function Header() {
   const { logViewerRef } = useContext(PageContext);
-  const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleClickPlay = useCallback(async () => {
     await logViewerRef.current?.startFollowing();
@@ -36,21 +36,30 @@ export function Header() {
     await logViewerRef.current?.jumpToBeginning();
   }, []);
 
+  const handleJumpToEnd = useCallback(async () => {
+    await logViewerRef.current?.jumpToEnd();
+  }, []);
+
+  // Init
   useEffect(() => {
     const logViewer = logViewerRef.current;
     if (!logViewer) return console.error('LogViewer not available');
 
-    return logViewer.onIsReadyChange(setIsReady);
+    setIsLoading(logViewer.isLoading);
+    return logViewer.onChange('isLoading', setIsLoading);
   }, []);
 
   return (
     <div>
       <ul>
-        <li>isReady: {logViewerRef.current?.isReady.toString()}</li>
+        <li>isReady: {isLoading.toString()}</li>
         <li>isPaused:</li>
       </ul>
       <button type="button" onClick={handleJumpToBeginning}>
         Beginning
+      </button>
+      <button type="button" onClick={handleJumpToEnd}>
+        End
       </button>
       <button type="button" onClick={handleClickPlay}>
         Play
