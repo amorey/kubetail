@@ -13,25 +13,26 @@
 // limitations under the License.
 
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { Virtualizer } from '@tanstack/react-virtual';
+import type { Virtualizer, VirtualItem } from '@tanstack/react-virtual';
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+
+import { useBeforePaint } from '@/lib/before-paint';
+import { DoubleTailedArray } from '@/lib/double-tailed-array';
+import { cn } from '@/lib/util';
+
+export type LogRecord = {
+  timestamp: number;
+  message: string;
+};
 
 export type LogViewerInitialPosition =
   | { type: 'head'; timestamp?: never }
   | { type: 'tail'; timestamp?: never }
   | { type: 'time'; timestamp: number };
 
-export type LogViewerVirtualizer = {
-  getTotalSize: () => number;
-};
+export type OnChangeCallback<TArgs extends unknown[] = unknown[]> = (...args: TArgs) => void;
 
-export type LogViewerEventMap = {
-  isReady: CustomEvent<boolean>;
-};
-
-/**
- * LogViewer - Component to render virtualized list of log records
- */
+export type OnChangeCancelFunction = () => void;
 
 export type LogViewerHandle = {
   isReady: boolean;
@@ -40,38 +41,100 @@ export type LogViewerHandle = {
   jumpToBeginning: () => Promise<void>;
   jumpToEnd: () => Promise<void>;
   jumpToTime: () => Promise<void>;
-  addEventListener: <K extends keyof LogViewerEventMap>(
-    type: K,
-    listener: (event: LogViewerEventMap[K]) => void,
-  ) => void;
-  removeEventListener: <K extends keyof LogViewerEventMap>(
-    type: K,
-    listener: (event: LogViewerEventMap[K]) => void,
-  ) => void;
+  onIsReadyChange: (callback: OnChangeCallback<[boolean]>) => OnChangeCancelFunction;
 };
 
+export type LogViewerVirtualRow = {
+  key: VirtualItem['key'];
+  index: number;
+  size: number;
+  start: number;
+  record: LogRecord;
+};
+
+export type LogViewerVirtualizer = {
+  hasMoreBefore: boolean;
+  hasMoreAfter: boolean;
+  getTotalSize: () => number;
+  getVirtualRows: () => LogViewerVirtualRow[];
+};
+
+/**
+ * LogViewer - Component to render virtualized list of log records
+ */
+
 export type LogViewerProps = {
+  className?: string;
+  style?: React.CSSProperties;
   initialPosition?: LogViewerInitialPosition;
+  estimatedSize: number;
+  overscan?: number;
   defaultFollow?: boolean;
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
 
-const LogViewerInner = ({ children, ...other }: LogViewerProps) => {
+const LogViewerInner = ({ className = '', estimatedSize, overscan = 0, children, ...other }: LogViewerProps) => {
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
-  const virtualizer = useMemo(
+  const recordsRef = useRef(new DoubleTailedArray<LogRecord>());
+
+  const [count, setCount] = useState(100);
+  const [hasMoreBefore, setHasMoreBefore] = useState(false);
+  const [hasMoreAfter, setHasMoreAfter] = useState(false);
+
+  const isInitializedRef = useRef(false);
+
+  const [isInitPending, setIsInitPending] = useState(true);
+  const isBeforePendingRef = useRef(false);
+  const isAfterPendingRef = useRef(false);
+  const [isRefreshPending, setIsRefreshPending] = useState(false);
+
+  const beforePaint = useBeforePaint(count);
+  const isAutoScrollEnabledRef = useRef(false);
+
+  const virtualizer = useVirtualizer({
+    count,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => estimatedSize,
+    overscan,
+    scrollMargin: hasMoreBefore ? estimatedSize : 0,
+    useScrollendEvent: true,
+  });
+
+  const v = useMemo(
     () => ({
-      getTotalSize: () => 100,
+      hasMoreBefore,
+      hasMoreAfter,
+      getTotalSize: () => {
+        let size = virtualizer.getTotalSize();
+        if (hasMoreBefore) size += estimatedSize;
+        if (hasMoreAfter) size += estimatedSize;
+        return size;
+      },
+      getVirtualRows: () =>
+        virtualizer.getVirtualItems().map((item) => {
+          const { key, index, size, start } = item;
+          return {
+            key,
+            index,
+            size,
+            start,
+            record: { timestamp: 100, message: 'xxx' },
+          };
+        }),
     }),
-    [],
+    [virtualizer, estimatedSize, hasMoreBefore, hasMoreAfter],
   );
 
-  return <div ref={scrollElementRef}>{children(virtualizer)}</div>;
+  return (
+    <div ref={scrollElementRef} className={cn('overflow-auto', className)}>
+      {children(v)}
+    </div>
+  );
 };
 
 export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(({ children, ...other }, ref) => {
   const [keyID, setKeyID] = useState(0);
-  const eventTargetRef = useRef(new EventTarget());
 
   useImperativeHandle(
     ref,
@@ -92,9 +155,7 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(({ children
       jumpToTime: async () => {
         setKeyID((id) => id + 1);
       },
-      addEventListener: (type, listener) => eventTargetRef.current.addEventListener(type, listener as EventListener),
-      removeEventListener: (type, listener) =>
-        eventTargetRef.current.removeEventListener(type, listener as EventListener),
+      onIsReadyChange: (callback: OnChangeCallback<[boolean]>) => () => {},
     }),
     [],
   );

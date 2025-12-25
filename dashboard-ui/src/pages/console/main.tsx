@@ -27,7 +27,7 @@ export function Main() {
   const { logViewerRef } = useContext(PageContext);
 
   return (
-    <LogViewer ref={logViewerRef} defaultFollow>
+    <LogViewer ref={logViewerRef} estimatedSize={ESTIMATED_SIZE} defaultFollow>
       {(virtualizer) => (
         <div
           style={{
@@ -36,7 +36,24 @@ export function Main() {
             position: 'relative',
           }}
         >
-          hello
+          {virtualizer.hasMoreBefore && <div>Has more before</div>}
+          {virtualizer.getVirtualRows().map((virtualRow) => {
+            const { record } = virtualRow;
+            return (
+              <div
+                key={virtualRow.key}
+                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono"
+                style={{
+                  height: `${virtualRow.size}px`,
+                  lineHeight: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {record.timestamp} {record.message}
+              </div>
+            );
+          })}
+          {virtualizer.hasMoreBefore && <div>Has more after</div>}
         </div>
       )}
     </LogViewer>

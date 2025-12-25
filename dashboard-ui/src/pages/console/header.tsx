@@ -40,9 +40,7 @@ export function Header() {
     const logViewer = logViewerRef.current;
     if (!logViewer) return console.error('LogViewer not available');
 
-    const cb = (ev: CustomEvent<boolean>) => setIsReady(ev.detail);
-    logViewer.addEventListener('isReady', cb);
-    return () => logViewer.removeEventListener('isReady', cb);
+    return logViewer.onIsReadyChange(setIsReady);
   }, []);
 
   return (
