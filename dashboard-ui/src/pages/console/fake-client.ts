@@ -15,9 +15,9 @@ const DEFAULT_FETCH_DELAY_MS = 1000;
  * FakeClient - Represents a fake client
  */
 export class FakeClient implements Client {
-  private firstTS: number | undefined = undefined;
+  private firstTS: Date | undefined = undefined;
 
-  private lastTS: number | undefined = undefined;
+  private lastTS: Date | undefined = undefined;
 
   private numLines: number;
 
@@ -40,8 +40,8 @@ export class FakeClient implements Client {
   ) {
     if (initialLines > 0) {
       const now = new Date().getTime();
-      this.firstTS = now - initialLines;
-      this.lastTS = now - 1;
+      this.firstTS = new Date(now - initialLines);
+      this.lastTS = new Date(now - 1);
     }
     this.numLines = initialLines;
     this.fetchDelayMs = fetchDelayMs;
@@ -51,17 +51,17 @@ export class FakeClient implements Client {
   /**
    * fetchSince - Get the first `count` log entries starting with timestamp `ts`
    * @param ts - The timestamp to start at (inclusive)
-   * @param count - The number of entries to fetch
+   * @param limit - The maximum number of entries to fetch
    */
-  async fetchSince(ts: number, count: number, fetchDelayMs?: number): Promise<FetchResult> {
+  async fetchSince(ts: Date, limit: number, fetchDelayMs?: number) {
     return new Promise<FetchResult>((resolve) => {
       let records: LogRecord[];
 
       if (!this.firstTS || !this.lastTS) {
         records = [];
       } else {
-        const startTS = Math.max(ts, this.firstTS);
-        const stopTS = Math.min(this.lastTS + 1, startTS + count);
+        const startTS = Math.max(ts.getTime(), this.firstTS.getTime());
+        const stopTS = Math.min(this.lastTS.getTime() + 1, startTS + limit);
         records = this.createRecords(startTS, stopTS);
       }
 
@@ -72,18 +72,18 @@ export class FakeClient implements Client {
 
   /**
    * fetchUntil - Get the last `count` log entries until timestamp `ts`
-   * @param idx - The timestamp to end at (inclusive)
-   * @param count - The number of entries to fetch
+   * @param ts - The timestamp to end at (inclusive)
+   * @param limit - The maximum number of entries to fetch
    */
-  async fetchUntil(ts: number, count: number, fetchDelayMs?: number): Promise<FetchResult> {
+  async fetchUntil(ts: Date, count: number, fetchDelayMs?: number) {
     return new Promise<FetchResult>((resolve) => {
       let records: LogRecord[];
 
       if (!this.firstTS || !this.lastTS) {
         records = [];
       } else {
-        const stopTS = Math.min(ts + 1, this.lastTS + 1);
-        const startTS = Math.max(this.firstTS, stopTS - count);
+        const stopTS = Math.min(ts.getTime() + 1, this.lastTS.getTime() + 1);
+        const startTS = Math.max(this.firstTS.getTime(), stopTS - count);
         records = this.createRecords(startTS, stopTS);
       }
 
@@ -94,21 +94,21 @@ export class FakeClient implements Client {
 
   /**
    * fetchAfter - Get the first `count` log entries after timestamp `ts`
-   * @param idx - The timestamp to start after (exclusive)
-   * @param count - The number of entries to fetch
+   * @param ts - The timestamp to start after (exclusive)
+   * @param limit - The maximum number of entries to fetch
    */
-  async fetchAfter(ts: number, count: number, fetchDelayMs?: number): Promise<FetchResult> {
-    return this.fetchSince(ts + 1, count, fetchDelayMs);
+  async fetchAfter(ts: Date, limit: number, fetchDelayMs?: number) {
+    return this.fetchSince(new Date(ts.getTime() + 1), limit, fetchDelayMs);
   }
 
   /**
    * fetchBefore - Get the last `count` log entries before timestamp `ts`
    * Returns entries in increasing order: [idx-count, idx-count+1, ..., idx-1]
    * @param ts - The timestamp to end before (exclusive)
-   * @param count - The number of entries to fetch
+   * @param limit - The maximum number of entries to fetch
    */
-  async fetchBefore(ts: number, count: number, fetchDelayMs?: number): Promise<FetchResult> {
-    return this.fetchUntil(ts - 1, count, fetchDelayMs);
+  async fetchBefore(ts: Date, limit: number, fetchDelayMs?: number) {
+    return this.fetchUntil(new Date(ts.getTime() - 1), limit, fetchDelayMs);
   }
 
   /**
@@ -130,10 +130,10 @@ export class FakeClient implements Client {
 
     if (sendToBuffer) {
       (async () => {
-        const result = await this.fetchAfter(options?.after || 0, Infinity, 0);
+        const result = await this.fetchAfter(options?.after || new Date(0), Infinity, 0);
 
         // Write results to callback
-        let lastTS = 0;
+        let lastTS = new Date(0);
         result.records.forEach((record) => {
           callback(record);
           lastTS = record.timestamp;
@@ -172,7 +172,7 @@ export class FakeClient implements Client {
 
       this.timer = setInterval(() => {
         if (!this.firstTS || !this.lastTS) {
-          const now = new Date().getTime();
+          const now = new Date();
           this.firstTS = now;
           this.lastTS = now;
         }
@@ -181,13 +181,13 @@ export class FakeClient implements Client {
         if (this.subscribers.size > 0) {
           for (let i = 0; i < linesPerTick; i += 1) {
             this.numLines += 1;
-            this.lastTS += 1;
-            this.notify(this.createRecord(this.lastTS));
+            this.lastTS = new Date(this.lastTS.getTime() + 1);
+            this.notify(this.createRecord(this.lastTS.getTime()));
           }
         } else {
           // Just increment the count without creating strings or notifying
           this.numLines += linesPerTick;
-          this.lastTS += linesPerTick;
+          this.lastTS = new Date(this.lastTS.getTime() + linesPerTick);
         }
       }, intervalMs);
     }
@@ -211,10 +211,10 @@ export class FakeClient implements Client {
    * createRecord - Helper method to generate a record from a timestamp
    */
   protected createRecord(ts: number): LogRecord {
-    const firstTS = this.firstTS || 0;
+    const firstTS = this.firstTS || new Date(0);
     return {
-      timestamp: ts,
-      message: `line ${ts - firstTS}`,
+      timestamp: new Date(ts),
+      message: `line ${ts - firstTS.getTime()}`,
     };
   }
 

@@ -78,7 +78,7 @@ export function Main() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  {record.timestamp} {record.message}
+                  {record.timestamp.toISOString()} {record.message}
                 </div>
               );
             })}
@@ -91,7 +91,7 @@ export function Main() {
                   transform: `translateY(${virtualizer.hasMoreAfterStart}px)`,
                 }}
               >
-                {virtualizer.isRefreshing ? 'Refreshing' : 'Loading...'} {virtualizer.hasMoreAfterStart}
+                {virtualizer.isRefreshing ? 'Refreshing' : 'Loading...'}
               </div>
             )}
           </div>

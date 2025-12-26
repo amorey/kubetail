@@ -23,7 +23,7 @@ import { DoubleTailedArray } from '@/lib/double-tailed-array';
 import { cn, MapSet } from '@/lib/util';
 
 export type LogRecord = {
-  timestamp: number;
+  timestamp: Date;
   message: string;
 };
 
@@ -34,23 +34,23 @@ export type FetchResult = {
 export type SubscriptionCallback = (record: LogRecord) => void;
 
 export type SubscriptionOptions = {
-  after?: number;
+  after?: Date;
 };
 
 export type SubscriptionCancelFunction = () => void;
 
 export type Client = {
-  fetchSince: (ts: number, count: number) => Promise<FetchResult>;
-  fetchUntil: (ts: number, count: number) => Promise<FetchResult>;
-  fetchAfter: (ts: number, count: number) => Promise<FetchResult>;
-  fetchBefore: (ts: number, count: number) => Promise<FetchResult>;
+  fetchSince: (timestamp: Date, limit: number) => Promise<FetchResult>;
+  fetchUntil: (timestamp: Date, limit: number) => Promise<FetchResult>;
+  fetchAfter: (timestamp: Date, limit: number) => Promise<FetchResult>;
+  fetchBefore: (timestamp: Date, limit: number) => Promise<FetchResult>;
   subscribe: (callback: SubscriptionCallback, options?: SubscriptionOptions) => SubscriptionCancelFunction;
 };
 
 export type LogViewerInitialPosition =
   | { type: 'head'; timestamp?: never }
   | { type: 'tail'; timestamp?: never }
-  | { type: 'time'; timestamp: number };
+  | { type: 'time'; timestamp: Date };
 
 export type OnChangeCallback<TArgs extends unknown[] = unknown[]> = (...args: TArgs) => void;
 
@@ -69,8 +69,7 @@ export type LogViewerHandle = {
   onChange: (name: string, callback: OnChangeCallback<[boolean]>) => OnChangeCancelFunction;
 };
 
-export type LogViewerVirtualRow = {
-  key: VirtualItem['key'];
+export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
   index: number;
   size: number;
   start: number;
@@ -150,7 +149,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
     const initFn = async () => {
       switch (config.initialPosition.type) {
         case 'head': {
-          const result = await client.fetchSince(0, config.batchSizeInitial + 1);
+          const result = await client.fetchSince(new Date(0), config.batchSizeInitial + 1);
 
           // Update UI
           if (result.records.length) {
@@ -166,7 +165,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
           break;
         }
         case 'tail': {
-          const result = await client.fetchUntil(Infinity, config.batchSizeInitial + 1);
+          const result = await client.fetchUntil(new Date(8.64e15), config.batchSizeInitial + 1);
 
           // Update UI
           if (result.records.length) {
