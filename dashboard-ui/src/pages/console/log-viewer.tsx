@@ -431,10 +431,10 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
 };
 
 /**
- * useFollow - Implement follow-from-end behavior
+ * useFollowFromEnd - Implement follow-from-end behavior
  */
 
-const useFollow = ({ client, config, state, refs, actions, services }: LogViewerRuntime) => {
+const useFollowFromEnd = ({ client, config, state, refs, actions, services }: LogViewerRuntime) => {
   useEffect(() => {
     if (!config.follow || state.isLoading || state.hasMoreAfter) return;
 
@@ -590,7 +590,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   useInit(runtime);
   useLoadMore(runtime);
   usePullToRefresh(runtime);
-  useFollow(runtime);
+  useFollowFromEnd(runtime);
   useAutoScroll(runtime);
 
   const v = useMemo(

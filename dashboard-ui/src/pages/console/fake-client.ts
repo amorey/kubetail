@@ -60,6 +60,8 @@ export class FakeClient implements Client {
 
   /**
    * fetchSince - Get the first `limit` log entries starting with `cursor`
+   * @param options - Fetch options
+   * @returns A promise that resolves to the fetch result
    */
   async fetchSince({ cursor, limit = DEFAULT_LIMIT, fetchDelayMs = 0 }: FakeFetchOptions) {
     const ts = cursor ? Date.parse(cursor) : 0;
@@ -80,6 +82,8 @@ export class FakeClient implements Client {
 
   /**
    * fetchUntil - Get the last `limit` log entries ending with the `cursor`
+   * @param options - Fetch options
+   * @returns A promise that resolves to the fetch result
    */
   async fetchUntil({ cursor, limit = DEFAULT_LIMIT, fetchDelayMs = 0 }: FakeFetchOptions) {
     const ts = cursor ? Date.parse(cursor) : Infinity;
@@ -100,6 +104,8 @@ export class FakeClient implements Client {
 
   /**
    * fetchAfter - Get the first `limit` log entries after `curosor`
+   * @param options - Fetch options
+   * @returns A promise that resolves to the fetch result
    */
   async fetchAfter({ cursor, ...other }: FakeFetchOptions) {
     const newCursor = cursor ? new Date(Date.parse(cursor) + 1).toISOString() : undefined;
@@ -108,10 +114,12 @@ export class FakeClient implements Client {
 
   /**
    * fetchBefore - Get the last `limit` log entries before `cursor`
+   * @param options - Fetch options
+   * @returns A promise that resolves to the fetch result
    */
   async fetchBefore({ cursor, ...other }: FakeFetchOptions) {
     const newCursor = cursor ? new Date(Date.parse(cursor) - 1).toISOString() : undefined;
-    return this.fetchSince({ cursor: newCursor, ...other });
+    return this.fetchUntil({ cursor: newCursor, ...other });
   }
 
   /**

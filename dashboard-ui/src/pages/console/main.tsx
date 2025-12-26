@@ -12,9 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useContext, useMemo, useRef } from 'react';
+import { useContext, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
-import { FakeClient } from './fake-client';
+import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
+import { useIsClusterAPIEnabled } from '@/lib/hooks';
+
+// import { FakeClient } from './fake-client';
+import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import { PageContext } from './shared';
 
@@ -27,8 +32,21 @@ const ESTIMATED_SIZE = 24;
 export function Main() {
   const { logViewerRef } = useContext(PageContext);
 
-  const client = useMemo(() => new FakeClient(1000), []);
-  client.setAppendRate(1);
+  const [searchParams] = useSearchParams();
+  const kubeContext = searchParams.get('kubeContext') || '';
+
+  const isUseClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
+
+  const apolloClient = useMemo(() => {
+    if (!isUseClusterAPIEnabled) return dashboardClient;
+    return getClusterAPIClient({
+      kubeContext,
+      namespace: 'kubetail-system',
+      serviceName: 'kubetail-cluster-api',
+    });
+  }, [isUseClusterAPIEnabled, kubeContext]);
+
+  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
 
   return (
     <LogViewer
