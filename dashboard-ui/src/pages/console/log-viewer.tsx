@@ -20,7 +20,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 
 import { useBeforePaint, type BeforePaintSubscribe } from '@/lib/before-paint';
 import { DoubleTailedArray } from '@/lib/double-tailed-array';
-import { cn } from '@/lib/util';
+import { cn, MapSet } from '@/lib/util';
 
 export type LogRecord = {
   timestamp: number;
@@ -121,6 +121,7 @@ type LogViewerRuntimeActions = {
   setHasMoreBefore: React.Dispatch<React.SetStateAction<boolean>>;
   setHasMoreAfter: React.Dispatch<React.SetStateAction<boolean>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  dispatchEvent: (name: string, value: boolean) => void;
 };
 
 type LogViewerRuntime = {
@@ -534,7 +535,7 @@ type LogViewerInnerProps = {
     config: LogViewerRuntimeConfig;
     state: Pick<LogViewerRuntimeState, 'isLoading'>;
     refs: Pick<LogViewerRuntimeRefs, 'isLoadingBefore' | 'isLoadingAfter' | 'isRefreshing'>;
-    actions: Pick<LogViewerRuntimeActions, 'setIsLoading'>;
+    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'dispatchEvent'>;
   };
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
@@ -590,7 +591,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
       isRefreshing: runtime.refs.isRefreshing.current,
       hasMoreBefore,
       hasMoreAfter,
-      hasMoreAfterStart: virtualizer.getTotalSize() + config.estimatedSize,
+      hasMoreAfterStart: virtualizer.getTotalSize() + (hasMoreBefore ? config.estimatedSize : 0),
       getTotalSize: () => {
         let size = virtualizer.getTotalSize();
         if (hasMoreBefore) size += config.estimatedSize;
@@ -609,7 +610,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
           };
         }),
     }),
-    [virtualizer, config.estimatedSize, runtime.state.isLoading, hasMoreBefore, hasMoreAfter],
+    [virtualizer, count, config.estimatedSize, runtime.state.isLoading, hasMoreBefore, hasMoreAfter],
   );
 
   return (
@@ -658,6 +659,7 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     const [follow, setFollow] = useState(defaultFollow);
     const [initialPosition, setInitialPosition] = useState(defaultInitialPosition);
     const prevClientRef = useRef<Client>(null);
+    const onChangeQueueRef = useRef(new MapSet<string, OnChangeCallback<[boolean]>>());
 
     const incrementKeyID = useCallback(() => setKeyID((id) => id + 1), []);
 
@@ -689,7 +691,13 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         jumpToTime: async () => {
           incrementKeyID();
         },
-        onChange: (name: string, callback: OnChangeCallback<[boolean]>) => () => {},
+        onChange: (name: string, callback: OnChangeCallback<[boolean]>) => {
+          onChangeQueueRef.current.add(name, callback);
+          return () => {
+            const q = onChangeQueueRef.current.get(name);
+            if (q) q.delete(callback);
+          };
+        },
       };
 
       Object.defineProperties(handle, {
@@ -702,10 +710,21 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       return handle;
     }, [isLoading]);
 
+    // Increment key when client changes to force new virtualizer
     useEffect(() => {
       if (prevClientRef.current && prevClientRef.current !== client) incrementKeyID();
       prevClientRef.current = client;
     }, [client]);
+
+    const dispatchEvent = useCallback((name: string, value: boolean) => {
+      const q = onChangeQueueRef.current.get(name);
+      if (q) q.forEach((callback) => callback(value));
+    }, []);
+
+    const setIsLoadingOverride = useCallback((value: boolean) => {
+      setIsLoading(value);
+      dispatchEvent('isLoading', value);
+    }, []) as React.Dispatch<React.SetStateAction<boolean>>;
 
     // Partial runtime
     const partialRuntime = {
@@ -729,7 +748,8 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         isRefreshing: isRefreshingRef,
       },
       actions: {
-        setIsLoading,
+        setIsLoading: setIsLoadingOverride,
+        dispatchEvent,
       },
     };
 

@@ -22,7 +22,9 @@ import { PageContext } from './shared';
 
 export function Header() {
   const { logViewerRef } = useContext(PageContext);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingBefore, setIsLoadingBefore] = useState(false);
+  const [isLoadingAfter, setIsLoadingAfter] = useState(false);
 
   const handleClickPlay = useCallback(async () => {
     await logViewerRef.current?.startFollowing();
@@ -45,15 +47,29 @@ export function Header() {
     const logViewer = logViewerRef.current;
     if (!logViewer) return console.error('LogViewer not available');
 
+    const c1 = logViewer.onChange('isLoading', setIsLoading);
+    const c2 = logViewer.onChange('isLoadingBefore', setIsLoadingBefore);
+    const c3 = logViewer.onChange('isLoadingAfter', setIsLoadingAfter);
+
     setIsLoading(logViewer.isLoading);
-    return logViewer.onChange('isLoading', setIsLoading);
+    setIsLoadingBefore(logViewer.isLoadingBefore);
+    setIsLoadingAfter(logViewer.isLoadingAfter);
+
+    // Return cancel function
+    return () => {
+      c1();
+      c2();
+      c3();
+    };
   }, []);
 
   return (
     <div>
       <ul>
-        <li>isReady: {isLoading.toString()}</li>
-        <li>isPaused:</li>
+        <li>isLoading: {isLoading.toString()}</li>
+        <li>{isLoading && 'Loading...'}</li>
+        <li>isLoadingBefore: {isLoadingBefore.toString()}</li>
+        <li>isLoadingAfter: {isLoadingAfter.toString()}</li>
       </ul>
       <button type="button" onClick={handleJumpToBeginning}>
         Beginning
