@@ -112,6 +112,7 @@ type LogViewerRuntimeState = {
   readonly hasMoreBefore: boolean;
   readonly hasMoreAfter: boolean;
   readonly isLoading: boolean;
+  readonly isRefreshing: boolean;
 };
 
 type LogViewerRuntimeRefs = {
@@ -120,7 +121,6 @@ type LogViewerRuntimeRefs = {
   isAutoScrollEnabled: React.RefObject<boolean>;
   isLoadingBefore: React.RefObject<boolean>;
   isLoadingAfter: React.RefObject<boolean>;
-  isRefreshing: React.RefObject<boolean>;
 };
 
 type LogViewerRuntimeActions = {
@@ -128,6 +128,7 @@ type LogViewerRuntimeActions = {
   setHasMoreBefore: React.Dispatch<React.SetStateAction<boolean>>;
   setHasMoreAfter: React.Dispatch<React.SetStateAction<boolean>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsRefreshing: React.Dispatch<React.SetStateAction<boolean>>;
   dispatchEvent: (name: string, value: boolean) => void;
 };
 
@@ -386,7 +387,7 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
 const usePullToRefresh = (runtime: LogViewerRuntime) => {
   const loadMoreAfter = useLoadMoreAfter(runtime);
 
-  const { config, refs, state } = runtime;
+  const { config, refs, state, actions } = runtime;
 
   // Handle pull-to-refresh at the end when follow is disabled
   useEffect(() => {
@@ -405,7 +406,8 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
       if (!isAtBottom()) return;
       if (refs.isLoadingAfter.current) return;
 
-      refs.isRefreshing.current = true;
+      refs.isLoadingAfter.current = true;
+      actions.setIsRefreshing(true);
 
       loadMoreAfter()
         .catch((error) => {
@@ -414,7 +416,8 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
         })
         .finally(() => {
           requestAnimationFrame(() => {
-            refs.isRefreshing.current = false;
+            refs.isLoadingAfter.current = false;
+            actions.setIsRefreshing(false);
           });
         });
     };
@@ -540,9 +543,9 @@ type LogViewerInnerProps = {
   partialRuntime: {
     client: Client;
     config: LogViewerRuntimeConfig;
-    state: Pick<LogViewerRuntimeState, 'isLoading'>;
-    refs: Pick<LogViewerRuntimeRefs, 'isLoadingBefore' | 'isLoadingAfter' | 'isRefreshing'>;
-    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'dispatchEvent'>;
+    state: Pick<LogViewerRuntimeState, 'isLoading' | 'isRefreshing'>;
+    refs: Pick<LogViewerRuntimeRefs, 'isLoadingBefore' | 'isLoadingAfter'>;
+    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'setIsRefreshing' | 'dispatchEvent'>;
   };
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
@@ -595,7 +598,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
       isLoading: runtime.state.isLoading,
       isLoadingBefore: runtime.refs.isLoadingBefore.current,
       isLoadingAfter: runtime.refs.isLoadingAfter.current,
-      isRefreshing: runtime.refs.isRefreshing.current,
+      isRefreshing: runtime.state.isRefreshing,
       hasMoreBefore,
       hasMoreAfter,
       hasMoreAfterStart: virtualizer.getTotalSize() + (hasMoreBefore ? config.estimatedSize : 0),
@@ -617,7 +620,15 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
           };
         }),
     }),
-    [virtualizer, count, config.estimatedSize, runtime.state.isLoading, hasMoreBefore, hasMoreAfter],
+    [
+      virtualizer,
+      count,
+      config.estimatedSize,
+      runtime.state.isLoading,
+      runtime.state.isRefreshing,
+      hasMoreBefore,
+      hasMoreAfter,
+    ],
   );
 
   return (
@@ -673,14 +684,14 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     const [isLoading, setIsLoading] = useState(true);
     const isLoadingBeforeRef = useRef(false);
     const isLoadingAfterRef = useRef(false);
-    const isRefreshingRef = useRef(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useImperativeHandle(ref, () => {
       const handle = {
-        isLoading: false,
+        isLoading,
+        isRefreshing,
         isLoadingBefore: false,
         isLoadingAfter: false,
-        isRefreshing: false,
         enableFollow: () => {
           setFollow(true);
         },
@@ -712,14 +723,12 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       };
 
       Object.defineProperties(handle, {
-        isLoading: { get: () => isLoading },
         isLoadingBefore: { get: () => isLoadingBeforeRef.current },
         isLoadingAfter: { get: () => isLoadingAfterRef.current },
-        isRefeshing: { get: () => isRefreshingRef.current },
       });
 
       return handle;
-    }, [isLoading]);
+    }, [isLoading, isRefreshing]);
 
     // Increment key when client changes to force new virtualizer
     useEffect(() => {
@@ -737,6 +746,11 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       dispatchEvent('isLoading', value);
     }, []) as React.Dispatch<React.SetStateAction<boolean>>;
 
+    const setIsRefreshingOverride = useCallback((value: boolean) => {
+      setIsRefreshing(value);
+      dispatchEvent('isRefreshing', value);
+    }, []) as React.Dispatch<React.SetStateAction<boolean>>;
+
     // Partial runtime
     const partialRuntime = {
       client,
@@ -752,14 +766,15 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       },
       state: {
         isLoading,
+        isRefreshing,
       },
       refs: {
         isLoadingBefore: isLoadingBeforeRef,
         isLoadingAfter: isLoadingAfterRef,
-        isRefreshing: isRefreshingRef,
       },
       actions: {
         setIsLoading: setIsLoadingOverride,
+        setIsRefreshing: setIsRefreshingOverride,
         dispatchEvent,
       },
     };

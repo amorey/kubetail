@@ -64,19 +64,17 @@ export class FakeClient implements Client {
   async fetchSince({ cursor, limit = DEFAULT_LIMIT, fetchDelayMs = 0 }: FakeFetchOptions) {
     const ts = cursor ? Date.parse(cursor) : 0;
 
+    let records: LogRecord[];
+    if (!this.firstTS || !this.lastTS) {
+      records = [];
+    } else {
+      const startTS = Math.max(ts, this.firstTS);
+      const stopTS = Math.min(this.lastTS + 1, startTS + limit);
+      records = this.createRecords(startTS, stopTS);
+    }
+
     return new Promise<FetchResult>((resolve) => {
-      let records: LogRecord[];
-
-      if (!this.firstTS || !this.lastTS) {
-        records = [];
-      } else {
-        const startTS = Math.max(ts, this.firstTS);
-        const stopTS = Math.min(this.lastTS + 1, startTS + limit);
-        records = this.createRecords(startTS, stopTS);
-      }
-
-      const result = { records };
-      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, result);
+      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records });
     });
   }
 
@@ -86,19 +84,17 @@ export class FakeClient implements Client {
   async fetchUntil({ cursor, limit = DEFAULT_LIMIT, fetchDelayMs = 0 }: FakeFetchOptions) {
     const ts = cursor ? Date.parse(cursor) : Infinity;
 
+    let records: LogRecord[];
+    if (!this.firstTS || !this.lastTS) {
+      records = [];
+    } else {
+      const stopTS = Math.min(ts + 1, this.lastTS + 1);
+      const startTS = Math.max(this.firstTS, stopTS - limit);
+      records = this.createRecords(startTS, stopTS);
+    }
+
     return new Promise<FetchResult>((resolve) => {
-      let records: LogRecord[];
-
-      if (!this.firstTS || !this.lastTS) {
-        records = [];
-      } else {
-        const stopTS = Math.min(ts + 1, this.lastTS + 1);
-        const startTS = Math.max(this.firstTS, stopTS - limit);
-        records = this.createRecords(startTS, stopTS);
-      }
-
-      const result = { records };
-      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, result);
+      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records });
     });
   }
 
