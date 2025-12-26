@@ -22,35 +22,43 @@ import { useBeforePaint, type BeforePaintSubscribe } from '@/lib/before-paint';
 import { DoubleTailedArray } from '@/lib/double-tailed-array';
 import { cn, MapSet } from '@/lib/util';
 
+export type Cursor = string;
+
 export type LogRecord = {
   timestamp: Date;
   message: string;
+  cursor: string;
 };
 
 export type FetchResult = {
   records: LogRecord[];
 };
 
+export type FetchOptions = {
+  cursor?: Cursor | null;
+  limit?: number;
+};
+
 export type SubscriptionCallback = (record: LogRecord) => void;
 
 export type SubscriptionOptions = {
-  after?: Date;
+  after?: Cursor | null;
 };
 
 export type SubscriptionCancelFunction = () => void;
 
 export type Client = {
-  fetchSince: (timestamp: Date, limit: number) => Promise<FetchResult>;
-  fetchUntil: (timestamp: Date, limit: number) => Promise<FetchResult>;
-  fetchAfter: (timestamp: Date, limit: number) => Promise<FetchResult>;
-  fetchBefore: (timestamp: Date, limit: number) => Promise<FetchResult>;
+  fetchSince: (options: FetchOptions) => Promise<FetchResult>;
+  fetchUntil: (options: FetchOptions) => Promise<FetchResult>;
+  fetchAfter: (options: FetchOptions) => Promise<FetchResult>;
+  fetchBefore: (options: FetchOptions) => Promise<FetchResult>;
   subscribe: (callback: SubscriptionCallback, options?: SubscriptionOptions) => SubscriptionCancelFunction;
 };
 
 export type LogViewerInitialPosition =
-  | { type: 'head'; timestamp?: never }
-  | { type: 'tail'; timestamp?: never }
-  | { type: 'time'; timestamp: Date };
+  | { type: 'head'; cursor?: never }
+  | { type: 'tail'; cursor?: never }
+  | { type: 'cursor'; cursor: Cursor };
 
 export type OnChangeCallback<TArgs extends unknown[] = unknown[]> = (...args: TArgs) => void;
 
@@ -61,11 +69,11 @@ export type LogViewerHandle = {
   readonly isLoadingBefore: boolean;
   readonly isLoadingAfter: boolean;
   readonly isRefreshing: boolean;
-  startFollowing: () => Promise<void>;
-  stopFollowing: () => void;
+  enableFollow: () => void;
+  disableFollow: () => void;
   jumpToBeginning: () => Promise<void>;
   jumpToEnd: () => Promise<void>;
-  jumpToTime: () => Promise<void>;
+  jumpToCursor: (cursor: Cursor) => Promise<void>;
   onChange: (name: string, callback: OnChangeCallback<[boolean]>) => OnChangeCancelFunction;
 };
 
@@ -149,7 +157,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
     const initFn = async () => {
       switch (config.initialPosition.type) {
         case 'head': {
-          const result = await client.fetchSince(new Date(0), config.batchSizeInitial + 1);
+          const result = await client.fetchSince({ limit: config.batchSizeInitial + 1 });
 
           // Update UI
           if (result.records.length) {
@@ -165,7 +173,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
           break;
         }
         case 'tail': {
-          const result = await client.fetchUntil(new Date(8.64e15), config.batchSizeInitial + 1);
+          const result = await client.fetchUntil({ limit: config.batchSizeInitial + 1 });
 
           // Update UI
           if (result.records.length) {
@@ -189,11 +197,11 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
 
           break;
         }
-        case 'time': {
+        case 'cursor': {
           // Fetch BATCH_SIZE records before and after the seek timestamp
           const [beforeResult, afterResult] = await Promise.all([
-            client.fetchBefore(config.initialPosition.timestamp, config.batchSizeInitial + 1),
-            client.fetchSince(config.initialPosition.timestamp, config.batchSizeInitial + 1),
+            client.fetchBefore({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial + 1 }),
+            client.fetchSince({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial + 1 }),
           ]);
 
           // Update UI
@@ -260,7 +268,7 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
   useCallback(async () => {
     // Get data
     const records = refs.records.current;
-    const result = await client.fetchBefore(records.first().timestamp, config.batchSizeRegular + 1);
+    const result = await client.fetchBefore({ cursor: records.first().cursor, limit: config.batchSizeRegular + 1 });
 
     // Update `hasMoreBefore`
     if (result.records.length > config.batchSizeRegular) result.records.shift();
@@ -296,7 +304,7 @@ const useLoadMoreAfter = ({ client, config, refs, actions, services }: LogViewer
   useCallback(async () => {
     // Get data
     const records = refs.records.current;
-    const result = await client.fetchAfter(records.last().timestamp, config.batchSizeRegular + 1);
+    const result = await client.fetchAfter({ cursor: records.last().cursor, limit: config.batchSizeRegular + 1 });
 
     // Update `hasMoreAfter`
     if (result.records.length > config.batchSizeRegular) result.records.pop();
@@ -372,7 +380,7 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
 };
 
 /**
- * usePullToRefresh
+ * usePullToRefresh - Implement pull-to-refresh feature
  */
 
 const usePullToRefresh = (runtime: LogViewerRuntime) => {
@@ -420,7 +428,7 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
 };
 
 /**
- * useFollow
+ * useFollow - Implement follow-from-end behavior
  */
 
 const useFollow = ({ client, config, state, refs, actions, services }: LogViewerRuntime) => {
@@ -464,7 +472,7 @@ const useFollow = ({ client, config, state, refs, actions, services }: LogViewer
       if (rafID === null) rafID = requestAnimationFrame(flush);
     };
 
-    const opts = records.length ? { after: records.last().timestamp } : undefined;
+    const opts = records.length ? { after: records.last().cursor } : undefined;
 
     const unsubscribe = client.subscribe(cb, opts);
 
@@ -479,7 +487,7 @@ const useFollow = ({ client, config, state, refs, actions, services }: LogViewer
 };
 
 /**
- * useAutoScroll
+ * useAutoScroll - Implement auto-scroll
  */
 
 const useAutoScroll = ({ config, state, refs }: LogViewerRuntime) => {
@@ -673,22 +681,26 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         isLoadingBefore: false,
         isLoadingAfter: false,
         isRefreshing: false,
-        startFollowing: async () => {
+        enableFollow: () => {
           setFollow(true);
         },
-        stopFollowing: () => {
+        disableFollow: () => {
           setFollow(false);
         },
         jumpToBeginning: async () => {
           setInitialPosition({ type: 'head' });
           incrementKeyID();
+          // TODO: wait for isLoading to resolve
         },
         jumpToEnd: async () => {
           setInitialPosition({ type: 'tail' });
           incrementKeyID();
+          // TODO: wait for isLoading to resolve
         },
-        jumpToTime: async () => {
+        jumpToCursor: async (cursor: Cursor) => {
+          setInitialPosition({ type: 'cursor', cursor });
           incrementKeyID();
+          // TODO: wait for isLoading to resolve
         },
         onChange: (name: string, callback: OnChangeCallback<[boolean]>) => {
           onChangeQueueRef.current.add(name, callback);

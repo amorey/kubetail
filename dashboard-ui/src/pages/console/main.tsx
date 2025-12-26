@@ -28,6 +28,7 @@ export function Main() {
   const { logViewerRef } = useContext(PageContext);
 
   const client = useMemo(() => new FakeClient(1000), []);
+  client.setAppendRate(1);
 
   return (
     <LogViewer
