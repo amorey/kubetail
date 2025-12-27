@@ -33,7 +33,7 @@ import { cn } from '@/lib/util';
 
 export const LOGVIEWER_INITIAL_STATE = {
   isLoading: false,
-};
+} satisfies LogViewerState;
 
 export type Cursor = string;
 
@@ -73,7 +73,7 @@ export type LogViewerInitialPosition =
   | { type: 'tail'; cursor?: never }
   | { type: 'cursor'; cursor: Cursor };
 
-export type LogViewerExternalState = {
+export type LogViewerState = {
   isLoading: boolean;
 };
 
@@ -82,7 +82,7 @@ export type LogViewerHandle = {
   jumpToEnd: () => Promise<void>;
   jumpToCursor: (cursor: Cursor) => Promise<void>;
   subscribe: (callback: () => void) => () => void;
-  getSnapshot: () => LogViewerExternalState;
+  getSnapshot: () => LogViewerState;
 };
 
 export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
@@ -682,9 +682,9 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
 
     const incrementKeyID = useCallback(() => setKeyID((id) => id + 1), []);
 
-    const [isLoading, setIsLoading] = useState(LOGVIEWER_INITIAL_STATE.isLoading);
+    const [isLoading, setIsLoading] = useState<boolean>(LOGVIEWER_INITIAL_STATE.isLoading);
 
-    const state = useMemo<LogViewerExternalState>(
+    const state = useMemo<LogViewerState>(
       () => ({
         isLoading,
       }),
@@ -779,7 +779,7 @@ function createLogViewerStore(handle: LogViewerHandle | null) {
 export function useLogViewerState(
   logViewerRef: React.RefObject<LogViewerHandle | null>,
   dependencies: any[],
-): LogViewerExternalState {
+): LogViewerState {
   const [store, setStore] = useState(() => createLogViewerStore(logViewerRef.current));
 
   useEffect(() => {
