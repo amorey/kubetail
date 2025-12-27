@@ -14,7 +14,7 @@
 
 import { format, toZonedTime } from 'date-fns-tz';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { memo, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Spinner } from '@kubetail/ui/elements/spinner';
@@ -25,8 +25,8 @@ import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 import { cn, cssEncode } from '@/lib/util';
 
-// import { FakeClient } from './fake-client';
-import { RealClient } from './real-client';
+import { FakeClient } from './fake-client';
+// import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import type { LogRecord, LogViewerVirtualRow } from './log-viewer';
 import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
@@ -88,7 +88,7 @@ type RowProps = {
   row: LogViewerVirtualRow;
 };
 
-const Row = memo(({ row }: RowProps) => {
+const Row = ({ row }: RowProps) => {
   const visibleCols = useAtomValue(visibleColsAtom);
   const isWrap = useAtomValue(isWrapAtom);
 
@@ -160,7 +160,7 @@ const Row = memo(({ row }: RowProps) => {
       {els}
     </div>
   );
-});
+};
 
 /**
  * Main component
@@ -186,9 +186,9 @@ export function Main() {
     });
   }, [isUseClusterAPIEnabled, kubeContext]);
 
-  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
-  // const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  // client.setAppendRate(1);
+  // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  const client = useMemo(() => new FakeClient(1000), [apolloClient]);
+  client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 

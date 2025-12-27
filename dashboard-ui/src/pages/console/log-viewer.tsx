@@ -793,31 +793,10 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     }, [client]);
 
     // Partial runtime
-    const partialRuntime = useMemo(
-      () => ({
-        client,
-        config: {
-          initialPosition,
-          follow,
-          estimateRowHeight,
-          overscan,
-          batchSizeInitial,
-          batchSizeRegular,
-          loadMoreThreshold,
-          pinToBottomTolerance,
-          hasMoreBeforeRowHeight,
-          hasMoreAfterRowHeight,
-          isRefreshingRowHeight,
-        },
-        state: {
-          isLoading,
-        },
-        actions: {
-          setIsLoading,
-        },
-      }),
-      [
-        client,
+    const partialRuntime = {
+      client,
+      config: {
+        initialPosition,
         follow,
         estimateRowHeight,
         overscan,
@@ -828,9 +807,14 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         hasMoreBeforeRowHeight,
         hasMoreAfterRowHeight,
         isRefreshingRowHeight,
+      },
+      state: {
         isLoading,
-      ],
-    );
+      },
+      actions: {
+        setIsLoading,
+      },
+    };
 
     return (
       <LogViewerInner key={keyID} partialRuntime={partialRuntime} {...other}>
