@@ -30,8 +30,6 @@ type PageContextType = {
   isSidebarOpen: boolean;
   setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   logViewerRef: React.RefObject<LogViewerHandle | null>;
-  follow: boolean;
-  setFollow: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const PageContext = createContext({} as PageContextType);

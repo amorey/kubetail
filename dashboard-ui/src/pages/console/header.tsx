@@ -38,7 +38,7 @@ import { cn } from '@/lib/util';
 
 import { ALL_VIEWER_COLUMNS, PageContext } from './shared';
 import type { ViewerColumn } from './shared';
-import { isWrapAtom, visibleColsAtom } from './state';
+import { isFollowAtom, isWrapAtom, visibleColsAtom } from './state';
 import { useLogViewerState } from './log-viewer';
 
 /**
@@ -109,22 +109,13 @@ const SettingsButton = () => {
 
 export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isSidebarOpen, setIsSidebarOpen, follow, setFollow, logViewerRef } = useContext(PageContext);
+  const { isSidebarOpen, setIsSidebarOpen, logViewerRef } = useContext(PageContext);
 
   const { isLoading } = useLogViewerState(logViewerRef, []);
+  const [isFollow, setIsFollow] = useAtom(isFollowAtom);
 
   const kubeContext = searchParams.get('kubeContext') || '';
   const isUseClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
-
-  /*
-  // Init
-  useEffect(() => {
-    const logViewer = logViewerRef.current;
-    if (!logViewer) return console.error('LogViewer not available');
-
-    setIsLoading(logViewer.isLoading);
-    return logViewer.onChange('isLoading', setIsLoading);
-  }, []); */
 
   const buttonCN =
     'rounded-lg h-[40px] w-[40px] flex items-center justify-center enabled:hover:bg-chrome-200 disabled:opacity-30';
@@ -166,11 +157,11 @@ export function Header() {
   }, []);
 
   const handlePlayPress = useCallback(() => {
-    setFollow(true);
+    setIsFollow(true);
   }, []);
 
   const handlePausePress = useCallback(() => {
-    setFollow(false);
+    setIsFollow(false);
   }, []);
 
   const handleSubmit = useCallback(
@@ -216,7 +207,7 @@ export function Header() {
           >
             <SkipBackIcon size={24} strokeWidth={1.5} className="text-chrome-foreground" />
           </button>
-          {follow ? (
+          {isFollow ? (
             <button
               type="button"
               className={buttonCN}

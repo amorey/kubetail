@@ -107,18 +107,15 @@ const InnerLayout = ({ sidebar, header, main }: InnerLayoutProps) => {
 
 export default function Page() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [follow, setFollow] = useState(true);
   const logViewerRef = useRef<LogViewerHandle>(null);
 
   const context = useMemo(
     () => ({
       isSidebarOpen,
       setIsSidebarOpen,
-      follow,
-      setFollow,
       logViewerRef,
     }),
-    [isSidebarOpen, follow],
+    [isSidebarOpen],
   );
 
   return (

@@ -596,6 +596,9 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     useScrollendEvent: true,
   });
 
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
+
   const runtime = {
     client: partialRuntime.client,
     config: partialRuntime.config,
@@ -659,6 +662,11 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
       hasMoreAfter,
     ],
   );
+
+  // Force re-measure when estimateRowHeight function changes
+  // useEffect(() => {
+  //   virtualizerRef.current.measure();
+  // }, [config.estimateRowHeight]);
 
   return (
     <div ref={scrollElementRef} className={cn('overflow-auto', className)} {...other}>
