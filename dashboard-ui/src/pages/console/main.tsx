@@ -30,7 +30,7 @@ const ESTIMATED_SIZE = 24;
  */
 
 export function Main() {
-  const { logViewerRef } = useContext(PageContext);
+  const { follow, logViewerRef } = useContext(PageContext);
 
   const [searchParams] = useSearchParams();
   const kubeContext = searchParams.get('kubeContext') || '';
@@ -54,7 +54,7 @@ export function Main() {
       className="h-full w-full"
       client={client}
       estimatedSize={ESTIMATED_SIZE}
-      defaultFollow
+      follow={follow}
     >
       {(virtualizer) => (
         <>
@@ -68,7 +68,10 @@ export function Main() {
           )}
           <div
             style={{
-              height: virtualizer.getTotalSize(),
+              height:
+                virtualizer.getTotalSize() +
+                (virtualizer.hasMoreBefore ? ESTIMATED_SIZE : 0) +
+                (virtualizer.hasMoreAfter ? ESTIMATED_SIZE : 0),
               width: '100%',
               position: 'relative',
             }}
@@ -90,7 +93,7 @@ export function Main() {
               return (
                 <div
                   key={virtualRow.key}
-                  className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono"
+                  className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono whitespace-nowrap"
                   style={{
                     height: `${virtualRow.size}px`,
                     lineHeight: `${virtualRow.size}px`,
@@ -107,7 +110,7 @@ export function Main() {
                 style={{
                   height: `${ESTIMATED_SIZE}px`,
                   lineHeight: `${ESTIMATED_SIZE}px`,
-                  transform: `translateY(${virtualizer.hasMoreAfterStart}px)`,
+                  transform: `translateY(${virtualizer.getTotalSize() + (virtualizer.hasMoreBefore ? ESTIMATED_SIZE : 0)}px)`,
                 }}
               >
                 {virtualizer.isRefreshing ? 'Refreshing' : 'Loading...'}

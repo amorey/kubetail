@@ -108,10 +108,9 @@ const SettingsButton = () => {
 
 export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isSidebarOpen, setIsSidebarOpen, logViewerRef } = useContext(PageContext);
+  const { isSidebarOpen, setIsSidebarOpen, follow, setFollow, logViewerRef } = useContext(PageContext);
 
   const [isLoading, setIsLoading] = useState<boolean>();
-  const [isFollowEnabled, setIsFollowEnabled] = useState(true);
 
   const kubeContext = searchParams.get('kubeContext') || '';
   const isUseClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
@@ -165,13 +164,11 @@ export function Header() {
   }, []);
 
   const handlePlayPress = useCallback(() => {
-    logViewerRef.current?.enableFollow();
-    setIsFollowEnabled(true);
+    setFollow(true);
   }, []);
 
   const handlePausePress = useCallback(() => {
-    logViewerRef.current?.disableFollow();
-    setIsFollowEnabled(false);
+    setFollow(false);
   }, []);
 
   const handleSubmit = useCallback(
@@ -217,7 +214,7 @@ export function Header() {
           >
             <SkipBackIcon size={24} strokeWidth={1.5} className="text-chrome-foreground" />
           </button>
-          {isFollowEnabled ? (
+          {follow ? (
             <button
               type="button"
               className={buttonCN}

@@ -66,11 +66,6 @@ export type OnChangeCancelFunction = () => void;
 
 export type LogViewerHandle = {
   readonly isLoading: boolean;
-  readonly isLoadingBefore: boolean;
-  readonly isLoadingAfter: boolean;
-  readonly isRefreshing: boolean;
-  enableFollow: () => void;
-  disableFollow: () => void;
   jumpToBeginning: () => Promise<void>;
   jumpToEnd: () => Promise<void>;
   jumpToCursor: (cursor: Cursor) => Promise<void>;
@@ -86,12 +81,9 @@ export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
 
 export type LogViewerVirtualizer = {
   readonly isLoading: boolean;
-  readonly isLoadingBefore: boolean;
-  readonly isLoadingAfter: boolean;
   readonly isRefreshing: boolean;
   hasMoreBefore: boolean;
   hasMoreAfter: boolean;
-  hasMoreAfterStart: number;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
 };
@@ -374,10 +366,24 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
     }
 
     return () => {
-      if (cancelID1) cancelAnimationFrame(cancelID1);
-      if (cancelID2) cancelAnimationFrame(cancelID2);
+      if (cancelID1) {
+        cancelAnimationFrame(cancelID1);
+        refs.isLoadingBefore.current = false;
+      }
+      if (cancelID2) {
+        cancelAnimationFrame(cancelID2);
+        refs.isLoadingAfter.current = false;
+      }
     };
-  }, [config.overscan, virtualItems, state.count, state.hasMoreBefore, state.hasMoreAfter, state.isLoading]);
+  }, [
+    virtualItems,
+    config.overscan,
+    config.loadMoreThreshold,
+    state.count,
+    state.hasMoreBefore,
+    state.hasMoreAfter,
+    state.isLoading,
+  ]);
 };
 
 /**
@@ -543,9 +549,8 @@ type LogViewerInnerProps = {
   partialRuntime: {
     client: Client;
     config: LogViewerRuntimeConfig;
-    state: Pick<LogViewerRuntimeState, 'isLoading' | 'isRefreshing'>;
-    refs: Pick<LogViewerRuntimeRefs, 'isLoadingBefore' | 'isLoadingAfter'>;
-    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'setIsRefreshing' | 'dispatchEvent'>;
+    state: Pick<LogViewerRuntimeState, 'isLoading'>;
+    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'dispatchEvent'>;
   };
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
@@ -554,10 +559,13 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
   const recordsRef = useRef(new DoubleTailedArray<LogRecord>());
+  const isLoadingBeforeRef = useRef(false);
+  const isLoadingAfterRef = useRef(false);
 
   const [count, setCount] = useState(0);
   const [hasMoreBefore, setHasMoreBefore] = useState(false);
   const [hasMoreAfter, setHasMoreAfter] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const beforePaint = useBeforePaint(count);
   const isAutoScrollEnabledRef = useRef(false);
@@ -576,14 +584,15 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const runtime = {
     client: partialRuntime.client,
     config: partialRuntime.config,
-    state: { count, hasMoreBefore, hasMoreAfter, ...partialRuntime.state },
+    state: { count, hasMoreBefore, hasMoreAfter, isRefreshing, ...partialRuntime.state },
     refs: {
       records: recordsRef,
       scrollEl: scrollElementRef,
       isAutoScrollEnabled: isAutoScrollEnabledRef,
-      ...partialRuntime.refs,
+      isLoadingBefore: isLoadingBeforeRef,
+      isLoadingAfter: isLoadingAfterRef,
     },
-    actions: { setCount, setHasMoreBefore, setHasMoreAfter, ...partialRuntime.actions },
+    actions: { setCount, setHasMoreBefore, setHasMoreAfter, setIsRefreshing, ...partialRuntime.actions },
     services: { virtualizer, beforePaint },
   } satisfies LogViewerRuntime;
 
@@ -596,18 +605,10 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const v = useMemo(
     () => ({
       isLoading: runtime.state.isLoading,
-      isLoadingBefore: runtime.refs.isLoadingBefore.current,
-      isLoadingAfter: runtime.refs.isLoadingAfter.current,
       isRefreshing: runtime.state.isRefreshing,
       hasMoreBefore,
       hasMoreAfter,
-      hasMoreAfterStart: virtualizer.getTotalSize() + (hasMoreBefore ? config.estimatedSize : 0),
-      getTotalSize: () => {
-        let size = virtualizer.getTotalSize();
-        if (hasMoreBefore) size += config.estimatedSize;
-        if (hasMoreAfter) size += config.estimatedSize;
-        return size;
-      },
+      getTotalSize: virtualizer.getTotalSize,
       getVirtualRows: () =>
         virtualizer.getVirtualItems().map((item) => {
           const { key, index, size, start } = item;
@@ -647,7 +648,7 @@ export type LogViewerProps = {
   client: Client;
   estimatedSize: number;
   initialPosition?: LogViewerInitialPosition;
-  defaultFollow?: boolean;
+  follow?: boolean;
   overscan?: number;
   batchSizeInitial?: number;
   batchSizeRegular?: number;
@@ -661,7 +662,7 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     {
       client,
       initialPosition: defaultInitialPosition = { type: 'tail' },
-      defaultFollow = true,
+      follow = true,
       estimatedSize,
       overscan = 20,
       batchSizeInitial = 150,
@@ -674,7 +675,6 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     ref,
   ) => {
     const [keyID, setKeyID] = useState(0);
-    const [follow, setFollow] = useState(defaultFollow);
     const [initialPosition, setInitialPosition] = useState(defaultInitialPosition);
     const prevClientRef = useRef<Client>(null);
     const onChangeQueueRef = useRef(new MapSet<string, OnChangeCallback<[boolean]>>());
@@ -682,22 +682,11 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     const incrementKeyID = useCallback(() => setKeyID((id) => id + 1), []);
 
     const [isLoading, setIsLoading] = useState(true);
-    const isLoadingBeforeRef = useRef(false);
-    const isLoadingAfterRef = useRef(false);
-    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    useImperativeHandle(ref, () => {
-      const handle = {
+    useImperativeHandle(
+      ref,
+      () => ({
         isLoading,
-        isRefreshing,
-        isLoadingBefore: false,
-        isLoadingAfter: false,
-        enableFollow: () => {
-          setFollow(true);
-        },
-        disableFollow: () => {
-          setFollow(false);
-        },
         jumpToBeginning: async () => {
           setInitialPosition({ type: 'head' });
           incrementKeyID();
@@ -720,15 +709,9 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
             if (q) q.delete(callback);
           };
         },
-      };
-
-      Object.defineProperties(handle, {
-        isLoadingBefore: { get: () => isLoadingBeforeRef.current },
-        isLoadingAfter: { get: () => isLoadingAfterRef.current },
-      });
-
-      return handle;
-    }, [isLoading, isRefreshing]);
+      }),
+      [isLoading],
+    );
 
     // Increment key when client changes to force new virtualizer
     useEffect(() => {
@@ -746,11 +729,6 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       dispatchEvent('isLoading', value);
     }, []) as React.Dispatch<React.SetStateAction<boolean>>;
 
-    const setIsRefreshingOverride = useCallback((value: boolean) => {
-      setIsRefreshing(value);
-      dispatchEvent('isRefreshing', value);
-    }, []) as React.Dispatch<React.SetStateAction<boolean>>;
-
     // Partial runtime
     const partialRuntime = {
       client,
@@ -766,15 +744,9 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       },
       state: {
         isLoading,
-        isRefreshing,
-      },
-      refs: {
-        isLoadingBefore: isLoadingBeforeRef,
-        isLoadingAfter: isLoadingAfterRef,
       },
       actions: {
         setIsLoading: setIsLoadingOverride,
-        setIsRefreshing: setIsRefreshingOverride,
         dispatchEvent,
       },
     };
