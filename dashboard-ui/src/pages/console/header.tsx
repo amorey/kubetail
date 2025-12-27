@@ -111,7 +111,7 @@ export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isSidebarOpen, setIsSidebarOpen, follow, setFollow, logViewerRef } = useContext(PageContext);
 
-  const { isLoading } = useLogViewerState(logViewerRef.current, []);
+  const { isLoading } = useLogViewerState(logViewerRef, []);
 
   const kubeContext = searchParams.get('kubeContext') || '';
   const isUseClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);

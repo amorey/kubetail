@@ -31,7 +31,7 @@ import { useBeforePaint, type BeforePaintSubscribe } from '@/lib/before-paint';
 import { DoubleTailedArray } from '@/lib/double-tailed-array';
 import { cn } from '@/lib/util';
 
-export const DEFAULT_LOGVIEWER_EXTERNAL_STATE = {
+export const LOGVIEWER_INITIAL_STATE = {
   isLoading: false,
 };
 
@@ -682,17 +682,19 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
 
     const incrementKeyID = useCallback(() => setKeyID((id) => id + 1), []);
 
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(LOGVIEWER_INITIAL_STATE.isLoading);
 
-    const state = useMemo(
+    const state = useMemo<LogViewerExternalState>(
       () => ({
         isLoading,
       }),
       [isLoading],
     );
+    const stateRef = useRef(state);
 
     // Notify listeners when state changes
     useEffect(() => {
+      stateRef.current = state;
       listenerQueueRef.current.forEach((callback) => callback());
     }, [state]);
 
@@ -720,9 +722,9 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
             listenerQueueRef.current.delete(callback);
           };
         },
-        getSnapshot: () => state,
+        getSnapshot: () => stateRef.current,
       }),
-      [state],
+      [],
     );
 
     // Increment key when client changes to force new virtualizer
@@ -770,16 +772,19 @@ function createLogViewerStore(handle: LogViewerHandle | null) {
   if (handle) return { subscribe: handle.subscribe, getSnapshot: handle.getSnapshot };
   return {
     subscribe: (_: () => void) => () => {},
-    getSnapshot: () => DEFAULT_LOGVIEWER_EXTERNAL_STATE,
+    getSnapshot: () => LOGVIEWER_INITIAL_STATE,
   };
 }
 
-export function useLogViewerState(handle: LogViewerHandle | null, ...dependencies: any[]): LogViewerExternalState {
-  const [store, setStore] = useState(() => createLogViewerStore(handle));
+export function useLogViewerState(
+  logViewerRef: React.RefObject<LogViewerHandle | null>,
+  dependencies: any[],
+): LogViewerExternalState {
+  const [store, setStore] = useState(() => createLogViewerStore(logViewerRef.current));
 
   useEffect(() => {
-    setStore(createLogViewerStore(handle));
-  }, [handle, ...dependencies]);
+    setStore(createLogViewerStore(logViewerRef.current));
+  }, dependencies);
 
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
 }
