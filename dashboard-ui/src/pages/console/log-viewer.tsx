@@ -99,6 +99,7 @@ export type LogViewerVirtualizer = {
   hasMoreAfter: boolean;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
+  measureElement: (node: Element | null | undefined) => void;
 };
 
 type LogViewerRuntimeConfig = {
@@ -109,7 +110,8 @@ type LogViewerRuntimeConfig = {
   readonly batchSizeRegular: number;
   readonly loadMoreThreshold: number;
   readonly pinToBottomTolerance: number;
-  readonly estimatedSize: number;
+  readonly hasMoreBeforeScrollMargin: number;
+  estimateSize: (record: LogRecord) => number;
 };
 
 type LogViewerRuntimeState = {
@@ -576,9 +578,9 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => config.estimatedSize,
+    estimateSize: (index: number) => config.estimateSize(recordsRef.current.at(index)),
     overscan: config.overscan,
-    scrollMargin: hasMoreBefore ? config.estimatedSize : 0,
+    scrollMargin: hasMoreBefore ? config.hasMoreBeforeScrollMargin : 0,
     useScrollendEvent: true,
   });
 
@@ -621,11 +623,12 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
             record: recordsRef.current.at(index),
           };
         }),
+      measureElement: virtualizer.measureElement,
     }),
     [
       virtualizer,
       count,
-      config.estimatedSize,
+      config.estimateSize,
       runtime.state.isLoading,
       runtime.state.isRefreshing,
       hasMoreBefore,
@@ -647,7 +650,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
 export type LogViewerProps = {
   className?: string;
   client: Client;
-  estimatedSize: number;
+  estimateSize: (record: LogRecord) => number;
   initialPosition?: LogViewerInitialPosition;
   follow?: boolean;
   overscan?: number;
@@ -655,6 +658,7 @@ export type LogViewerProps = {
   batchSizeRegular?: number;
   loadMoreThreshold?: number;
   pinToBottomTolerance?: number;
+  hasMoreBeforeScrollMargin?: number;
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
 
@@ -664,12 +668,13 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       client,
       initialPosition: defaultInitialPosition = { type: 'tail' },
       follow = true,
-      estimatedSize,
+      estimateSize,
       overscan = 20,
       batchSizeInitial = 150,
       batchSizeRegular = 100,
       loadMoreThreshold = 50,
       pinToBottomTolerance = 10,
+      hasMoreBeforeScrollMargin = 0,
       children,
       ...other
     },
@@ -739,12 +744,13 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       config: {
         initialPosition,
         follow,
-        estimatedSize,
+        estimateSize,
         overscan,
         batchSizeInitial,
         batchSizeRegular,
         loadMoreThreshold,
         pinToBottomTolerance,
+        hasMoreBeforeScrollMargin,
       },
       state: {
         isLoading,
@@ -780,11 +786,14 @@ export function useLogViewerState(
   logViewerRef: React.RefObject<LogViewerHandle | null>,
   dependencies: any[],
 ): LogViewerState {
+  // Initialize store
   const [store, setStore] = useState(() => createLogViewerStore(logViewerRef.current));
 
+  // Update based on user-provided dependencies
   useEffect(() => {
     setStore(createLogViewerStore(logViewerRef.current));
   }, dependencies);
 
+  // Return sync external store instance
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
 }

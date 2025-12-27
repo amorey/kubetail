@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
@@ -21,6 +21,7 @@ import { useIsClusterAPIEnabled } from '@/lib/hooks';
 // import { FakeClient } from './fake-client';
 import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
+import type { LogRecord } from './log-viewer';
 import { PageContext } from './shared';
 
 const ESTIMATED_SIZE = 24;
@@ -48,13 +49,16 @@ export function Main() {
 
   const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
 
+  const estimateSize = useCallback((record: LogRecord) => ESTIMATED_SIZE, []);
+
   return (
     <LogViewer
       ref={logViewerRef}
       className="h-full w-full"
       client={client}
-      estimatedSize={ESTIMATED_SIZE}
+      estimateSize={estimateSize}
       follow={follow}
+      hasMoreBeforeScrollMargin={ESTIMATED_SIZE}
     >
       {(virtualizer) => (
         <>
@@ -93,7 +97,7 @@ export function Main() {
               return (
                 <div
                   key={virtualRow.key}
-                  className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono whitespace-nowrap"
+                  className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono"
                   style={{
                     height: `${virtualRow.size}px`,
                     lineHeight: `${virtualRow.size}px`,
