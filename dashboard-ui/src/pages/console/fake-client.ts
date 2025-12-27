@@ -228,6 +228,19 @@ export class FakeClient implements Client {
       timestamp,
       message: `line ${ts - firstTS}`,
       cursor: timestamp.toISOString(),
+      source: {
+        metadata: {
+          region: 'region',
+          zone: 'zone',
+          os: 'os',
+          arch: 'arch',
+          node: 'node',
+        },
+        namespace: 'namespace',
+        podName: 'podName',
+        containerName: 'containerName',
+        containerID: 'containerID',
+      },
     };
   }
 

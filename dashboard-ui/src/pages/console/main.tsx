@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from 'jotai';
-import { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { format, toZonedTime } from 'date-fns-tz';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Spinner } from '@kubetail/ui/elements/spinner';
@@ -22,13 +23,14 @@ import { AnsiHtml } from 'fancy-ansi/react';
 
 import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
+import { cn, cssEncode } from '@/lib/util';
 
 // import { FakeClient } from './fake-client';
 import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
-import type { LogRecord } from './log-viewer';
-import { PageContext } from './shared';
-import { isFollowAtom, isWrapAtom } from './state';
+import type { LogRecord, LogViewerVirtualRow } from './log-viewer';
+import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
+import { colWidthsAtom, isFollowAtom, isWrapAtom, maxRowWidthAtom, visibleColsAtom } from './state';
 
 const LOG_RECORD_ROW_HEIGHT = 24;
 const HAS_MORE_BEFORE_ROW_HEIGHT = 24;
@@ -42,11 +44,123 @@ const IS_REFRESHING_ROW_HEIGHT = 24;
 const LoadingOverlay = () => (
   <div className="bg-chrome-100 opacity-85 w-full h-full flex items-center justify-center">
     <div className="bg-background flex items-center space-x-4 p-3 border border-chrome-200 rounded-md">
-      <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full" />
-      <span className="text-gray-700 font-medium">Loading...</span>
+      <div>Loading</div>
+      <Spinner size="xs" />
     </div>
   </div>
 );
+
+/**
+ * Row component
+ */
+
+const getAttribute = (record: LogRecord, col: ViewerColumn) => {
+  switch (col) {
+    case ViewerColumn.Timestamp: {
+      const tsWithTZ = toZonedTime(record.timestamp, 'UTC');
+      return format(tsWithTZ, 'LLL dd, y HH:mm:ss.SSS', { timeZone: 'UTC' });
+    }
+    case ViewerColumn.ColorDot: {
+      const k = cssEncode(`${record.source.namespace}/${record.source.podName}/${record.source.containerName}`);
+      const el = <div className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: `var(--${k}-color)` }} />;
+      return el;
+    }
+    case ViewerColumn.PodContainer:
+      return `${record.source.podName}/${record.source.containerName}`;
+    case ViewerColumn.Region:
+      return record.source.metadata.region;
+    case ViewerColumn.Zone:
+      return record.source.metadata.zone;
+    case ViewerColumn.OS:
+      return record.source.metadata.os;
+    case ViewerColumn.Arch:
+      return record.source.metadata.arch;
+    case ViewerColumn.Node:
+      return record.source.metadata.node;
+    case ViewerColumn.Message:
+      return <AnsiHtml text={record.message} />;
+    default:
+      throw new Error('not implemented');
+  }
+};
+
+type RowProps = {
+  row: LogViewerVirtualRow;
+};
+
+const Row = memo(({ row }: RowProps) => {
+  const visibleCols = useAtomValue(visibleColsAtom);
+  const isWrap = useAtomValue(isWrapAtom);
+
+  const rowElRef = useRef<HTMLDivElement>(null);
+  const [colWidths, setColWidths] = useAtom(colWidthsAtom);
+  const setMaxRowWidth = useSetAtom(maxRowWidthAtom);
+
+  // update global colWidths
+  useEffect(() => {
+    const rowEl = rowElRef.current;
+    if (!rowEl) return;
+
+    // get current column widths
+    const currColWidths = new Map<ViewerColumn, number>();
+    Array.from(rowEl.children || []).forEach((colEl) => {
+      const colId = (colEl as HTMLElement).dataset.colId as ViewerColumn;
+      if (!colId || colId === ViewerColumn.Message) return;
+      currColWidths.set(colId, colEl.scrollWidth);
+    });
+
+    // update colWidths state (if necessary)
+    setColWidths((oldVals) => {
+      const changedVals = new Map<ViewerColumn, number>();
+      currColWidths.forEach((currWidth, colId) => {
+        const oldWidth = oldVals.get(colId);
+        const newWidth = Math.max(currWidth, oldWidth || 0);
+        if (newWidth !== oldWidth) changedVals.set(colId, newWidth);
+      });
+      if (changedVals.size) return new Map([...oldVals, ...changedVals]);
+      return oldVals;
+    });
+
+    // update maxRowWidth state
+    setMaxRowWidth((currVal) => Math.max(currVal, rowEl.scrollWidth));
+  }, [visibleCols, setColWidths, setMaxRowWidth]);
+
+  const els: React.ReactElement[] = [];
+  ALL_VIEWER_COLUMNS.forEach((col) => {
+    if (visibleCols.has(col)) {
+      els.push(
+        <div
+          key={col}
+          className={cn(
+            row.index % 2 !== 0 && 'bg-chrome-100',
+            'px-2',
+            isWrap ? '' : 'whitespace-nowrap',
+            col === ViewerColumn.Timestamp ? 'bg-chrome-200' : '',
+            col === ViewerColumn.Message ? 'grow' : 'shrink-0',
+          )}
+          style={col !== ViewerColumn.Message ? { minWidth: `${colWidths.get(col) || 0}px` } : {}}
+          data-col-id={col}
+        >
+          {getAttribute(row.record, col)}
+        </div>,
+      );
+    }
+  });
+
+  return (
+    <div
+      ref={rowElRef}
+      className="absolute top-0 left-0 flex leading-6"
+      style={{
+        height: `${row.size}px`,
+        lineHeight: `${LOG_RECORD_ROW_HEIGHT}px`,
+        transform: `translateY(${row.start}px)`,
+      }}
+    >
+      {els}
+    </div>
+  );
+});
 
 /**
  * Main component
@@ -123,22 +237,9 @@ export function Main() {
                   Loading...
                 </div>
               )}
-              {virtualizer.getVirtualRows().map((virtualRow) => {
-                const { record } = virtualRow;
-                return (
-                  <div
-                    key={virtualRow.key}
-                    className="absolute top-0 left-0 w-[300px] border-b border-gray-300 font-mono"
-                    style={{
-                      height: `${virtualRow.size}px`,
-                      lineHeight: `${LOG_RECORD_ROW_HEIGHT}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <AnsiHtml text={record.message} />
-                  </div>
-                );
-              })}
+              {virtualizer.getVirtualRows().map((virtualRow) => (
+                <Row key={virtualRow.key} row={virtualRow} />
+              ))}
               {virtualizer.hasMoreAfter && (
                 <div
                   className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"

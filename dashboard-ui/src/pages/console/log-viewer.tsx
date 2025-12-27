@@ -41,6 +41,19 @@ export type LogRecord = {
   timestamp: Date;
   message: string;
   cursor: string;
+  source: {
+    metadata: {
+      region: string;
+      zone: string;
+      os: string;
+      arch: string;
+      node: string;
+    };
+    namespace: string;
+    podName: string;
+    containerName: string;
+    containerID: string;
+  };
 };
 
 export type FetchResult = {
@@ -587,10 +600,15 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
 
   const { config } = partialRuntime;
 
+  const estimateSize = useCallback(
+    (index: number) => config.estimateRowHeight(recordsRef.current.at(index)),
+    [config.estimateRowHeight],
+  );
+
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: (index: number) => config.estimateRowHeight(recordsRef.current.at(index)),
+    estimateSize,
     overscan: config.overscan,
     scrollMargin: hasMoreBefore ? config.hasMoreBeforeRowHeight : 0,
     useScrollendEvent: true,
@@ -775,10 +793,31 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     }, [client]);
 
     // Partial runtime
-    const partialRuntime = {
-      client,
-      config: {
-        initialPosition,
+    const partialRuntime = useMemo(
+      () => ({
+        client,
+        config: {
+          initialPosition,
+          follow,
+          estimateRowHeight,
+          overscan,
+          batchSizeInitial,
+          batchSizeRegular,
+          loadMoreThreshold,
+          pinToBottomTolerance,
+          hasMoreBeforeRowHeight,
+          hasMoreAfterRowHeight,
+          isRefreshingRowHeight,
+        },
+        state: {
+          isLoading,
+        },
+        actions: {
+          setIsLoading,
+        },
+      }),
+      [
+        client,
         follow,
         estimateRowHeight,
         overscan,
@@ -789,14 +828,9 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         hasMoreBeforeRowHeight,
         hasMoreAfterRowHeight,
         isRefreshingRowHeight,
-      },
-      state: {
         isLoading,
-      },
-      actions: {
-        setIsLoading,
-      },
-    };
+      ],
+    );
 
     return (
       <LogViewerInner key={keyID} partialRuntime={partialRuntime} {...other}>
@@ -830,7 +864,7 @@ export function useLogViewerState(
   // Update based on user-provided dependencies
   useEffect(() => {
     setStore(createLogViewerStore(logViewerRef.current));
-  }, dependencies);
+  }, [...dependencies]);
 
   // Return sync external store instance
   return useSyncExternalStore(store.subscribe, store.getSnapshot);

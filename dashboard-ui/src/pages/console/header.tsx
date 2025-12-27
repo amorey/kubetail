@@ -23,7 +23,7 @@ import {
   SkipBack as SkipBackIcon,
   SkipForward as SkipForwardIcon,
 } from 'lucide-react';
-import { useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Checkbox } from '@kubetail/ui/elements/checkbox';

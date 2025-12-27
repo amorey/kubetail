@@ -22,6 +22,7 @@ function createRecord(item: ServerLogRecord): LogRecord {
     timestamp: ts,
     message: item.message,
     cursor: item.timestamp,
+    source: item.source,
   };
 }
 
