@@ -95,14 +95,11 @@ export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
 export type LogViewerVirtualizer = {
   readonly isLoading: boolean;
   readonly hasMoreBefore: boolean;
-  readonly hasMoreBeforeRowHeight: number;
-  readonly hasMoreBeforeRowStart: number;
   readonly hasMoreAfter: boolean;
-  readonly hasMoreAfterRowHeight: number;
-  hasMoreAfterRowStart: () => number;
   readonly isRefreshing: boolean;
+  readonly hasMoreAfterRowHeight: number;
+  readonly hasMoreBeforeRowHeight: number;
   readonly isRefreshingRowHeight: number;
-  isRefreshingRowStart: () => number;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
   measureElement: (node: Element | null | undefined) => void;
@@ -616,23 +613,12 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const v = useMemo(
     () => ({
       isLoading: runtime.state.isLoading,
-      hasMoreBefore,
-      hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
-      hasMoreBeforeRowStart: 0,
-      hasMoreAfter,
-      hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
-      hasMoreAfterRowStart: () => {
-        let h = virtualizer.getTotalSize();
-        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
-        return h;
-      },
       isRefreshing: runtime.state.isRefreshing,
+      hasMoreBefore,
+      hasMoreAfter,
+      hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
+      hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
       isRefreshingRowHeight: config.isRefreshingRowHeight,
-      isRefreshingRowStart: () => {
-        let h = virtualizer.getTotalSize();
-        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
-        return h;
-      },
       getTotalSize: () => {
         let h = virtualizer.getTotalSize();
         if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;

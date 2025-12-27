@@ -90,7 +90,6 @@ export function Main() {
                 style={{
                   height: `${virtualizer.hasMoreBeforeRowHeight}px`,
                   lineHeight: `${virtualizer.hasMoreBeforeRowHeight}px`,
-                  transform: 'translateY(0px)',
                 }}
               >
                 Loading...
@@ -114,11 +113,10 @@ export function Main() {
             })}
             {virtualizer.hasMoreAfter && (
               <div
-                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
                 style={{
                   height: `${virtualizer.hasMoreAfterRowHeight}px`,
                   lineHeight: `${virtualizer.hasMoreAfterRowHeight}px`,
-                  transform: `translateY(${virtualizer.hasMoreAfterRowStart()}px)`,
                 }}
               >
                 Loading...
@@ -126,11 +124,10 @@ export function Main() {
             )}
             {virtualizer.isRefreshing && (
               <div
-                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
                 style={{
-                  height: `${virtualizer.hasMoreAfterRowHeight}px`,
-                  lineHeight: `${virtualizer.hasMoreAfterRowHeight}px`,
-                  transform: `translateY(${virtualizer.hasMoreAfterRowStart()}px)`,
+                  height: `${virtualizer.isRefreshingRowHeight}px`,
+                  lineHeight: `${virtualizer.isRefreshingRowHeight}px`,
                 }}
               >
                 Refreshing...
