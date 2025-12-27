@@ -517,10 +517,20 @@ const useAutoScroll = ({ config, state, refs }: LogViewerRuntime) => {
 
     if (state.isLoading || state.hasMoreAfter) return;
 
+    const isAtBottom = () => {
+      const { scrollTop, clientHeight, scrollHeight } = scrollElement;
+      return Math.abs(scrollTop + clientHeight - scrollHeight) <= config.pinToBottomTolerance;
+    };
+
+    // Enable auto-scroll when follow is on and we're at the bottom
+    if (config.follow && isAtBottom()) {
+      refs.isAutoScrollEnabled.current = true;
+    }
+
     const handleScroll = () => {
       const lastScrollTop = lastScrollTopRef.current;
 
-      const { scrollTop, clientHeight, scrollHeight } = scrollElement;
+      const { scrollTop } = scrollElement;
 
       // Update scroll position tracker
       lastScrollTopRef.current = scrollTop;
@@ -532,10 +542,7 @@ const useAutoScroll = ({ config, state, refs }: LogViewerRuntime) => {
       }
 
       // If scrolled to bottom, turn on auto-scroll
-      if (
-        !refs.isAutoScrollEnabled.current &&
-        Math.abs(scrollTop + clientHeight - scrollHeight) <= config.pinToBottomTolerance
-      ) {
+      if (!refs.isAutoScrollEnabled.current && isAtBottom()) {
         refs.isAutoScrollEnabled.current = true;
       }
     };
