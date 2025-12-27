@@ -94,9 +94,15 @@ export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
 
 export type LogViewerVirtualizer = {
   readonly isLoading: boolean;
+  readonly hasMoreBefore: boolean;
+  readonly hasMoreBeforeRowHeight: number;
+  readonly hasMoreBeforeRowStart: number;
+  readonly hasMoreAfter: boolean;
+  readonly hasMoreAfterRowHeight: number;
+  hasMoreAfterRowStart: () => number;
   readonly isRefreshing: boolean;
-  hasMoreBefore: boolean;
-  hasMoreAfter: boolean;
+  readonly isRefreshingRowHeight: number;
+  isRefreshingRowStart: () => number;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
   measureElement: (node: Element | null | undefined) => void;
@@ -110,8 +116,10 @@ type LogViewerRuntimeConfig = {
   readonly batchSizeRegular: number;
   readonly loadMoreThreshold: number;
   readonly pinToBottomTolerance: number;
-  readonly hasMoreBeforeScrollMargin: number;
-  estimateSize: (record: LogRecord) => number;
+  readonly hasMoreBeforeRowHeight: number;
+  readonly hasMoreAfterRowHeight: number;
+  readonly isRefreshingRowHeight: number;
+  estimateRowHeight: (record: LogRecord) => number;
 };
 
 type LogViewerRuntimeState = {
@@ -578,9 +586,9 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: (index: number) => config.estimateSize(recordsRef.current.at(index)),
+    estimateSize: (index: number) => config.estimateRowHeight(recordsRef.current.at(index)),
     overscan: config.overscan,
-    scrollMargin: hasMoreBefore ? config.hasMoreBeforeScrollMargin : 0,
+    scrollMargin: hasMoreBefore ? config.hasMoreBeforeRowHeight : 0,
     useScrollendEvent: true,
   });
 
@@ -608,10 +616,30 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const v = useMemo(
     () => ({
       isLoading: runtime.state.isLoading,
-      isRefreshing: runtime.state.isRefreshing,
       hasMoreBefore,
+      hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
+      hasMoreBeforeRowStart: 0,
       hasMoreAfter,
-      getTotalSize: virtualizer.getTotalSize,
+      hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
+      hasMoreAfterRowStart: () => {
+        let h = virtualizer.getTotalSize();
+        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
+        return h;
+      },
+      isRefreshing: runtime.state.isRefreshing,
+      isRefreshingRowHeight: config.isRefreshingRowHeight,
+      isRefreshingRowStart: () => {
+        let h = virtualizer.getTotalSize();
+        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
+        return h;
+      },
+      getTotalSize: () => {
+        let h = virtualizer.getTotalSize();
+        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
+        if (hasMoreAfter) h += config.hasMoreBeforeRowHeight;
+        if (runtime.state.isRefreshing) h += config.isRefreshingRowHeight;
+        return h;
+      },
       getVirtualRows: () =>
         virtualizer.getVirtualItems().map((item) => {
           const { key, index, size, start } = item;
@@ -628,7 +656,10 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     [
       virtualizer,
       count,
-      config.estimateSize,
+      config.estimateRowHeight,
+      config.hasMoreBeforeRowHeight,
+      config.hasMoreAfterRowHeight,
+      config.isRefreshingRowHeight,
       runtime.state.isLoading,
       runtime.state.isRefreshing,
       hasMoreBefore,
@@ -650,7 +681,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
 export type LogViewerProps = {
   className?: string;
   client: Client;
-  estimateSize: (record: LogRecord) => number;
+  estimateRowHeight: (record: LogRecord) => number;
   initialPosition?: LogViewerInitialPosition;
   follow?: boolean;
   overscan?: number;
@@ -658,7 +689,9 @@ export type LogViewerProps = {
   batchSizeRegular?: number;
   loadMoreThreshold?: number;
   pinToBottomTolerance?: number;
-  hasMoreBeforeScrollMargin?: number;
+  hasMoreBeforeRowHeight?: number;
+  hasMoreAfterRowHeight?: number;
+  isRefreshingRowHeight?: number;
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
 
@@ -668,13 +701,15 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       client,
       initialPosition: defaultInitialPosition = { type: 'tail' },
       follow = true,
-      estimateSize,
+      estimateRowHeight,
       overscan = 20,
       batchSizeInitial = 150,
       batchSizeRegular = 100,
       loadMoreThreshold = 50,
       pinToBottomTolerance = 10,
-      hasMoreBeforeScrollMargin = 0,
+      hasMoreBeforeRowHeight = 0,
+      hasMoreAfterRowHeight = 0,
+      isRefreshingRowHeight = 0,
       children,
       ...other
     },
@@ -744,13 +779,15 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       config: {
         initialPosition,
         follow,
-        estimateSize,
+        estimateRowHeight,
         overscan,
         batchSizeInitial,
         batchSizeRegular,
         loadMoreThreshold,
         pinToBottomTolerance,
-        hasMoreBeforeScrollMargin,
+        hasMoreBeforeRowHeight,
+        hasMoreAfterRowHeight,
+        isRefreshingRowHeight,
       },
       state: {
         isLoading,

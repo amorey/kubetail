@@ -18,13 +18,16 @@ import { useSearchParams } from 'react-router-dom';
 import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 
-// import { FakeClient } from './fake-client';
-import { RealClient } from './real-client';
+import { FakeClient } from './fake-client';
+// import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import type { LogRecord } from './log-viewer';
 import { PageContext } from './shared';
 
-const ESTIMATED_SIZE = 24;
+const LOG_RECORD_ROW_HEIGHT = 24;
+const HAS_MORE_BEFORE_ROW_HEIGHT = 24;
+const HAS_MORE_AFTER_ROW_HEIGHT = 24;
+const IS_REFRESHING_ROW_HEIGHT = 24;
 
 /**
  * Main component
@@ -47,18 +50,22 @@ export function Main() {
     });
   }, [isUseClusterAPIEnabled, kubeContext]);
 
-  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  const client = useMemo(() => new FakeClient(1000), [apolloClient]);
+  client.setAppendRate(1);
 
-  const estimateSize = useCallback((record: LogRecord) => ESTIMATED_SIZE, []);
+  const estimateRowHeight = useCallback((record: LogRecord) => LOG_RECORD_ROW_HEIGHT, []);
 
   return (
     <LogViewer
       ref={logViewerRef}
       className="h-full w-full"
       client={client}
-      estimateSize={estimateSize}
+      estimateRowHeight={estimateRowHeight}
       follow={follow}
-      hasMoreBeforeScrollMargin={ESTIMATED_SIZE}
+      hasMoreBeforeRowHeight={HAS_MORE_BEFORE_ROW_HEIGHT}
+      hasMoreAfterRowHeight={HAS_MORE_AFTER_ROW_HEIGHT}
+      isRefreshingRowHeight={IS_REFRESHING_ROW_HEIGHT}
     >
       {(virtualizer) => (
         <>
@@ -72,10 +79,7 @@ export function Main() {
           )}
           <div
             style={{
-              height:
-                virtualizer.getTotalSize() +
-                (virtualizer.hasMoreBefore ? ESTIMATED_SIZE : 0) +
-                (virtualizer.hasMoreAfter ? ESTIMATED_SIZE : 0),
+              height: virtualizer.getTotalSize(),
               width: '100%',
               position: 'relative',
             }}
@@ -84,8 +88,8 @@ export function Main() {
               <div
                 className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
                 style={{
-                  height: `${ESTIMATED_SIZE}px`,
-                  lineHeight: `${ESTIMATED_SIZE}px`,
+                  height: `${virtualizer.hasMoreBeforeRowHeight}px`,
+                  lineHeight: `${virtualizer.hasMoreBeforeRowHeight}px`,
                   transform: 'translateY(0px)',
                 }}
               >
@@ -108,16 +112,28 @@ export function Main() {
                 </div>
               );
             })}
-            {(virtualizer.hasMoreAfter || virtualizer.isRefreshing) && (
+            {virtualizer.hasMoreAfter && (
               <div
                 className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
                 style={{
-                  height: `${ESTIMATED_SIZE}px`,
-                  lineHeight: `${ESTIMATED_SIZE}px`,
-                  transform: `translateY(${virtualizer.getTotalSize() + (virtualizer.hasMoreBefore ? ESTIMATED_SIZE : 0)}px)`,
+                  height: `${virtualizer.hasMoreAfterRowHeight}px`,
+                  lineHeight: `${virtualizer.hasMoreAfterRowHeight}px`,
+                  transform: `translateY(${virtualizer.hasMoreAfterRowStart()}px)`,
                 }}
               >
-                {virtualizer.isRefreshing ? 'Refreshing' : 'Loading...'}
+                Loading...
+              </div>
+            )}
+            {virtualizer.isRefreshing && (
+              <div
+                className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                style={{
+                  height: `${virtualizer.hasMoreAfterRowHeight}px`,
+                  lineHeight: `${virtualizer.hasMoreAfterRowHeight}px`,
+                  transform: `translateY(${virtualizer.hasMoreAfterRowStart()}px)`,
+                }}
+              >
+                Refreshing...
               </div>
             )}
           </div>
