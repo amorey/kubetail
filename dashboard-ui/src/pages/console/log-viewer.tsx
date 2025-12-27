@@ -16,11 +16,24 @@
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Virtualizer, VirtualItem } from '@tanstack/react-virtual';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { useBeforePaint, type BeforePaintSubscribe } from '@/lib/before-paint';
 import { DoubleTailedArray } from '@/lib/double-tailed-array';
-import { cn, MapSet } from '@/lib/util';
+import { cn } from '@/lib/util';
+
+export const DEFAULT_LOGVIEWER_EXTERNAL_STATE = {
+  isLoading: false,
+};
 
 export type Cursor = string;
 
@@ -60,16 +73,16 @@ export type LogViewerInitialPosition =
   | { type: 'tail'; cursor?: never }
   | { type: 'cursor'; cursor: Cursor };
 
-export type OnChangeCallback<TArgs extends unknown[] = unknown[]> = (...args: TArgs) => void;
-
-export type OnChangeCancelFunction = () => void;
+export type LogViewerExternalState = {
+  isLoading: boolean;
+};
 
 export type LogViewerHandle = {
-  readonly isLoading: boolean;
   jumpToBeginning: () => Promise<void>;
   jumpToEnd: () => Promise<void>;
   jumpToCursor: (cursor: Cursor) => Promise<void>;
-  onChange: (name: string, callback: OnChangeCallback<[boolean]>) => OnChangeCancelFunction;
+  subscribe: (callback: () => void) => () => void;
+  getSnapshot: () => LogViewerExternalState;
 };
 
 export type LogViewerVirtualRow = Pick<VirtualItem, 'key'> & {
@@ -121,7 +134,6 @@ type LogViewerRuntimeActions = {
   setHasMoreAfter: React.Dispatch<React.SetStateAction<boolean>>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setIsRefreshing: React.Dispatch<React.SetStateAction<boolean>>;
-  dispatchEvent: (name: string, value: boolean) => void;
 };
 
 type LogViewerRuntime = {
@@ -248,7 +260,10 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
       });
 
     return () => {
-      if (cancelID) cancelAnimationFrame(cancelID);
+      if (cancelID) {
+        cancelAnimationFrame(cancelID);
+        actions.setIsLoading(false);
+      }
     };
   }, [client]);
 };
@@ -328,9 +343,6 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
   useEffect(() => {
     if (!virtualItems.length || state.isLoading) return;
 
-    let cancelID1: number;
-    let cancelID2: number;
-
     if (state.hasMoreBefore && !refs.isLoadingBefore.current) {
       const first = virtualItems[0];
       if (first.index <= config.loadMoreThreshold - config.overscan) {
@@ -341,7 +353,7 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
             console.error('Failed to load more records before:', error);
           })
           .finally(() => {
-            cancelID1 = requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
               refs.isLoadingBefore.current = false;
             });
           });
@@ -358,23 +370,12 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
             console.error('Failed to load more records after:', error);
           })
           .finally(() => {
-            cancelID2 = requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
               refs.isLoadingAfter.current = false;
             });
           });
       }
     }
-
-    return () => {
-      if (cancelID1) {
-        cancelAnimationFrame(cancelID1);
-        refs.isLoadingBefore.current = false;
-      }
-      if (cancelID2) {
-        cancelAnimationFrame(cancelID2);
-        refs.isLoadingAfter.current = false;
-      }
-    };
   }, [
     virtualItems,
     config.overscan,
@@ -550,7 +551,7 @@ type LogViewerInnerProps = {
     client: Client;
     config: LogViewerRuntimeConfig;
     state: Pick<LogViewerRuntimeState, 'isLoading'>;
-    actions: Pick<LogViewerRuntimeActions, 'setIsLoading' | 'dispatchEvent'>;
+    actions: Pick<LogViewerRuntimeActions, 'setIsLoading'>;
   };
   children: (virtualizer: LogViewerVirtualizer) => React.ReactNode;
 };
@@ -677,16 +678,27 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
     const [keyID, setKeyID] = useState(0);
     const [initialPosition, setInitialPosition] = useState(defaultInitialPosition);
     const prevClientRef = useRef<Client>(null);
-    const onChangeQueueRef = useRef(new MapSet<string, OnChangeCallback<[boolean]>>());
+    const listenerQueueRef = useRef(new Set<() => void>());
 
     const incrementKeyID = useCallback(() => setKeyID((id) => id + 1), []);
 
     const [isLoading, setIsLoading] = useState(true);
 
+    const state = useMemo(
+      () => ({
+        isLoading,
+      }),
+      [isLoading],
+    );
+
+    // Notify listeners when state changes
+    useEffect(() => {
+      listenerQueueRef.current.forEach((callback) => callback());
+    }, [state]);
+
     useImperativeHandle(
       ref,
       () => ({
-        isLoading,
         jumpToBeginning: async () => {
           setInitialPosition({ type: 'head' });
           incrementKeyID();
@@ -702,15 +714,15 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
           incrementKeyID();
           // TODO: wait for isLoading to resolve
         },
-        onChange: (name: string, callback: OnChangeCallback<[boolean]>) => {
-          onChangeQueueRef.current.add(name, callback);
+        subscribe: (callback: () => void) => {
+          listenerQueueRef.current.add(callback);
           return () => {
-            const q = onChangeQueueRef.current.get(name);
-            if (q) q.delete(callback);
+            listenerQueueRef.current.delete(callback);
           };
         },
+        getSnapshot: () => state,
       }),
-      [isLoading],
+      [state],
     );
 
     // Increment key when client changes to force new virtualizer
@@ -718,16 +730,6 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
       if (prevClientRef.current && prevClientRef.current !== client) incrementKeyID();
       prevClientRef.current = client;
     }, [client]);
-
-    const dispatchEvent = useCallback((name: string, value: boolean) => {
-      const q = onChangeQueueRef.current.get(name);
-      if (q) q.forEach((callback) => callback(value));
-    }, []);
-
-    const setIsLoadingOverride = useCallback((value: boolean) => {
-      setIsLoading(value);
-      dispatchEvent('isLoading', value);
-    }, []) as React.Dispatch<React.SetStateAction<boolean>>;
 
     // Partial runtime
     const partialRuntime = {
@@ -746,8 +748,7 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
         isLoading,
       },
       actions: {
-        setIsLoading: setIsLoadingOverride,
-        dispatchEvent,
+        setIsLoading,
       },
     };
 
@@ -760,3 +761,25 @@ export const LogViewer = forwardRef<LogViewerHandle, LogViewerProps>(
 );
 
 LogViewer.displayName = 'LogViewer';
+
+/**
+ * useLogViewerState - Hook to subscribe to LogViewer external state reactively
+ */
+
+function createLogViewerStore(handle: LogViewerHandle | null) {
+  if (handle) return { subscribe: handle.subscribe, getSnapshot: handle.getSnapshot };
+  return {
+    subscribe: (_: () => void) => () => {},
+    getSnapshot: () => DEFAULT_LOGVIEWER_EXTERNAL_STATE,
+  };
+}
+
+export function useLogViewerState(handle: LogViewerHandle | null, ...dependencies: any[]): LogViewerExternalState {
+  const [store, setStore] = useState(() => createLogViewerStore(handle));
+
+  useEffect(() => {
+    setStore(createLogViewerStore(handle));
+  }, [handle, ...dependencies]);
+
+  return useSyncExternalStore(store.subscribe, store.getSnapshot);
+}

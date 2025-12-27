@@ -23,7 +23,7 @@ import {
   SkipBack as SkipBackIcon,
   SkipForward as SkipForwardIcon,
 } from 'lucide-react';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Checkbox } from '@kubetail/ui/elements/checkbox';
@@ -39,6 +39,7 @@ import { cn } from '@/lib/util';
 import { ALL_VIEWER_COLUMNS, PageContext } from './shared';
 import type { ViewerColumn } from './shared';
 import { isWrapAtom, visibleColsAtom } from './state';
+import { useLogViewerState } from './log-viewer';
 
 /**
  * Settings button
@@ -110,11 +111,12 @@ export function Header() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isSidebarOpen, setIsSidebarOpen, follow, setFollow, logViewerRef } = useContext(PageContext);
 
-  const [isLoading, setIsLoading] = useState<boolean>();
+  const { isLoading } = useLogViewerState(logViewerRef.current, []);
 
   const kubeContext = searchParams.get('kubeContext') || '';
   const isUseClusterAPIEnabled = useIsClusterAPIEnabled(kubeContext);
 
+  /*
   // Init
   useEffect(() => {
     const logViewer = logViewerRef.current;
@@ -122,7 +124,7 @@ export function Header() {
 
     setIsLoading(logViewer.isLoading);
     return logViewer.onChange('isLoading', setIsLoading);
-  }, []);
+  }, []); */
 
   const buttonCN =
     'rounded-lg h-[40px] w-[40px] flex items-center justify-center enabled:hover:bg-chrome-200 disabled:opacity-30';
