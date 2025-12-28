@@ -16,7 +16,6 @@
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Virtualizer, VirtualItem } from '@tanstack/react-virtual';
-import { Provider as JotaiProvider, atom, useAtom, useSetAtom, useAtomValue } from 'jotai';
 import {
   forwardRef,
   useCallback,
@@ -31,8 +30,6 @@ import {
 import { useBeforePaint, type BeforePaintSubscribe } from '@/lib/before-paint';
 import { DoubleTailedArray } from '@/lib/double-tailed-array';
 import { cn } from '@/lib/util';
-
-const countAtom = atom(0);
 
 export const LOGVIEWER_INITIAL_STATE = {
   isLoading: false,

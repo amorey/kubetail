@@ -25,9 +25,8 @@ import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 import { cn, cssEncode } from '@/lib/util';
 
-import { Virtualizer } from '@tanstack/react-virtual';
-import { FakeClient } from './fake-client';
-// import { RealClient } from './real-client';
+// import { FakeClient } from './fake-client';
+import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import type { LogRecord, LogViewerVirtualRow, LogViewerVirtualizer } from './log-viewer';
 import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
@@ -163,7 +162,7 @@ const Row = memo(
       </div>
     );
   },
-  (prev, next) => true,
+  () => true,
 );
 
 /**
@@ -216,9 +215,9 @@ export function Main() {
     });
   }, [isUseClusterAPIEnabled, kubeContext]);
 
-  // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
-  const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  client.setAppendRate(1);
+  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  // const client = useMemo(() => new FakeClient(1000), [apolloClient]);
+  // client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 
