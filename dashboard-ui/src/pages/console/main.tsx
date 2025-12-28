@@ -89,79 +89,82 @@ type RowProps = {
   row: LogViewerVirtualRow;
 };
 
-const Row = ({ row }: RowProps) => {
-  const visibleCols = useAtomValue(visibleColsAtom);
-  const isWrap = useAtomValue(isWrapAtom);
+const Row = memo(
+  ({ row }: RowProps) => {
+    const visibleCols = useAtomValue(visibleColsAtom);
+    const isWrap = useAtomValue(isWrapAtom);
 
-  const rowElRef = useRef<HTMLDivElement>(null);
-  const [colWidths, setColWidths] = useAtom(colWidthsAtom);
-  const setMaxRowWidth = useSetAtom(maxRowWidthAtom);
+    const rowElRef = useRef<HTMLDivElement>(null);
+    const [colWidths, setColWidths] = useAtom(colWidthsAtom);
+    const setMaxRowWidth = useSetAtom(maxRowWidthAtom);
 
-  // Update global colWidths
-  useEffect(() => {
-    const rowEl = rowElRef.current;
-    if (!rowEl) return;
+    // Update global colWidths
+    useEffect(() => {
+      const rowEl = rowElRef.current;
+      if (!rowEl) return;
 
-    // Get current column widths
-    const currColWidths = new Map<ViewerColumn, number>();
-    Array.from(rowEl.children || []).forEach((colEl) => {
-      const colId = (colEl as HTMLElement).dataset.colId as ViewerColumn;
-      if (!colId || colId === ViewerColumn.Message) return;
-      currColWidths.set(colId, colEl.scrollWidth);
-    });
-
-    // Update colWidths state (if necessary)
-    setColWidths((oldVals) => {
-      const changedVals = new Map<ViewerColumn, number>();
-      currColWidths.forEach((currWidth, colId) => {
-        const oldWidth = oldVals.get(colId);
-        const newWidth = Math.max(currWidth, oldWidth || 0);
-        if (newWidth !== oldWidth) changedVals.set(colId, newWidth);
+      // Get current column widths
+      const currColWidths = new Map<ViewerColumn, number>();
+      Array.from(rowEl.children || []).forEach((colEl) => {
+        const colId = (colEl as HTMLElement).dataset.colId as ViewerColumn;
+        if (!colId || colId === ViewerColumn.Message) return;
+        currColWidths.set(colId, colEl.scrollWidth);
       });
-      if (changedVals.size) return new Map([...oldVals, ...changedVals]);
-      return oldVals;
+
+      // Update colWidths state (if necessary)
+      setColWidths((oldVals) => {
+        const changedVals = new Map<ViewerColumn, number>();
+        currColWidths.forEach((currWidth, colId) => {
+          const oldWidth = oldVals.get(colId);
+          const newWidth = Math.max(currWidth, oldWidth || 0);
+          if (newWidth !== oldWidth) changedVals.set(colId, newWidth);
+        });
+        if (changedVals.size) return new Map([...oldVals, ...changedVals]);
+        return oldVals;
+      });
+
+      // Update maxRowWidth state
+      setMaxRowWidth((currVal) => Math.max(currVal, rowEl.scrollWidth));
+    }, [visibleCols, setColWidths, setMaxRowWidth]);
+
+    const els: React.ReactElement[] = [];
+    ALL_VIEWER_COLUMNS.forEach((col) => {
+      if (visibleCols.has(col)) {
+        els.push(
+          <div
+            key={col}
+            className={cn(
+              row.index % 2 !== 0 && 'bg-chrome-100',
+              'px-2',
+              isWrap ? '' : 'whitespace-nowrap',
+              col === ViewerColumn.Timestamp ? 'bg-chrome-200' : '',
+              col === ViewerColumn.Message ? 'grow' : 'shrink-0',
+            )}
+            style={col !== ViewerColumn.Message ? { minWidth: `${colWidths.get(col) || 0}px` } : {}}
+            data-col-id={col}
+          >
+            {getAttribute(row.record, col)}
+          </div>,
+        );
+      }
     });
 
-    // Update maxRowWidth state
-    setMaxRowWidth((currVal) => Math.max(currVal, rowEl.scrollWidth));
-  }, [visibleCols, setColWidths, setMaxRowWidth]);
-
-  const els: React.ReactElement[] = [];
-  ALL_VIEWER_COLUMNS.forEach((col) => {
-    if (visibleCols.has(col)) {
-      els.push(
-        <div
-          key={col}
-          className={cn(
-            row.index % 2 !== 0 && 'bg-chrome-100',
-            'px-2',
-            isWrap ? '' : 'whitespace-nowrap',
-            col === ViewerColumn.Timestamp ? 'bg-chrome-200' : '',
-            col === ViewerColumn.Message ? 'grow' : 'shrink-0',
-          )}
-          style={col !== ViewerColumn.Message ? { minWidth: `${colWidths.get(col) || 0}px` } : {}}
-          data-col-id={col}
-        >
-          {getAttribute(row.record, col)}
-        </div>,
-      );
-    }
-  });
-
-  return (
-    <div
-      ref={rowElRef}
-      className="absolute top-0 left-0 flex leading-6"
-      style={{
-        height: `${row.size}px`,
-        lineHeight: `${LOG_RECORD_ROW_HEIGHT}px`,
-        transform: `translateY(${row.start}px)`,
-      }}
-    >
-      {els}
-    </div>
-  );
-};
+    return (
+      <div
+        ref={rowElRef}
+        className="absolute top-0 left-0 flex leading-6"
+        style={{
+          height: `${row.size}px`,
+          lineHeight: `${LOG_RECORD_ROW_HEIGHT}px`,
+          transform: `translateY(${row.start}px)`,
+        }}
+      >
+        {els}
+      </div>
+    );
+  },
+  (prev, next) => true,
+);
 
 /**
  * Rows component
