@@ -66,17 +66,18 @@ export class FakeClient implements Client {
   async fetchSince({ cursor, limit = DEFAULT_LIMIT, fetchDelayMs = 0 }: FakeFetchOptions) {
     const ts = cursor ? Date.parse(cursor) : 0;
 
-    let records: LogRecord[];
-    if (!this.firstTS || !this.lastTS) {
-      records = [];
-    } else {
+    let records: LogRecord[] = [];
+    let nextCursor: string | null = null;
+
+    if (this.firstTS && this.lastTS) {
       const startTS = Math.max(ts, this.firstTS);
       const stopTS = Math.min(this.lastTS + 1, startTS + limit);
       records = this.createRecords(startTS, stopTS);
+      if (stopTS < this.lastTS) nextCursor = new Date(stopTS + 1).toISOString();
     }
 
     return new Promise<FetchResult>((resolve) => {
-      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records });
+      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records, nextCursor });
     });
   }
 
@@ -89,16 +90,17 @@ export class FakeClient implements Client {
     const ts = cursor ? Date.parse(cursor) : Infinity;
 
     let records: LogRecord[];
-    if (!this.firstTS || !this.lastTS) {
-      records = [];
-    } else {
+    let nextCursor: string | null = null;
+
+    if (this.firstTS && this.lastTS) {
       const stopTS = Math.min(ts + 1, this.lastTS + 1);
       const startTS = Math.max(this.firstTS, stopTS - limit);
       records = this.createRecords(startTS, stopTS);
+      if (startTS > this.firstTS) nextCursor = new Date(startTS - 1).toISOString();
     }
 
     return new Promise<FetchResult>((resolve) => {
-      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records });
+      setTimeout(resolve, fetchDelayMs || this.fetchDelayMs, { records, nextCursor });
     });
   }
 
@@ -147,13 +149,16 @@ export class FakeClient implements Client {
         let lastTS = new Date(0);
         result.records.forEach((record) => {
           callback(record);
-          lastTS = record.timestamp;
+          lastTS = new Date(record.timestamp);
         });
 
         // Empty buffer
         while (buffer.length > 0) {
           const record = buffer.shift();
-          if (record && record.timestamp > lastTS) callback(record);
+          if (record) {
+            const ts = new Date(record.timestamp);
+            if (ts > lastTS) callback(record);
+          }
         }
 
         // Update flag
@@ -223,11 +228,11 @@ export class FakeClient implements Client {
    */
   protected createRecord(ts: number): LogRecord {
     const firstTS = this.firstTS || 0;
-    const timestamp = new Date(ts);
+    const timestamp = new Date(ts).toISOString();
     return {
       timestamp,
       message: `line ${ts - firstTS}`,
-      cursor: timestamp.toISOString(),
+      cursor: timestamp,
       source: {
         metadata: {
           region: 'region',

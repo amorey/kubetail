@@ -38,7 +38,7 @@ export const LOGVIEWER_INITIAL_STATE = {
 export type Cursor = string;
 
 export type LogRecord = {
-  timestamp: Date;
+  timestamp: string;
   message: string;
   cursor: string;
   source: {
@@ -58,6 +58,7 @@ export type LogRecord = {
 
 export type FetchResult = {
   records: LogRecord[];
+  nextCursor: string | null;
 };
 
 export type FetchOptions = {
@@ -183,15 +184,11 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
     const initFn = async () => {
       switch (config.initialPosition.type) {
         case 'head': {
-          const result = await client.fetchSince({ limit: config.batchSizeInitial + 1 });
+          const result = await client.fetchSince({ limit: config.batchSizeInitial });
 
           // Update UI
           if (result.records.length) {
-            if (result.records.length > config.batchSizeInitial) {
-              result.records.pop();
-              actions.setHasMoreAfter(true);
-            }
-
+            if (result.nextCursor) actions.setHasMoreAfter(true);
             refs.records.current = new DoubleTailedArray(result.records);
             actions.setCount(result.records.length);
           }
@@ -199,15 +196,11 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
           break;
         }
         case 'tail': {
-          const result = await client.fetchUntil({ limit: config.batchSizeInitial + 1 });
+          const result = await client.fetchUntil({ limit: config.batchSizeInitial });
 
           // Update UI
           if (result.records.length) {
-            if (result.records.length > config.batchSizeInitial) {
-              result.records.shift();
-              actions.setHasMoreBefore(true);
-            }
-
+            if (result.nextCursor) actions.setHasMoreBefore(true);
             const beforePaintPromise = services.beforePaint(() => {
               const scrollElement = refs.scrollEl.current;
               if (scrollElement) scrollElement.scrollTop = scrollElement.scrollHeight;
@@ -226,23 +219,17 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
         case 'cursor': {
           // Fetch BATCH_SIZE records before and after the seek timestamp
           const [beforeResult, afterResult] = await Promise.all([
-            client.fetchBefore({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial + 1 }),
-            client.fetchSince({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial + 1 }),
+            client.fetchBefore({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial }),
+            client.fetchSince({ cursor: config.initialPosition.cursor, limit: config.batchSizeInitial }),
           ]);
 
           // Update UI
           if (beforeResult.records.length || afterResult.records.length) {
             // Handle cursors for before results
-            if (beforeResult.records.length > config.batchSizeInitial) {
-              beforeResult.records.shift();
-              actions.setHasMoreBefore(true);
-            }
+            if (beforeResult.nextCursor) actions.setHasMoreBefore(true);
 
             // Handle cursors for after results
-            if (afterResult.records.length > config.batchSizeInitial) {
-              afterResult.records.pop();
-              actions.setHasMoreAfter(true);
-            }
+            if (afterResult.nextCursor) actions.setHasMoreAfter(true);
 
             // Scroll to the middle (where the seek timestamp should be)
             const beforePaintPromise = services.beforePaint(() => {
@@ -298,11 +285,10 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
   useCallback(async () => {
     // Get data
     const records = refs.records.current;
-    const result = await client.fetchBefore({ cursor: records.first().cursor, limit: config.batchSizeRegular + 1 });
+    const result = await client.fetchBefore({ cursor: records.first().cursor, limit: config.batchSizeRegular });
 
     // Update `hasMoreBefore`
-    if (result.records.length > config.batchSizeRegular) result.records.shift();
-    else actions.setHasMoreBefore(false);
+    if (result.nextCursor === null) actions.setHasMoreBefore(false);
 
     // Update UI
     if (result.records.length) {
@@ -334,11 +320,10 @@ const useLoadMoreAfter = ({ client, config, refs, actions }: LogViewerRuntime) =
   useCallback(async () => {
     // Get data
     const records = refs.records.current;
-    const result = await client.fetchAfter({ cursor: records.last().cursor, limit: config.batchSizeRegular + 1 });
+    const result = await client.fetchAfter({ cursor: records.last().cursor, limit: config.batchSizeRegular });
 
     // Update `hasMoreAfter`
-    if (result.records.length > config.batchSizeRegular) result.records.pop();
-    else actions.setHasMoreAfter(false);
+    if (result.nextCursor === null) actions.setHasMoreAfter(false);
 
     // Update UI
     if (result.records.length) {

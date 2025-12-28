@@ -25,8 +25,8 @@ import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 import { cn, cssEncode } from '@/lib/util';
 
-// import { FakeClient } from './fake-client';
-import { RealClient } from './real-client';
+import { FakeClient } from './fake-client';
+// import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import type { LogRecord, LogViewerVirtualRow, LogViewerVirtualizer } from './log-viewer';
 import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
@@ -178,9 +178,10 @@ const Rows = memo(
     </>
   ),
   (prev, next) => {
-    // Check ranges
     const prevRange = prev.virtualizer.range || { startIndex: NaN, endIndex: NaN };
     const nextRange = next.virtualizer.range || { startIndex: NaN, endIndex: NaN };
+
+    // Check ranges
     if (prevRange.startIndex !== nextRange.startIndex) return false;
     if (prevRange.endIndex !== nextRange.endIndex) return false;
 
@@ -215,9 +216,9 @@ export function Main() {
     });
   }, [isUseClusterAPIEnabled, kubeContext]);
 
-  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
-  // const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  // client.setAppendRate(1);
+  // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  const client = useMemo(() => new FakeClient(1000), [apolloClient]);
+  client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 
@@ -237,7 +238,7 @@ export function Main() {
     <>
       <LogViewer
         ref={logViewerRef}
-        className="h-full w-full"
+        className="h-full w-full font-mono text-xs leading-6"
         client={client}
         estimateRowHeight={estimateRowHeight}
         follow={isFollow}
@@ -248,16 +249,10 @@ export function Main() {
         {(virtualizer) => (
           <>
             {virtualizer.isLoading && <LoadingOverlay />}
-            <div
-              style={{
-                height: virtualizer.getTotalSize(),
-                width: '100%',
-                position: 'relative',
-              }}
-            >
+            <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
               {virtualizer.hasMoreBefore && (
                 <div
-                  className="absolute top-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                  className="absolute top-0 left-0 text-gray-500"
                   style={{
                     height: `${virtualizer.hasMoreBeforeRowHeight}px`,
                     lineHeight: `${virtualizer.hasMoreBeforeRowHeight}px`,
@@ -269,7 +264,7 @@ export function Main() {
               <Rows virtualizer={virtualizer} />
               {virtualizer.hasMoreAfter && (
                 <div
-                  className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                  className="absolute bottom-0 left-0 text-gray-500"
                   style={{
                     height: `${virtualizer.hasMoreAfterRowHeight}px`,
                     lineHeight: `${virtualizer.hasMoreAfterRowHeight}px`,
@@ -280,7 +275,7 @@ export function Main() {
               )}
               {virtualizer.isRefreshing && (
                 <div
-                  className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
+                  className="absolute bottom-0 left-0 text-gray-500"
                   style={{
                     height: `${virtualizer.isRefreshingRowHeight}px`,
                     lineHeight: `${virtualizer.isRefreshingRowHeight}px`,
