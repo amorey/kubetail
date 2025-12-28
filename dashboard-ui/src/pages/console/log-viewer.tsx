@@ -143,7 +143,6 @@ type LogViewerRuntimeState = {
 };
 
 type LogViewerRuntimeRefs = {
-  virtualizer: React.RefObject<Virtualizer<HTMLDivElement, Element> | null>;
   records: React.RefObject<DoubleTailedArray<LogRecord>>;
   scrollEl: React.RefObject<HTMLDivElement | null>;
   isAutoScrollEnabled: React.RefObject<boolean>;
@@ -167,6 +166,7 @@ type LogViewerRuntime = {
   actions: LogViewerRuntimeActions;
   services: {
     beforePaint: BeforePaintSubscribe;
+    virtualizer: Virtualizer<HTMLDivElement, Element>;
   };
 };
 
@@ -233,8 +233,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
 
             // Scroll to the middle (where the seek timestamp should be)
             const beforePaintPromise = services.beforePaint(() => {
-              if (refs.virtualizer.current)
-                refs.virtualizer.current.scrollToIndex(beforeResult.records.length, { align: 'start' });
+              services.virtualizer.scrollToIndex(beforeResult.records.length, { align: 'start' });
             });
 
             // Combine results
@@ -298,7 +297,7 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
       const { scrollTop: prevScrollTop, scrollHeight: prevScrollHeight } = scrollElement;
 
       // Hack to get around https://github.com/TanStack/virtual/issues/1094
-      if (refs.virtualizer.current) refs.virtualizer.current.isScrolling = false;
+      services.virtualizer.isScrolling = false;
 
       const beforePaintPromise = services.beforePaint(() => {
         const nextScrollHeight = scrollElement.scrollHeight;
@@ -316,7 +315,7 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
  * useLoadMoreAfter - Returns stable loadMoreAfter function
  */
 
-const useLoadMoreAfter = ({ client, config, refs, actions }: LogViewerRuntime) =>
+const useLoadMoreAfter = ({ client, config, refs, actions, services }: LogViewerRuntime) =>
   useCallback(async () => {
     // Get data
     const records = refs.records.current;
@@ -328,7 +327,7 @@ const useLoadMoreAfter = ({ client, config, refs, actions }: LogViewerRuntime) =
     // Update UI
     if (result.records.length) {
       // Hack to get around https://github.com/TanStack/virtual/issues/1094
-      if (refs.virtualizer.current) refs.virtualizer.current.isScrolling = false;
+      services.virtualizer.isScrolling = false;
 
       records.append(...result.records);
       actions.setCount(records.length);
@@ -343,9 +342,9 @@ const useLoadMore = (runtime: LogViewerRuntime) => {
   const loadMoreBefore = useLoadMoreBefore(runtime);
   const loadMoreAfter = useLoadMoreAfter(runtime);
 
-  const { config, refs, state } = runtime;
+  const { config, refs, state, services } = runtime;
 
-  const virtualizerRange = refs.virtualizer.current?.range;
+  const virtualizerRange = services.virtualizer.range;
 
   const countRef = useRef(state.count);
   countRef.current = state.count;
@@ -476,7 +475,7 @@ const useFollowFromEnd = ({ client, config, state, refs, actions, services }: Lo
       if (pendingRecords.length === 0) return;
 
       // Hack to get around https://github.com/TanStack/virtual/issues/1094
-      if (refs.virtualizer.current) refs.virtualizer.current.isScrolling = false;
+      services.virtualizer.isScrolling = false;
 
       // Scroll to bottom if auto-scroll enabled
       const beforePaintPromise =
@@ -588,7 +587,6 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
   const recordsRef = useRef(new DoubleTailedArray<LogRecord>());
-  const virtualizerRef = useRef<Virtualizer<HTMLDivElement, Element>>(null);
   const isLoadingBeforeRef = useRef(false);
   const isLoadingAfterRef = useRef(false);
 
@@ -615,7 +613,6 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     scrollMargin: hasMoreBefore ? config.hasMoreBeforeRowHeight : 0,
     useScrollendEvent: true,
   });
-  virtualizerRef.current = virtualizer;
 
   const runtime = {
     client: partialRuntime.client,
@@ -623,14 +620,13 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     state: { count, hasMoreBefore, hasMoreAfter, isRefreshing, ...partialRuntime.state },
     refs: {
       records: recordsRef,
-      virtualizer: virtualizerRef,
       scrollEl: scrollElementRef,
       isAutoScrollEnabled: isAutoScrollEnabledRef,
       isLoadingBefore: isLoadingBeforeRef,
       isLoadingAfter: isLoadingAfterRef,
     },
     actions: { setCount, setHasMoreBefore, setHasMoreAfter, setIsRefreshing, ...partialRuntime.actions },
-    services: { beforePaint },
+    services: { beforePaint, virtualizer },
   } satisfies LogViewerRuntime;
 
   useInit(runtime);
@@ -639,39 +635,54 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   useFollowFromEnd(runtime);
   useAutoScroll(runtime);
 
-  const v = {
-    isLoading: runtime.state.isLoading,
-    isRefreshing: runtime.state.isRefreshing,
-    hasMoreBefore,
-    hasMoreAfter,
-    hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
-    hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
-    isRefreshingRowHeight: config.isRefreshingRowHeight,
-    range: virtualizer.range,
-    getTotalSize: () => {
-      let h = virtualizer.getTotalSize();
-      if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
-      if (hasMoreAfter) h += config.hasMoreBeforeRowHeight;
-      if (runtime.state.isRefreshing) h += config.isRefreshingRowHeight;
-      return h;
-    },
-    getVirtualRows: () =>
-      virtualizer.getVirtualItems().map((item) => {
-        const { key, index, size, start } = item;
-        return {
-          key,
-          index,
-          size,
-          start,
-          record: recordsRef.current.at(index),
-        };
-      }),
-    measureElement: virtualizer.measureElement,
-  };
+  const nodes = useMemo(() => {
+    const v = {
+      isLoading: runtime.state.isLoading,
+      isRefreshing: runtime.state.isRefreshing,
+      hasMoreBefore,
+      hasMoreAfter,
+      hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
+      hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
+      isRefreshingRowHeight: config.isRefreshingRowHeight,
+      range: virtualizer.range,
+      getTotalSize: () => {
+        let h = virtualizer.getTotalSize();
+        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
+        if (hasMoreAfter) h += config.hasMoreBeforeRowHeight;
+        if (runtime.state.isRefreshing) h += config.isRefreshingRowHeight;
+        return h;
+      },
+      getVirtualRows: () =>
+        virtualizer.getVirtualItems().map((item) => {
+          const { key, index, size, start } = item;
+          return {
+            key,
+            index,
+            size,
+            start,
+            record: recordsRef.current.at(index),
+          };
+        }),
+      measureElement: virtualizer.measureElement,
+    };
+
+    return children(v);
+  }, [
+    runtime.state.count,
+    runtime.state.isLoading,
+    runtime.state.isRefreshing,
+    runtime.state.hasMoreBefore,
+    runtime.state.hasMoreAfter,
+    runtime.config.hasMoreBeforeRowHeight,
+    runtime.config.hasMoreAfterRowHeight,
+    runtime.config.isRefreshingRowHeight,
+    virtualizer.range?.startIndex || NaN,
+    virtualizer.range?.endIndex || NaN,
+  ]);
 
   return (
     <div ref={scrollElementRef} className={cn('overflow-auto', className)} {...other}>
-      {children(v)}
+      {nodes}
     </div>
   );
 };

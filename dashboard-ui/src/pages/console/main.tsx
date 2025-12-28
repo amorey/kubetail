@@ -178,15 +178,16 @@ const Rows = memo(
     </>
   ),
   (prev, next) => {
+    // Check ranges
     const prevRange = prev.virtualizer.range || { startIndex: NaN, endIndex: NaN };
     const nextRange = next.virtualizer.range || { startIndex: NaN, endIndex: NaN };
-
-    // Check ranges
     if (prevRange.startIndex !== nextRange.startIndex) return false;
     if (prevRange.endIndex !== nextRange.endIndex) return false;
 
     // Check state
     if (prev.virtualizer.isRefreshing !== next.virtualizer.isRefreshing) return false;
+    if (prev.virtualizer.hasMoreBefore !== next.virtualizer.hasMoreBefore) return false;
+    if (prev.virtualizer.hasMoreAfter !== next.virtualizer.hasMoreAfter) return false;
 
     return true;
   },
@@ -218,7 +219,7 @@ export function Main() {
 
   // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
   const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  // client.setAppendRate(1);
+  client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 
