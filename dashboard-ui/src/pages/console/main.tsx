@@ -218,7 +218,7 @@ export function Main() {
 
   // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
   const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  client.setAppendRate(1);
+  // client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 
