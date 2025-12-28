@@ -113,6 +113,7 @@ export type LogViewerVirtualizer = {
   readonly hasMoreAfterRowHeight: number;
   readonly hasMoreBeforeRowHeight: number;
   readonly isRefreshingRowHeight: number;
+  readonly range: { startIndex: number; endIndex: number } | null;
   getTotalSize: () => number;
   getVirtualRows: () => LogViewerVirtualRow[];
   measureElement: (node: Element | null | undefined) => void;
@@ -416,6 +417,7 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
   const loadMoreAfter = useLoadMoreAfter(runtime);
 
   const { config, refs, state, actions } = runtime;
+  const wheelRafRef = useRef<number | null>(null);
 
   // Handle pull-to-refresh at the end when follow is disabled
   useEffect(() => {
@@ -430,32 +432,44 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
     };
 
     const handleWheel = (event: WheelEvent) => {
-      if (event.deltaY <= 0) return;
-      if (!isAtBottom()) return;
-      if (refs.isLoadingAfter.current) return;
+      if (wheelRafRef.current !== null) return;
 
-      refs.isLoadingAfter.current = true;
-      actions.setIsRefreshing(true);
+      const { deltaY } = event;
 
-      loadMoreAfter()
-        .catch((error) => {
-          // Log error but don't throw - allow the UI to continue functioning
-          console.error('Failed to refresh records:', error);
-        })
-        .finally(() => {
-          requestAnimationFrame(() => {
-            refs.isLoadingAfter.current = false;
-            actions.setIsRefreshing(false);
+      wheelRafRef.current = requestAnimationFrame(() => {
+        wheelRafRef.current = null;
+
+        if (deltaY <= 0) return;
+        if (!isAtBottom()) return;
+        if (refs.isLoadingAfter.current) return;
+
+        refs.isLoadingAfter.current = true;
+        actions.setIsRefreshing(true);
+
+        loadMoreAfter()
+          .catch((error) => {
+            // Log error and allow the UI to continue functioning
+            console.error('Failed to refresh records:', error);
+          })
+          .finally(() => {
+            requestAnimationFrame(() => {
+              refs.isLoadingAfter.current = false;
+              actions.setIsRefreshing(false);
+            });
           });
-        });
+      });
     };
 
     scrollElement.addEventListener('wheel', handleWheel, { passive: true });
 
     return () => {
+      if (wheelRafRef.current !== null) {
+        cancelAnimationFrame(wheelRafRef.current);
+        wheelRafRef.current = null;
+      }
       scrollElement.removeEventListener('wheel', handleWheel);
     };
-  }, [config.follow, config.pinToBottomTolerance, config.loadMoreThreshold, state.isLoading, state.hasMoreAfter]);
+  }, [config.follow, config.loadMoreThreshold, config.pinToBottomTolerance, state.isLoading, state.hasMoreAfter]);
 };
 
 /**
@@ -514,7 +528,7 @@ const useFollowFromEnd = ({ client, config, state, refs, actions, services }: Lo
       flush();
       unsubscribe();
     };
-  }, [client, services.virtualizer, config.follow, state.isLoading, state.hasMoreAfter]);
+  }, [client, config.follow, state.isLoading, state.hasMoreAfter]);
 };
 
 /**
@@ -644,6 +658,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
     hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
     isRefreshingRowHeight: config.isRefreshingRowHeight,
+    range: virtualizer.range,
     getTotalSize: () => {
       let h = virtualizer.getTotalSize();
       if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;

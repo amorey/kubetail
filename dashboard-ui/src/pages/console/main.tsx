@@ -14,7 +14,7 @@
 
 import { format, toZonedTime } from 'date-fns-tz';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Spinner } from '@kubetail/ui/elements/spinner';
@@ -25,10 +25,11 @@ import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 import { cn, cssEncode } from '@/lib/util';
 
+import { Virtualizer } from '@tanstack/react-virtual';
 import { FakeClient } from './fake-client';
 // import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
-import type { LogRecord, LogViewerVirtualRow } from './log-viewer';
+import type { LogRecord, LogViewerVirtualRow, LogViewerVirtualizer } from './log-viewer';
 import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
 import { colWidthsAtom, isFollowAtom, isWrapAtom, maxRowWidthAtom, visibleColsAtom } from './state';
 
@@ -96,12 +97,12 @@ const Row = ({ row }: RowProps) => {
   const [colWidths, setColWidths] = useAtom(colWidthsAtom);
   const setMaxRowWidth = useSetAtom(maxRowWidthAtom);
 
-  // update global colWidths
+  // Update global colWidths
   useEffect(() => {
     const rowEl = rowElRef.current;
     if (!rowEl) return;
 
-    // get current column widths
+    // Get current column widths
     const currColWidths = new Map<ViewerColumn, number>();
     Array.from(rowEl.children || []).forEach((colEl) => {
       const colId = (colEl as HTMLElement).dataset.colId as ViewerColumn;
@@ -109,7 +110,7 @@ const Row = ({ row }: RowProps) => {
       currColWidths.set(colId, colEl.scrollWidth);
     });
 
-    // update colWidths state (if necessary)
+    // Update colWidths state (if necessary)
     setColWidths((oldVals) => {
       const changedVals = new Map<ViewerColumn, number>();
       currColWidths.forEach((currWidth, colId) => {
@@ -121,7 +122,7 @@ const Row = ({ row }: RowProps) => {
       return oldVals;
     });
 
-    // update maxRowWidth state
+    // Update maxRowWidth state
     setMaxRowWidth((currVal) => Math.max(currVal, rowEl.scrollWidth));
   }, [visibleCols, setColWidths, setMaxRowWidth]);
 
@@ -161,6 +162,32 @@ const Row = ({ row }: RowProps) => {
     </div>
   );
 };
+
+/**
+ * Rows component
+ */
+
+const Rows = memo(
+  ({ virtualizer }: { virtualizer: LogViewerVirtualizer }) => (
+    <>
+      {virtualizer.getVirtualRows().map((virtualRow) => (
+        <Row key={virtualRow.key} row={virtualRow} />
+      ))}
+    </>
+  ),
+  (prev, next) => {
+    // Check ranges
+    const prevRange = prev.virtualizer.range || { startIndex: NaN, endIndex: NaN };
+    const nextRange = next.virtualizer.range || { startIndex: NaN, endIndex: NaN };
+    if (prevRange.startIndex !== nextRange.startIndex) return false;
+    if (prevRange.endIndex !== nextRange.endIndex) return false;
+
+    // Check state
+    if (prev.virtualizer.isRefreshing !== next.virtualizer.isRefreshing) return false;
+
+    return true;
+  },
+);
 
 /**
  * Main component
@@ -237,9 +264,7 @@ export function Main() {
                   Loading...
                 </div>
               )}
-              {virtualizer.getVirtualRows().map((virtualRow) => (
-                <Row key={virtualRow.key} row={virtualRow} />
-              ))}
+              <Rows virtualizer={virtualizer} />
               {virtualizer.hasMoreAfter && (
                 <div
                   className="absolute bottom-0 left-0 w-full border-b border-gray-300 font-mono text-gray-500"
