@@ -40,7 +40,7 @@ export type Cursor = string;
 export type LogRecord = {
   timestamp: string;
   message: string;
-  cursor: string;
+  cursor: Cursor;
   source: {
     metadata: {
       region: string;
@@ -635,54 +635,39 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   useFollowFromEnd(runtime);
   useAutoScroll(runtime);
 
-  const nodes = useMemo(() => {
-    const v = {
-      isLoading: runtime.state.isLoading,
-      isRefreshing: runtime.state.isRefreshing,
-      hasMoreBefore,
-      hasMoreAfter,
-      hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
-      hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
-      isRefreshingRowHeight: config.isRefreshingRowHeight,
-      range: virtualizer.range,
-      getTotalSize: () => {
-        let h = virtualizer.getTotalSize();
-        if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
-        if (hasMoreAfter) h += config.hasMoreBeforeRowHeight;
-        if (runtime.state.isRefreshing) h += config.isRefreshingRowHeight;
-        return h;
-      },
-      getVirtualRows: () =>
-        virtualizer.getVirtualItems().map((item) => {
-          const { key, index, size, start } = item;
-          return {
-            key,
-            index,
-            size,
-            start,
-            record: recordsRef.current.at(index),
-          };
-        }),
-      measureElement: virtualizer.measureElement,
-    };
-
-    return children(v);
-  }, [
-    runtime.state.count,
-    runtime.state.isLoading,
-    runtime.state.isRefreshing,
-    runtime.state.hasMoreBefore,
-    runtime.state.hasMoreAfter,
-    runtime.config.hasMoreBeforeRowHeight,
-    runtime.config.hasMoreAfterRowHeight,
-    runtime.config.isRefreshingRowHeight,
-    virtualizer.range?.startIndex || NaN,
-    virtualizer.range?.endIndex || NaN,
-  ]);
+  const v = {
+    isLoading: runtime.state.isLoading,
+    isRefreshing: runtime.state.isRefreshing,
+    hasMoreBefore,
+    hasMoreAfter,
+    hasMoreBeforeRowHeight: config.hasMoreBeforeRowHeight,
+    hasMoreAfterRowHeight: config.hasMoreAfterRowHeight,
+    isRefreshingRowHeight: config.isRefreshingRowHeight,
+    range: virtualizer.range,
+    getTotalSize: () => {
+      let h = virtualizer.getTotalSize();
+      if (hasMoreBefore) h += config.hasMoreBeforeRowHeight;
+      if (hasMoreAfter) h += config.hasMoreBeforeRowHeight;
+      if (runtime.state.isRefreshing) h += config.isRefreshingRowHeight;
+      return h;
+    },
+    getVirtualRows: () =>
+      virtualizer.getVirtualItems().map((item) => {
+        const { key, index, size, start } = item;
+        return {
+          key,
+          index,
+          size,
+          start,
+          record: recordsRef.current.at(index),
+        };
+      }),
+    measureElement: virtualizer.measureElement,
+  };
 
   return (
     <div ref={scrollElementRef} className={cn('overflow-auto', className)} {...other}>
-      {nodes}
+      {children(v)}
     </div>
   );
 };

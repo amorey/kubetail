@@ -6,6 +6,7 @@ import { LOG_RECORDS_FETCH, LOG_RECORDS_FOLLOW } from '@/lib/graphql/dashboard/o
 import type {
   Client,
   FetchOptions,
+  FetchResult,
   LogRecord,
   SubscriptionCallback,
   SubscriptionCancelFunction,
@@ -17,13 +18,20 @@ import type {
  */
 
 function createRecord(item: ServerLogRecord): LogRecord {
-  const ts = new Date(item.timestamp);
   return {
-    timestamp: ts,
+    timestamp: item.timestamp,
     message: item.message,
     cursor: item.timestamp,
     source: item.source,
   };
+}
+
+function upgradeRecords(records: any[]): LogRecord[] {
+  return records.map((r) => {
+    const copy = { ...r };
+    copy.cursor = r.timestamp;
+    return copy;
+  });
 }
 
 /**
@@ -59,7 +67,10 @@ export class RealClient implements Client {
       fetchPolicy: 'no-cache',
     });
 
-    return { records: (result.data?.logRecordsFetch?.records || []).map(createRecord) };
+    if (!result.data?.logRecordsFetch) throw new Error('unexpected');
+
+    const { records, nextCursor } = result.data.logRecordsFetch;
+    return { records: upgradeRecords(records), nextCursor } as FetchResult;
   }
 
   /**
@@ -80,7 +91,10 @@ export class RealClient implements Client {
       fetchPolicy: 'no-cache',
     });
 
-    return { records: (result.data?.logRecordsFetch?.records || []).map(createRecord) };
+    if (!result.data?.logRecordsFetch) throw new Error('unexpected');
+
+    const { records, nextCursor } = result.data.logRecordsFetch;
+    return { records: upgradeRecords(records), nextCursor } as FetchResult;
   }
 
   /**
@@ -101,7 +115,10 @@ export class RealClient implements Client {
       fetchPolicy: 'no-cache',
     });
 
-    return { records: (result.data?.logRecordsFetch?.records || []).map(createRecord) };
+    if (!result.data?.logRecordsFetch) throw new Error('unexpected');
+
+    const { records, nextCursor } = result.data.logRecordsFetch;
+    return { records: upgradeRecords(records), nextCursor } as FetchResult;
   }
 
   /**
@@ -122,7 +139,10 @@ export class RealClient implements Client {
       fetchPolicy: 'no-cache',
     });
 
-    return { records: (result.data?.logRecordsFetch?.records || []).map(createRecord) };
+    if (!result.data?.logRecordsFetch) throw new Error('unexpected');
+
+    const { records, nextCursor } = result.data.logRecordsFetch;
+    return { records: upgradeRecords(records), nextCursor } as FetchResult;
   }
 
   /**
