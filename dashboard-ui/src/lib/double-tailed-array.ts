@@ -82,17 +82,19 @@ export class DoubleTailedArray<T> {
   }
 
   /**
-   * Add element(s) to the end of the array
+   * Add elements to the end of the array
    */
-  append(...values: T[]): void {
-    this.after.push(...values);
+  append(values: T[]): void {
+    for (let i = 0; i < values.length; i += 1) {
+      this.after.push(values[i]);
+    }
   }
 
   /**
    * Add element(s) to the beginning of the array
    * Elements are added in order, so prepend(1, 2, 3) will add [1, 2, 3] at the start
    */
-  prepend(...values: T[]): void {
+  prepend(values: T[]): void {
     // Push in reverse order so they appear in correct order at the beginning
     for (let i = values.length - 1; i >= 0; i -= 1) {
       this.before.push(values[i]);

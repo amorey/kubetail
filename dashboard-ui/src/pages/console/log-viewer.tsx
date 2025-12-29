@@ -16,7 +16,7 @@
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Virtualizer, VirtualItem } from '@tanstack/react-virtual';
-import {
+import React, {
   forwardRef,
   useCallback,
   useEffect,
@@ -34,6 +34,13 @@ import { cn } from '@/lib/util';
 export const LOGVIEWER_INITIAL_STATE = {
   isLoading: false,
 } satisfies LogViewerState;
+
+export class UninitializedRecordsError extends Error {
+  constructor() {
+    super(`Records uninitialized`);
+    this.name = 'UninitializedRecordsError';
+  }
+}
 
 export type Cursor = string;
 
@@ -143,7 +150,6 @@ type LogViewerRuntimeState = {
 };
 
 type LogViewerRuntimeRefs = {
-  records: React.RefObject<DoubleTailedArray<LogRecord>>;
   scrollEl: React.RefObject<HTMLDivElement | null>;
   isAutoScrollEnabled: React.RefObject<boolean>;
   isLoadingBefore: React.RefObject<boolean>;
@@ -167,6 +173,7 @@ type LogViewerRuntime = {
   services: {
     beforePaint: BeforePaintSubscribe;
     virtualizer: Virtualizer<HTMLDivElement, Element>;
+    records: LogRecordsService;
   };
 };
 
@@ -189,8 +196,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
           // Update UI
           if (result.records.length) {
             if (result.nextCursor) actions.setHasMoreAfter(true);
-            refs.records.current = new DoubleTailedArray(result.records);
-            actions.setCount(result.records.length);
+            services.records.new(result.records);
           }
 
           break;
@@ -206,8 +212,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
               if (scrollElement) scrollElement.scrollTop = scrollElement.scrollHeight;
             });
 
-            refs.records.current = new DoubleTailedArray(result.records);
-            actions.setCount(result.records.length);
+            services.records.new(result.records);
 
             await beforePaintPromise;
           }
@@ -237,10 +242,7 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
             });
 
             // Combine results
-            const allRecords = new DoubleTailedArray(afterResult.records);
-            allRecords.prepend(...beforeResult.records);
-            refs.records.current = allRecords;
-            actions.setCount(allRecords.length);
+            services.records.new([...beforeResult.records, ...afterResult.records]);
 
             await beforePaintPromise;
           }
@@ -283,8 +285,10 @@ const useInit = ({ client, config, refs, actions, services }: LogViewerRuntime) 
 const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewerRuntime) =>
   useCallback(async () => {
     // Get data
-    const records = refs.records.current;
-    const result = await client.fetchBefore({ cursor: records.first().cursor, limit: config.batchSizeRegular });
+    const result = await client.fetchBefore({
+      cursor: services.records.first().cursor,
+      limit: config.batchSizeRegular,
+    });
 
     // Update `hasMoreBefore`
     if (result.nextCursor === null) actions.setHasMoreBefore(false);
@@ -304,8 +308,7 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
         scrollElement.scrollTop = prevScrollTop + (nextScrollHeight - prevScrollHeight);
       });
 
-      records.prepend(...result.records);
-      actions.setCount(records.length);
+      services.records.prepend(result.records);
 
       await beforePaintPromise;
     }
@@ -315,11 +318,10 @@ const useLoadMoreBefore = ({ client, config, refs, actions, services }: LogViewe
  * useLoadMoreAfter - Returns stable loadMoreAfter function
  */
 
-const useLoadMoreAfter = ({ client, config, refs, actions, services }: LogViewerRuntime) =>
+const useLoadMoreAfter = ({ client, config, actions, services }: LogViewerRuntime) =>
   useCallback(async () => {
     // Get data
-    const records = refs.records.current;
-    const result = await client.fetchAfter({ cursor: records.last().cursor, limit: config.batchSizeRegular });
+    const result = await client.fetchAfter({ cursor: services.records.last().cursor, limit: config.batchSizeRegular });
 
     // Update `hasMoreAfter`
     if (result.nextCursor === null) actions.setHasMoreAfter(false);
@@ -329,8 +331,7 @@ const useLoadMoreAfter = ({ client, config, refs, actions, services }: LogViewer
       // Hack to get around https://github.com/TanStack/virtual/issues/1094
       services.virtualizer.isScrolling = false;
 
-      records.append(...result.records);
-      actions.setCount(records.length);
+      services.records.append(result.records);
     }
   }, [client, config.batchSizeRegular]);
 
@@ -461,11 +462,10 @@ const usePullToRefresh = (runtime: LogViewerRuntime) => {
  * useFollowFromEnd - Implement follow-from-end behavior
  */
 
-const useFollowFromEnd = ({ client, config, state, refs, actions, services }: LogViewerRuntime) => {
+const useFollowFromEnd = ({ client, config, state, refs, services }: LogViewerRuntime) => {
   useEffect(() => {
     if (!config.follow || state.isLoading || state.hasMoreAfter) return;
 
-    const records = refs.records.current;
     const pendingRecords: LogRecord[] = [];
     let rafID: number | null = null;
 
@@ -485,8 +485,7 @@ const useFollowFromEnd = ({ client, config, state, refs, actions, services }: Lo
         });
 
       // Append all pending records at once
-      records.append(...pendingRecords);
-      actions.setCount(records.length);
+      services.records.append(pendingRecords);
 
       // Clear the pending records
       pendingRecords.length = 0;
@@ -502,7 +501,7 @@ const useFollowFromEnd = ({ client, config, state, refs, actions, services }: Lo
       if (rafID === null) rafID = requestAnimationFrame(flush);
     };
 
-    const opts = records.length ? { after: records.last().cursor } : undefined;
+    const opts = services.records.length() ? { after: services.records.last().cursor } : undefined;
 
     const unsubscribe = client.subscribe(cb, opts);
 
@@ -569,6 +568,65 @@ const useAutoScroll = ({ config, state, refs }: LogViewerRuntime) => {
 };
 
 /**
+ * useLogRecordsService - Custom hook to interface with the log records cache
+ */
+
+type LogRecordInternal = LogRecord & {
+  key: number;
+};
+
+type LogRecordsService = {
+  new: (records: LogRecord[]) => void;
+  append: (records: LogRecord[]) => void;
+  prepend: (records: LogRecord[]) => void;
+  get: (index: number) => LogRecordInternal;
+  getKey: (index: number) => number;
+  first: () => LogRecordInternal;
+  last: () => LogRecordInternal;
+  length: () => number;
+};
+
+function useLogRecordsService(setCount: React.Dispatch<React.SetStateAction<number>>): LogRecordsService {
+  // RecordsRef will never be null so this assertion is safe
+  const recordsRef = useRef(null) as unknown as React.RefObject<DoubleTailedArray<LogRecordInternal>>;
+
+  const keyRef = useRef(0);
+
+  const addKeys = useCallback((records: LogRecord[]) => {
+    for (let i = 0; i < records.length; i += 1) {
+      (records[i] as LogRecordInternal).key = keyRef.current;
+      keyRef.current += 1;
+    }
+  }, []);
+
+  return useMemo(
+    () => ({
+      new: (records: LogRecord[]) => {
+        addKeys(records);
+        recordsRef.current = new DoubleTailedArray(records as LogRecordInternal[]);
+        setCount(recordsRef.current.length);
+      },
+      append: (records: LogRecord[]) => {
+        addKeys(records);
+        recordsRef.current.append(records as LogRecordInternal[]);
+        setCount(recordsRef.current.length);
+      },
+      prepend: (records: LogRecord[]) => {
+        addKeys(records);
+        recordsRef.current.prepend(records as LogRecordInternal[]);
+        setCount(recordsRef.current.length);
+      },
+      get: (index: number) => recordsRef.current.at(index),
+      getKey: (index: number) => recordsRef.current.at(index).key,
+      first: () => recordsRef.current.first(),
+      last: () => recordsRef.current.last(),
+      length: () => recordsRef.current?.length ?? 0,
+    }),
+    [],
+  );
+}
+
+/**
  * LogViewerInner - Inner component that renders virtualized list of log records
  */
 
@@ -586,11 +644,12 @@ type LogViewerInnerProps = {
 const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: LogViewerInnerProps) => {
   const scrollElementRef = useRef<HTMLDivElement>(null);
 
-  const recordsRef = useRef(new DoubleTailedArray<LogRecord>());
   const isLoadingBeforeRef = useRef(false);
   const isLoadingAfterRef = useRef(false);
 
   const [count, setCount] = useState(0);
+  const records = useLogRecordsService(setCount);
+
   const [hasMoreBefore, setHasMoreBefore] = useState(false);
   const [hasMoreAfter, setHasMoreAfter] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -601,14 +660,17 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const { config } = partialRuntime;
 
   const estimateSize = useCallback(
-    (index: number) => config.estimateRowHeight(recordsRef.current.at(index)),
+    (index: number) => config.estimateRowHeight(records.get(index)),
     [config.estimateRowHeight],
   );
+
+  const getItemKey = useCallback((index: number) => records.getKey(index), []);
 
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollElementRef.current,
     estimateSize,
+    getItemKey,
     overscan: config.overscan,
     scrollMargin: hasMoreBefore ? config.hasMoreBeforeRowHeight : 0,
     useScrollendEvent: true,
@@ -619,14 +681,13 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
     config: partialRuntime.config,
     state: { count, hasMoreBefore, hasMoreAfter, isRefreshing, ...partialRuntime.state },
     refs: {
-      records: recordsRef,
       scrollEl: scrollElementRef,
       isAutoScrollEnabled: isAutoScrollEnabledRef,
       isLoadingBefore: isLoadingBeforeRef,
       isLoadingAfter: isLoadingAfterRef,
     },
     actions: { setCount, setHasMoreBefore, setHasMoreAfter, setIsRefreshing, ...partialRuntime.actions },
-    services: { beforePaint, virtualizer },
+    services: { beforePaint, virtualizer, records },
   } satisfies LogViewerRuntime;
 
   useInit(runtime);
@@ -659,7 +720,7 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
           index,
           size,
           start,
-          record: recordsRef.current.at(index),
+          record: records.get(index),
         };
       }),
     measureElement: virtualizer.measureElement,

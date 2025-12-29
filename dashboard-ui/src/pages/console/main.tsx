@@ -25,8 +25,8 @@ import { dashboardClient, getClusterAPIClient } from '@/apollo-client';
 import { useIsClusterAPIEnabled } from '@/lib/hooks';
 import { cn, cssEncode } from '@/lib/util';
 
-// import { FakeClient } from './fake-client';
-import { RealClient } from './real-client';
+import { FakeClient } from './fake-client';
+// import { RealClient } from './real-client';
 import { LogViewer } from './log-viewer';
 import type { LogRecord, LogViewerVirtualRow, LogViewerVirtualizer } from './log-viewer';
 import { ALL_VIEWER_COLUMNS, PageContext, ViewerColumn } from './shared';
@@ -158,11 +158,12 @@ const Row = memo(
           transform: `translateY(${row.start}px)`,
         }}
       >
+        <div>{row.key}</div>
         {els}
       </div>
     );
   },
-  () => true,
+  () => false,
 );
 
 /**
@@ -189,7 +190,7 @@ const Rows = memo(
     if (prev.virtualizer.hasMoreBefore !== next.virtualizer.hasMoreBefore) return false;
     if (prev.virtualizer.hasMoreAfter !== next.virtualizer.hasMoreAfter) return false;
 
-    return true;
+    return false;
   },
 );
 
@@ -217,9 +218,9 @@ export function Main() {
     });
   }, [isUseClusterAPIEnabled, kubeContext]);
 
-  const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
-  // const client = useMemo(() => new FakeClient(1000), [apolloClient]);
-  // client.setAppendRate(1);
+  // const client = useMemo(() => new RealClient(apolloClient), [apolloClient]);
+  const client = useMemo(() => new FakeClient(1000), [apolloClient]);
+  client.setAppendRate(1);
 
   const sizerElRef = useRef<HTMLDivElement>(null);
 
