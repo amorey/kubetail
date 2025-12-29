@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 export type BeforePaintCallback = () => void | Promise<void>;
+
+export type BeforePaintTrigger = () => void;
 
 export type BeforePaintSubscribe = (callback: BeforePaintCallback) => Promise<void>;
 
@@ -24,7 +26,8 @@ type BeforePaintQueueItem = {
   reject: (error: unknown) => void;
 };
 
-export function useBeforePaint(trigger: any): BeforePaintSubscribe {
+export function useBeforePaint(): [BeforePaintSubscribe, BeforePaintTrigger] {
+  const [trigger, setTrigger] = useState(0);
   const beforePaintQueueRef = useRef<BeforePaintQueueItem[]>([]);
 
   useLayoutEffect(() => {
@@ -42,11 +45,14 @@ export function useBeforePaint(trigger: any): BeforePaintSubscribe {
     }
   }, [trigger]);
 
-  return useCallback(
-    (cb: BeforePaintCallback) =>
-      new Promise<void>((resolve, reject) => {
-        beforePaintQueueRef.current.push({ callback: cb, resolve, reject });
-      }),
+  return useMemo(
+    () => [
+      (cb: BeforePaintCallback) =>
+        new Promise<void>((resolve, reject) => {
+          beforePaintQueueRef.current.push({ callback: cb, resolve, reject });
+        }),
+      () => setTrigger((v) => v + 1),
+    ],
     [],
   );
 }

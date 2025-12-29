@@ -586,7 +586,7 @@ type LogRecordsService = {
   length: () => number;
 };
 
-function useLogRecordsService(setCount: React.Dispatch<React.SetStateAction<number>>): LogRecordsService {
+function useLogRecordsService(virtualizer: Virtualizer, beforePaintTrigger: () => void): LogRecordsService {
   // RecordsRef will never be null so this assertion is safe
   const recordsRef = useRef(null) as unknown as React.RefObject<DoubleTailedArray<LogRecordInternal>>;
 
@@ -604,17 +604,17 @@ function useLogRecordsService(setCount: React.Dispatch<React.SetStateAction<numb
       new: (records: LogRecord[]) => {
         addKeys(records);
         recordsRef.current = new DoubleTailedArray(records as LogRecordInternal[]);
-        setCount(recordsRef.current.length);
+        beforePaintTrigger();
       },
       append: (records: LogRecord[]) => {
         addKeys(records);
         recordsRef.current.append(records as LogRecordInternal[]);
-        setCount(recordsRef.current.length);
+        beforePaintTrigger();
       },
       prepend: (records: LogRecord[]) => {
         addKeys(records);
         recordsRef.current.prepend(records as LogRecordInternal[]);
-        setCount(recordsRef.current.length);
+        beforePaintTrigger();
       },
       get: (index: number) => recordsRef.current.at(index),
       getKey: (index: number) => recordsRef.current.at(index).key,
@@ -648,14 +648,15 @@ const LogViewerInner = ({ className = '', partialRuntime, children, ...other }: 
   const isLoadingAfterRef = useRef(false);
 
   const [count, setCount] = useState(0);
-  const records = useLogRecordsService(setCount);
 
   const [hasMoreBefore, setHasMoreBefore] = useState(false);
   const [hasMoreAfter, setHasMoreAfter] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const beforePaint = useBeforePaint(count);
+  const [beforePaint, beforePaintTrigger] = useBeforePaint();
   const isAutoScrollEnabledRef = useRef(false);
+
+  const records = useLogRecordsService(beforePaintTrigger);
 
   const { config } = partialRuntime;
 
