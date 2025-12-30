@@ -163,35 +163,7 @@ const Row = memo(
       </div>
     );
   },
-  () => false,
-);
-
-/**
- * Rows component
- */
-
-const Rows = memo(
-  ({ virtualizer }: { virtualizer: LogViewerVirtualizer }) => (
-    <>
-      {virtualizer.getVirtualRows().map((virtualRow) => (
-        <Row key={virtualRow.key} row={virtualRow} />
-      ))}
-    </>
-  ),
-  (prev, next) => {
-    // Check ranges
-    const prevRange = prev.virtualizer.range || { startIndex: NaN, endIndex: NaN };
-    const nextRange = next.virtualizer.range || { startIndex: NaN, endIndex: NaN };
-    if (prevRange.startIndex !== nextRange.startIndex) return false;
-    if (prevRange.endIndex !== nextRange.endIndex) return false;
-
-    // Check state
-    if (prev.virtualizer.isRefreshing !== next.virtualizer.isRefreshing) return false;
-    if (prev.virtualizer.hasMoreBefore !== next.virtualizer.hasMoreBefore) return false;
-    if (prev.virtualizer.hasMoreAfter !== next.virtualizer.hasMoreAfter) return false;
-
-    return false;
-  },
+  (prev, next) => prev.row.record === next.row.record,
 );
 
 /**
@@ -263,7 +235,9 @@ export function Main() {
                   Loading...
                 </div>
               )}
-              <Rows virtualizer={virtualizer} />
+              {virtualizer.getVirtualRows().map((virtualRow) => (
+                <Row key={virtualRow.key} row={virtualRow} />
+              ))}
               {virtualizer.hasMoreAfter && (
                 <div
                   className="absolute bottom-0 left-0 text-gray-500"
